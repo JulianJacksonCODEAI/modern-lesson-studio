@@ -1,0 +1,18 @@
+# Built extensions: made by build.ps1, never committed
+build/
+
+# Packages and tooling
+node_modules/
+*.zip
+*.crx
+*.pem
+
+# Run reports and downloads can contain private lesson content
+lesson-studio-run-report*.json
+reviewed-transfer-*.json
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.env
