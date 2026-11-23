@@ -17,12 +17,11 @@ Release steps: bump `manifest.json`, add a section here, merge the pull request,
 ### Changed
 - Page reads that Lesson Studio runs inside Level Builder and Google Slides use the page's own `fetch` in Firefox (`content.fetch`) so they carry the user's sign-in. Chromium is unchanged.
 - The toolbar icon opens Chrome's side panel in Chromium and toggles the sidebar in Firefox.
-
-- Report a problem: if the direct send is blocked, Lesson Studio sends the report from inside the form's own page in a background tab (then closes it), which carries the user's Google sign-in in Firefox. If that fails too, the Report window offers "Send it in Google Forms instead", which opens the form with every field filled in for the user to Submit. Waiting reports have the same option in the footer.
+- Report a problem: if the direct send is blocked, Lesson Studio opens the pre-filled form in a background tab, ticks "Record my email" (the form collects verified emails), presses Google's own Submit, checks for the confirmation page and closes the tab. This carries the user's Google sign-in in Firefox. If that fails too, the Report window offers "Send it in Google Forms instead", which opens the form with every field filled in for the user to Submit. Waiting reports have the same option in the footer.
 
 ### Tested live (Firefox, 2026-11-22)
 - Sidebar, Allow access, Import, Check, Prepare, Save and the new lesson links all work.
-- Sending a report directly fails in Firefox: Firefox sends the request without the Google sign-in, Google redirects to accounts.google.com, and the redirect is blocked ("NetworkError"). The background-tab send is the fix; not yet confirmed live.
+- Sending a report directly fails in Firefox (no Google sign-in on the request; and since the form collects verified emails, Google returns HTTP 400 without the "Record my email" consent). The background-tab send works: reports arrive with the sender's verified email.
 
 ## [1.3.1] - 2026-11-22
 
