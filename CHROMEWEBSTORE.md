@@ -96,7 +96,7 @@ Everything else stays in the user's browser. The imported lesson, save receipts 
 **Privacy Policy URL**
 https://julianjacksoncodeai.github.io/modern-lesson-studio/privacy/
 
-> Published with GitHub Pages from `docs/privacy/index.html` on `main`.
+> Published with GitHub Pages from `docs/privacy/index.md` on `main` (Cayman theme).
 
 ## Distribution
 
