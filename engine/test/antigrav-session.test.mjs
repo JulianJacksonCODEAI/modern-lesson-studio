@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {destinationFromTab,editorUrlFromInput,reviewPackageFor} from '../session.mjs';
+import {destinationFromTab,editorUrlFromInput,lessonPageFromInput,reviewPackageFor} from '../session.mjs';
 import {sharedCandidates,withoutCandidates,sameIntent,keepSavedObjectives,normalizeObjective} from '../shared-choices.mjs';
 import {assertWritableLesson} from '../dist/destination.mjs';
 import {generate} from '../dist/core.mjs';
@@ -78,4 +78,11 @@ test('objectives: with addMissing, only Notion objectives Level Builder lacks ar
  assert.deepEqual(packageProblems(r.pkg),[]);
  const none=keepSavedObjectives(pkg,[...saved,'EXPLAIN who is affected by AI mistakes'],{addMissing:true});
  assert.deepEqual(none.added,[],'nothing is added when every Notion objective is already there');
+});
+test('unit and course lesson links are opened as editor pages so their real ID can be read',()=>{
+ assert.equal(lessonPageFromInput('https://levelbuilder-studio.code.org/s/scottsdale-levelbuilder-exploration/lessons/10/edit'),'https://levelbuilder-studio.code.org/s/scottsdale-levelbuilder-exploration/lessons/10/edit');
+ assert.equal(lessonPageFromInput('levelbuilder-studio.code.org/s/csp-unit1-dev-27-28/lessons/16'),'https://levelbuilder-studio.code.org/s/csp-unit1-dev-27-28/lessons/16/edit');
+ assert.equal(lessonPageFromInput('https://levelbuilder-studio.code.org/courses/6-12-dev-playground/units/16/lessons/11/'),'https://levelbuilder-studio.code.org/courses/6-12-dev-playground/units/16/lessons/11/edit');
+ for(const bad of ['https://studio.code.org/s/csp1/lessons/3/edit','http://levelbuilder-studio.code.org/s/x/lessons/3/edit','https://levelbuilder-studio.code.org/s/x/levels/3','https://levelbuilder-studio.code.org/lessons/42/edit','abc',''])
+  assert.equal(lessonPageFromInput(bad),null,bad);
 });

@@ -2,7 +2,7 @@
 import {loadImports,saveImports,clearImports,importSlides,importNotion,buildLesson} from '../shared/sources.mjs';
 import {renderLesson,renderReview} from '../shared/lesson-view.mjs';
 import {buildReport,sendReport,queueReport,pendingReports,removePending,PROBLEM_TYPES,PROBLEM_LABELS} from '../shared/report.mjs';
-import {createSession,destinationFromTab,editorUrlFromInput,reviewPackageFor,SANDBOX_LESSONS} from '../engine/session.mjs';
+import {createSession,destinationFromTab,editorUrlFromInput,lessonPageFromInput,lessonDescriptionInPage,reviewPackageFor,SANDBOX_LESSONS} from '../engine/session.mjs';
 import {AIService} from '../ai/ai-service.mjs';
 
 const $=id=>document.getElementById(id);
@@ -137,11 +137,32 @@ function renderDestination(){
 }
 $('own-lesson').addEventListener('change',()=>{session?.confirmOwnership($('own-lesson').checked);refresh();});
 $('btn-change-lesson').addEventListener('click',()=>{$('dest-open').hidden=false;$('lesson-link').focus();});
+// Resolves when the tab finishes loading (or already has).
+async function tabLoaded(tabId,ms=30000){
+ const now=await chrome.tabs.get(tabId);if(now.status==='complete')return now;
+ return new Promise((resolve,reject)=>{
+  const on=(id,info,tab)=>{if(id===tabId&&info.status==='complete'){clearTimeout(timer);chrome.tabs.onUpdated.removeListener(on);resolve(tab);}};
+  const timer=setTimeout(()=>{chrome.tabs.onUpdated.removeListener(on);reject(Error('The lesson page took too long to load.'));},ms);
+  chrome.tabs.onUpdated.addListener(on);
+ });
+}
 $('dest-open').addEventListener('submit',async e=>{
  e.preventDefault();
- const url=editorUrlFromInput($('lesson-link').value);
- if(!url){say('dest-status',"That isn't a Level Builder lesson link. Paste the lesson's editor link, like https://levelbuilder-studio.code.org/lessons/123/edit, or its ID.",'error');return;}
- const tab=await chrome.tabs.create({url});pinnedTabId=tab.id;$('lesson-link').value='';
+ const text=$('lesson-link').value,direct=editorUrlFromInput(text);
+ if(direct){const tab=await chrome.tabs.create({url:direct});pinnedTabId=tab.id;$('lesson-link').value='';return;}
+ const page=lessonPageFromInput(text);
+ if(!page){say('dest-status',"That isn't a Level Builder lesson link. Paste a lesson link from levelbuilder-studio.code.org (for example …/lessons/123/edit or …/s/unit-name/lessons/4/edit), or the lesson's ID.",'error');return;}
+ // Links like /s/<unit>/lessons/<n>/edit name the lesson by its position, so open it and read its real ID.
+ say('dest-status','Opening the lesson to find its ID…');
+ const tab=await chrome.tabs.create({url:page});pinnedTabId=tab.id;
+ try{
+  await tabLoaded(tab.id);
+  const [r]=await chrome.scripting.executeScript({target:{tabId:tab.id},func:lessonDescriptionInPage});
+  const id=r?.result?.id;
+  if(!Number.isSafeInteger(id)||id<1)throw Error(r?.result?.error||'That page is not a Level Builder lesson editor.');
+  await chrome.tabs.update(tab.id,{url:`https://levelbuilder-studio.code.org/lessons/${id}/edit`});
+  $('lesson-link').value='';say('dest-status',`Found lesson ${id}. Opening its editor…`);
+ }catch(err){say('dest-status','Could not open that lesson: '+err.message,'error');}
 });
 document.querySelectorAll('[data-open-lesson]').forEach(b=>b.addEventListener('click',async()=>{
  const tab=await chrome.tabs.create({url:`https://levelbuilder-studio.code.org/lessons/${b.dataset.openLesson}/edit`});pinnedTabId=tab.id;
