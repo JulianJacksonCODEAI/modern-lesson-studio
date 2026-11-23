@@ -13,6 +13,9 @@ One home for the engine. The prototype repo `jacksj12/codeai-levelbuilder-protot
 - The engine's design notes and live acceptance records moved to `docs/engine/`.
 - Privacy policy published with GitHub Pages at https://julianjacksoncodeai.github.io/modern-lesson-studio/privacy/ (source `docs/privacy/index.html`; `PRIVACY.md` links to it). The store listing's privacy and support links point to this repo.
 
+### Added
+- CI: a GitHub Actions workflow (`.github/workflows/ci.yml`) runs the unit tests, both builds with their checks, and Mozilla's extension checker on every pull request and every push to `main`.
+
 ### Removed
 - `_legacy/`, the earlier AntiGrav side panel, popup and engine copy (never shipped; kept in git history).
 

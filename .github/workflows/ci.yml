@@ -1,0 +1,40 @@
+# Runs the same checks as build.ps1 on every pull request and every push to main:
+# all unit tests, both builds with their checks, and Mozilla's extension checker.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build team and full editions (fails on broken imports or advanced code in the team build)
+        run: node scripts/build.mjs
+
+      # Team build: no errors or warnings. Full build: no errors (its older prototype
+      # screens use innerHTML with escaped text, which the checker warns about).
+      - name: Mozilla extension checker (team, Firefox)
+        run: npx -y web-ext@8 lint --source-dir build/team-firefox --warnings-as-errors
+
+      - name: Mozilla extension checker (full, Firefox)
+        run: npx -y web-ext@8 lint --source-dir build/full-firefox
