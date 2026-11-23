@@ -13,6 +13,8 @@ test('Firefox manifest swaps the side panel and service worker for a sidebar and
  assert.equal(f.sidebar_action.default_panel,'sidepanel/sidepanel.html');
  assert.equal(f.browser_specific_settings.gecko.id,FIREFOX_IDS.team);
  assert.equal(f.version,manifest.version);
+ assert.equal(f.browser_specific_settings.gecko.strict_min_version,'140.0','data_collection_permissions needs Firefox 140');
+ assert.equal(f.browser_specific_settings.gecko_android.strict_min_version,'142.0','and Firefox for Android 142');
  assert.deepEqual(f.host_permissions,manifest.host_permissions);
  assert.equal(manifest.side_panel.default_path,'sidepanel/sidepanel.html','the Chromium manifest is not changed');
  assert.notEqual(firefoxManifest(manifest,{edition:'full'}).browser_specific_settings.gecko.id,f.browser_specific_settings.gecko.id);

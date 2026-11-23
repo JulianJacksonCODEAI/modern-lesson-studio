@@ -6,6 +6,11 @@ Release steps: bump `manifest.json`, add a section here, merge the pull request,
 
 ## [Unreleased]
 
+## [1.4.2] - 2026-11-22
+
+### Fixed
+- Firefox builds now need Firefox 140 or later (Firefox for Android 142), the first versions that support the data-collection declaration. Clears Mozilla's two "strict_min_version" warnings on upload.
+
 ## [1.4.1] - 2026-11-22
 
 ### Changed
