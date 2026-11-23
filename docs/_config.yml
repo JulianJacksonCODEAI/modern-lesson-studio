@@ -1,0 +1,9 @@
+# GitHub Pages site for Lesson Studio, published from main's /docs folder.
+theme: jekyll-theme-cayman
+title: Lesson Studio
+description: A browser extension from the Code.org CodeAI curriculum team that copies a lesson's Slides speaker notes and Notion page into Level Builder.
+
+# Only the site pages are published. Engine notes and the install guide stay in the repo.
+exclude:
+  - engine
+  - INSTALL-team.txt
