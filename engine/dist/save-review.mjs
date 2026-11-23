@@ -258,6 +258,8 @@ export function savedSectionBlanks(section){
  for(const k of ['name','progressionName','description'])if(s[k]==null)s[k]='';
  if(s.remarks==null)s.remarks=false;
  if(s.tips==null)s.tips=[];
+ // Live, 2026-11-22: a new section in a new activity saved its duration as text ("5" for 5).
+ if(typeof s.duration==='string'&&/^\d+$/.test(s.duration))s.duration=Number(s.duration);
  return s;
 }
 

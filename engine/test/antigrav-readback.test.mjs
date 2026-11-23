@@ -23,3 +23,8 @@ test('a failed new-section check names the fields that differ',()=>{
  assert.match(msg,/tips\[0\]\.markdown: saved "x", reviewed "y"/);
  assert.doesNotMatch(msg,/name/);
 });
+test('a new section saved with its duration as text matches the reviewed number',()=>{
+ assert.equal(canonical(savedSectionBlanks({name:'',duration:'5'})),canonical(savedSectionBlanks({name:'',duration:5})));
+ assert.notEqual(canonical(savedSectionBlanks({duration:'6'})),canonical(savedSectionBlanks({duration:5})),'a different duration still fails');
+ assert.notEqual(canonical(savedSectionBlanks({duration:'5 min'})),canonical(savedSectionBlanks({duration:5})),'non-numeric text is not converted');
+});
