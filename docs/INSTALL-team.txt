@@ -1,0 +1,41 @@
+LESSON STUDIO {VERSION}: HOW TO INSTALL
+=======================================
+
+Lesson Studio copies a lesson's Google Slides speaker notes and Notion page into
+a Level Builder lesson. It runs in Google Chrome, in the side panel.
+
+INSTALL (about 2 minutes)
+1. Unzip this file. You get this guide and a folder named "lesson-studio".
+   Move the "lesson-studio" folder somewhere it can stay, such as Documents.
+   Chrome loads it from there, so don't delete or move it later.
+2. In Chrome, go to:  chrome://extensions
+3. Turn on "Developer mode" (top right).
+4. Click "Load unpacked" (top left) and choose the "lesson-studio" folder.
+5. Click the puzzle-piece icon in the toolbar and pin "Lesson Studio".
+6. Click the Lesson Studio icon to open the side panel.
+
+Sign in to Chrome with your code.org Google account, and to Level Builder.
+
+USE IT
+1. Import: open the lesson's Slides deck and click "Import the open Slides deck".
+   Then open its Notion page and click "Import the open Notion page".
+2. Check: read what will go into Level Builder. You can't edit here. If something
+   is wrong, click "Report" on that item.
+3. Save: open YOUR lesson in Level Builder, tick "This is my lesson", click
+   "Check resources", choose Skip or Add for anything missing, click
+   "Prepare changes", read the list, then tick the box and click
+   "Save to Level Builder". Make any edits in Level Builder afterwards.
+
+Only save to lessons you own. Never save to an official course lesson.
+
+SOMETHING WRONG?
+Click "Report a problem" at the bottom of the side panel. Your report goes to
+the curriculum team with the details of your run filled in.
+
+UPDATING TO A NEW VERSION
+1. Unzip the new version.
+2. Delete everything inside your existing "lesson-studio" folder, then copy in
+   everything from the new "lesson-studio" folder. Keep the folder where it is.
+3. Go to chrome://extensions and click the reload arrow on Lesson Studio.
+This keeps your imported lesson and any reports still waiting to send.
+The panel's footer shows the version you're using.

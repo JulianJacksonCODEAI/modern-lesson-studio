@@ -6,6 +6,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {writeZip,readZip} from './zip.mjs';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const out=path.join(root,'build');
@@ -13,7 +14,7 @@ const manifest=JSON.parse(fs.readFileSync(path.join(root,'manifest.json'),'utf8'
 const builtAt=new Date().toISOString();
 const rel=p=>path.relative(root,p).split(path.sep).join('/');
 
-const EXCLUDE_ALWAYS=[/^build\//,/^_legacy\//,/^test\//,/^engine\/test\//,/^scripts\//,/^node_modules\//,/^\.git/,/\.md$/i,/^package(-lock)?\.json$/,/^build\.ps1$/,/^core\//];
+const EXCLUDE_ALWAYS=[/^build\//,/^docs\//,/^_legacy\//,/^test\//,/^engine\/test\//,/^scripts\//,/^node_modules\//,/^\.git/,/\.md$/i,/^package(-lock)?\.json$/,/^build\.ps1$/,/^core\//];
 const TEAM_ENTRIES=['sidepanel/sidepanel.html','background/service-worker.js'];
 const TEAM_ASSETS=['icons/icon-16.png','icons/icon-48.png','icons/icon-128.png','shared/report-form.json'];
 const ADVANCED=/^advanced\//;
@@ -76,7 +77,24 @@ for(const f of fullFiles.filter(f=>/\.(m?js|html)$/.test(f)))for(const r of refs
  if(!fs.existsSync(path.join(out,'full',r)))problems.push(`Full build: ${f} references missing ${r}`);
 for(const f of [...manifest.host_permissions])if(TEAM_DROPPED_HOSTS.includes(f)&&teamManifest.host_permissions.includes(f))problems.push('Team manifest kept '+f);
 
+// ---- team zip to share (only if the team build passed its checks) ----
+let zipName=null;
+if(!problems.length){
+ zipName=`lesson-studio-team-${manifest.version}.zip`;
+ const guide=fs.readFileSync(path.join(root,'docs','INSTALL-team.txt'),'utf8').replaceAll('{VERSION}',manifest.version);
+ const entries=[{name:'How to install Lesson Studio.txt',data:Buffer.from(guide.replace(/\r?\n/g,'\r\n'),'utf8')},
+  ...teamFiles.sort().map(f=>({name:'lesson-studio/'+f,data:fs.readFileSync(path.join(out,'team',f))}))];
+ const zip=writeZip(entries);fs.writeFileSync(path.join(out,zipName),zip);
+ const back=readZip(fs.readFileSync(path.join(out,zipName)));
+ if(back.length!==entries.length)problems.push('Team zip: wrong number of files.');
+ if(!back.some(e=>e.name==='lesson-studio/manifest.json'))problems.push('Team zip: lesson-studio/manifest.json is missing.');
+ if(JSON.parse(back.find(e=>e.name==='lesson-studio/manifest.json').data).version!==manifest.version)problems.push('Team zip: manifest version differs.');
+ for(const e of back){if(e.name.includes('\\'))problems.push('Team zip: backslash path '+e.name);if(/^lesson-studio\/advanced\//.test(e.name))problems.push('Team zip: advanced file '+e.name);}
+ const info=JSON.parse(back.find(e=>e.name==='lesson-studio/build-info.json').data);if(info.edition!=='team')problems.push('Team zip: not the team edition.');
+}
+
 console.log(`full: ${all.length+2} files → build/full`);
 console.log(`team: ${teamFiles.length} files → build/team`);
+if(zipName)console.log(`share: build/${zipName} (team build + install guide)`);
 if(problems.length){console.error('\nBUILD CHECK FAILED:\n- '+problems.join('\n- '));process.exit(1);}
 console.log('Build checks passed: no broken imports in either build, and no advanced code in the team build.');

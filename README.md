@@ -17,6 +17,8 @@ Build both (runs every test first, stops on any failure):
 
 Load one in Chrome: `chrome://extensions` → Developer mode → **Load unpacked** → choose `build\team` or `build\full`. Click the toolbar icon to open the side panel.
 
+**Sharing with the team:** share only `build\lesson-studio-team-<version>.zip`, for example in a view-only Google Drive folder. It holds the team build and install steps for teammates. Never share `build\full` or this repository.
+
 ## Safety rules
 
 - **Saves go to any lesson the user confirms is theirs** (decided 2026-11-22). The Save tab shows the open lesson's name, unit and ID, and nothing is checked, added or saved until the user ticks "This is my lesson, not an official course lesson". Lesson Studio can't tell an official lesson from a dev lesson by its link, so that confirmation is the safeguard. Sandbox lesson 10 (8898984) holds the accepted AI Lab save and shows a warning; sandbox lesson 11 (8898985) is for tests.
