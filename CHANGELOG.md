@@ -6,6 +6,20 @@ Release steps: bump `manifest.json`, add a section here, merge the pull request,
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-11-22
+
+### Added
+- Firefox: `build.ps1` also makes `build/team-firefox` and `build/full-firefox` (same files, Firefox manifest: sidebar instead of side panel, background script, fixed add-on IDs, Firefox 128 or later) and `build/lesson-studio-team-firefox-<version>.zip` for signing on addons.mozilla.org. Mozilla's `web-ext lint` runs in the build: the team build must have no errors or warnings, the full build no errors.
+- An "Allow access" banner appears when the browser hasn't granted access to Slides, Notion and Level Builder (Firefox asks after install; Chromium grants it at install, so it never shows there).
+- The install guide covers Edge, Brave, Arc, Opera and Firefox.
+
+### Changed
+- Page reads that Lesson Studio runs inside Level Builder and Google Slides use the page's own `fetch` in Firefox (`content.fetch`) so they carry the user's sign-in. Chromium is unchanged.
+- The toolbar icon opens Chrome's side panel in Chromium and toggles the sidebar in Firefox.
+
+### Not yet tested live
+- Firefox, end to end.
+
 ## [1.3.1] - 2026-11-22
 
 ### Added

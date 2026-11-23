@@ -2,6 +2,11 @@
 
 A Chrome side panel that copies a lesson's Google Slides speaker notes and Notion page into a Code.org Level Builder lesson the user owns, with a checked save.
 
+## Browsers
+
+- **Chromium** (Chrome, Edge, Brave, Arc, Opera): `build\team` and `build\full`. Load with **Load unpacked** on the browser's extensions page.
+- **Firefox 128 or later:** `build\team-firefox` and `build\full-firefox`. For testing, use **about:debugging → This Firefox → Load Temporary Add-on** and choose the folder's `manifest.json`; it is removed when Firefox restarts. To share it, sign `build\lesson-studio-team-firefox-<version>.zip` as an **unlisted** add-on on addons.mozilla.org. That's free, isn't public, and gives a signed `.xpi` to share like the zip. Never sign or share `full-firefox`.
+
 ## Two builds
 
 | Build | Who | What it has |
