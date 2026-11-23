@@ -97,3 +97,17 @@ test('the in-page sender reports network errors instead of throwing',async()=>{
  try{assert.deepEqual(await postReportInPage('https://docs.google.com/forms/d/e/x/formResponse','a=1'),{ok:false,status:0,url:'',error:'offline'});}
  finally{globalThis.fetch=saved;}
 });
+test("the in-page sender adds the form's hidden fields, never overriding the report's own answers",async()=>{
+ const savedFetch=globalThis.fetch,savedDoc=globalThis.document;let sent;
+ globalThis.fetch=async(url,opts)=>{sent=opts.body;return {ok:true,status:200,url};};
+ const hidden=[{name:'fbzx',value:'-123'},{name:'partialResponse',value:'[null,null,"-123"]'},{name:'entry.809629770',value:'stale'}];
+ globalThis.document={querySelector:s=>s==='form[action*="formResponse"]'?{querySelectorAll:()=>hidden}:null};
+ try{
+  const r=await postReportInPage(config.submitUrl,new URLSearchParams({'entry.809629770':'Slides: deck','entry.2062910186':'note'}).toString());
+  assert.equal(r.ok,true);
+  assert.equal(sent.get('fbzx'),'-123');
+  assert.equal(sent.get('partialResponse'),'[null,null,"-123"]');
+  assert.equal(sent.get('fvv'),'1');assert.equal(sent.get('pageHistory'),'0');
+  assert.deepEqual(sent.getAll('entry.809629770'),['Slides: deck'],'report answers are not replaced by the page');
+ }finally{globalThis.fetch=savedFetch;globalThis.document=savedDoc;}
+});

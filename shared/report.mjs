@@ -53,7 +53,14 @@ export function formBody(config,fields,problemType,note){
 export async function postReportInPage(submitUrl,body){
  const pageFetch=globalThis.content&&typeof globalThis.content.fetch==='function'?globalThis.content.fetch.bind(globalThis.content):fetch;
  try{
-  const response=await pageFetch(submitUrl,{method:'POST',body:new URLSearchParams(body),credentials:'include',redirect:'follow'});
+  // From inside the form page, Google also expects the form's own hidden fields (session token fbzx, fvv,
+  // pageHistory, partialResponse), as a real Submit sends; without them it answers 400 (seen in Firefox).
+  const params=new URLSearchParams(body);
+  const form=globalThis.document?.querySelector?.('form[action*="formResponse"]');
+  for(const input of form?form.querySelectorAll('input[type="hidden"][name]'):[])if(!input.name.startsWith('entry.')&&!params.has(input.name))params.append(input.name,input.value);
+  if(!params.has('fvv'))params.append('fvv','1');
+  if(!params.has('pageHistory'))params.append('pageHistory','0');
+  const response=await pageFetch(submitUrl,{method:'POST',body:params,credentials:'include',redirect:'follow'});
   return {ok:response.ok,status:response.status,url:String(response.url||'')};
  }catch(error){return {ok:false,status:0,url:'',error:String(error?.message||error)};}
 }
