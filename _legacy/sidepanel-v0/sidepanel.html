@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lesson Studio AI Side Panel</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <div class="panel-layout">
+    <!-- Top Navigation Header -->
+    <header class="panel-header">
+      <div class="header-main">
+        <div class="brand">
+          <div class="brand-badge">
+            <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div>
+            <h1 class="brand-title">Lesson Studio AI</h1>
+            <p id="active-lesson-label" class="lesson-tag">AI Lab Lesson 16</p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button id="btn-open-full-studio" class="btn-icon" title="Open Full Studio in New Tab" aria-label="Open Full Studio">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-sm">
+              <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="nav-tabs" role="tablist">
+        <button id="tab-btn-sources" class="tab-btn active" role="tab" aria-selected="true" data-tab="sources">
+          <span class="tab-icon">📥</span> Sources
+        </button>
+        <button id="tab-btn-editor" class="tab-btn" role="tab" aria-selected="false" data-tab="editor">
+          <span class="tab-icon">✏️</span> Lesson
+        </button>
+        <button id="tab-btn-ai" class="tab-btn" role="tab" aria-selected="false" data-tab="ai">
+          <span class="tab-icon">✨</span> AI Copilot
+        </button>
+        <button id="tab-btn-transfer" class="tab-btn" role="tab" aria-selected="false" data-tab="transfer">
+          <span class="tab-icon">⚡</span> Staging
+        </button>
+        <button id="tab-btn-export" class="tab-btn" role="tab" aria-selected="false" data-tab="export">
+          <span class="tab-icon">📦</span> Export
+        </button>
+      </nav>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="panel-body">
+      <!-- 1. SOURCES & IMPORT TAB -->
+      <section id="tab-pane-sources" class="tab-pane active" role="tabpanel">
+        <div class="pane-header">
+          <h2>Source Ingestion</h2>
+          <p class="pane-desc">Import from Google Slides, Notion, or raw notes.</p>
+        </div>
+
+        <!-- Google Slides 1-Click Card -->
+        <div class="card import-card">
+          <div class="card-title-row">
+            <span class="card-icon">📊</span>
+            <div>
+              <h3>Active Google Slides Deck</h3>
+              <p class="card-sub">Extract slides, titles, speaker notes and callouts.</p>
+            </div>
+          </div>
+          <button id="btn-import-active-slides" class="btn btn-primary w-full mt-2">
+            Import from Current Slides Tab
+          </button>
+        </div>
+
+        <!-- Notion 1-Click Card -->
+        <div class="card import-card mt-3">
+          <div class="card-title-row">
+            <span class="card-icon">📝</span>
+            <div>
+              <h3>Active Notion Lesson Brief</h3>
+              <p class="card-sub">Clip overview, objectives, resources, and vocabulary.</p>
+            </div>
+          </div>
+          <button id="btn-import-active-notion" class="btn btn-secondary w-full mt-2">
+            Clip from Current Notion Tab
+          </button>
+        </div>
+
+        <!-- Notion URL Import Card -->
+        <div class="card import-card mt-3">
+          <div class="card-title-row">
+            <span class="card-icon">🔗</span>
+            <div>
+              <h3>Import from Notion Link</h3>
+              <p class="card-sub">Paste any Notion page URL — fetched directly via API.</p>
+            </div>
+          </div>
+          <input
+            type="text"
+            id="notion-url-input"
+            class="form-control mt-2"
+            placeholder="https://www.notion.so/your-page or page ID..."
+          >
+          <button id="btn-import-notion-url" class="btn btn-primary w-full mt-2">
+            📥 Import from Notion URL
+          </button>
+          <p id="notion-url-hint" class="field-hint mt-1" hidden>
+            No Notion Integration Token saved. <strong>Add one in ⚙ AI Settings</strong> (popup footer) to use this feature.
+          </p>
+        </div>
+
+        <!-- File Upload / Drag & Drop -->
+        <div class="card mt-3">
+          <h3>Import Source Files</h3>
+          <p class="card-sub">Select PPTX deck, Notion Markdown (.md), or source JSON.</p>
+          <div id="drop-zone" class="drop-zone mt-2">
+            <svg class="drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <p><strong>Click to browse</strong> or drag & drop</p>
+            <span class="file-hint">PPTX, Notion MD, or JSON</span>
+            <input type="file" id="file-input" multiple accept=".pptx,.md,.markdown,.json" hidden>
+          </div>
+        </div>
+
+        <!-- Raw Text / AI Structuring -->
+        <div class="card mt-3">
+          <div class="card-title-row">
+            <span class="card-icon">✨</span>
+            <div>
+              <h3>AI Note Structurer</h3>
+              <p class="card-sub">Paste unstructured notes to auto-generate activities & callouts.</p>
+            </div>
+          </div>
+          <textarea id="raw-notes-input" class="textarea mt-2" rows="4" placeholder="Paste rough slide notes, lesson outline, or teacher notes here..."></textarea>
+          <button id="btn-ai-parse-notes" class="btn btn-accent w-full mt-2">
+            ✨ AI Auto-Structure into Lesson
+          </button>
+        </div>
+
+        <!-- Active Source Summary -->
+        <div id="source-summary-card" class="card summary-card mt-3" hidden>
+          <div class="summary-header">
+            <h4>Loaded Source Package</h4>
+            <span id="source-slides-count" class="badge badge-neutral">15 slides</span>
+          </div>
+          <p id="source-title" class="summary-title">AI Lab Lesson 16</p>
+          <div id="source-warnings" class="warnings-box mt-2" hidden></div>
+        </div>
+      </section>
+
+      <!-- 2. LESSON EDITOR TAB -->
+      <section id="tab-pane-editor" class="tab-pane" role="tabpanel" hidden>
+        <div class="pane-header">
+          <div class="header-with-badge">
+            <h2>Lesson Outline</h2>
+            <div class="history-controls">
+              <button id="btn-undo" class="btn-xs btn-secondary" title="Undo" disabled>↩ Undo</button>
+              <button id="btn-redo" class="btn-xs btn-secondary" title="Redo" disabled>↪ Redo</button>
+            </div>
+          </div>
+          <p class="pane-desc">Review and refine assembled activities, guidance, and callouts.</p>
+        </div>
+
+        <!-- Lesson Meta Card -->
+        <div class="card meta-card">
+          <div class="form-row">
+            <div class="form-group flex-2">
+              <label for="input-lesson-title">Lesson Title</label>
+              <input type="text" id="input-lesson-title" class="form-control" value="AI Lab Lesson 16">
+            </div>
+            <div class="form-group flex-1">
+              <label for="input-lesson-timing">Total Minutes</label>
+              <input type="text" id="input-lesson-timing" class="form-control" value="45" readonly>
+            </div>
+          </div>
+
+          <details class="accordion mt-2">
+            <summary class="accordion-header">Front Matter (Overviews & Objectives)</summary>
+            <div class="accordion-content">
+              <div class="form-group mt-2">
+                <label for="input-teacher-overview">Teacher Overview</label>
+                <textarea id="input-teacher-overview" class="textarea" rows="3"></textarea>
+              </div>
+              <div class="form-group mt-2">
+                <label for="input-student-overview">Student Overview</label>
+                <textarea id="input-student-overview" class="textarea" rows="2"></textarea>
+              </div>
+              <div class="form-group mt-2">
+                <label for="input-objectives">Objectives (one per line)</label>
+                <textarea id="input-objectives" class="textarea" rows="3"></textarea>
+              </div>
+            </div>
+          </details>
+        </div>
+
+        <!-- Activities Tree -->
+        <div class="activities-container mt-3">
+          <div class="section-toolbar">
+            <h3>Activities & Sections</h3>
+            <button id="btn-add-activity" class="btn btn-secondary btn-xs">+ Add Activity</button>
+          </div>
+          <div id="activities-list" class="activities-list mt-2">
+            <!-- Dynamically populated activities -->
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. AI COPILOT TAB -->
+      <section id="tab-pane-ai" class="tab-pane" role="tabpanel" hidden>
+        <div class="pane-header">
+          <h2>AI Curriculum Copilot</h2>
+          <p class="pane-desc">Curriculum alignment, pedagogical quality, and smart suggestions.</p>
+        </div>
+
+        <!-- Quality Score Meter -->
+        <div class="card ai-score-card">
+          <div class="score-display">
+            <div class="score-dial">
+              <span id="ai-score-num" class="score-num">--</span>
+              <span class="score-label">Quality Score</span>
+            </div>
+            <div class="score-details">
+              <h4 id="ai-score-grade">Audit Pending</h4>
+              <p id="ai-score-summary">Click below to evaluate curriculum quality and alignment.</p>
+            </div>
+          </div>
+          <button id="btn-run-full-audit" class="btn btn-primary w-full mt-3">
+            ✨ Run Curriculum Quality Audit
+          </button>
+        </div>
+
+        <!-- AI Quality Findings Box -->
+        <div id="ai-audit-results" class="card mt-3" hidden>
+          <h4>Audit Insights</h4>
+          <div id="ai-strengths-list" class="insights-box mt-2"></div>
+          <div id="ai-issues-list" class="issues-box mt-2"></div>
+          <div id="ai-deep-insight" class="insight-quote mt-2" hidden></div>
+        </div>
+
+        <!-- One-Click AI Generators -->
+        <div class="card mt-3">
+          <h3>Pedagogical Enhancements</h3>
+          <div class="quick-ai-grid mt-2">
+            <button id="btn-ai-gen-vocab" class="ai-tool-btn">
+              <span class="tool-icon">📖</span>
+              <div class="tool-text">
+                <strong>Define Vocabulary</strong>
+                <span>Extract terms & kid-friendly definitions</span>
+              </div>
+            </button>
+
+            <button id="btn-ai-gen-discussion" class="ai-tool-btn">
+              <span class="tool-icon">💬</span>
+              <div class="tool-text">
+                <strong>Discussion Probes</strong>
+                <span>Generate questions & misconceptions</span>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- AI Prompt Box -->
+        <div class="card mt-3">
+          <h3>Ask AI Curriculum Assistant</h3>
+          <div class="ai-chat-input-wrap mt-2">
+            <textarea id="ai-custom-prompt" class="textarea" rows="2" placeholder="e.g. Suggest a 5-minute warm-up game for this topic..."></textarea>
+            <button id="btn-send-ai-prompt" class="btn btn-accent w-full mt-2">Send Request</button>
+          </div>
+          <div id="ai-custom-response" class="ai-response-box mt-2" hidden></div>
+        </div>
+      </section>
+
+      <!-- 4. LEVEL BUILDER STAGING TAB -->
+      <section id="tab-pane-transfer" class="tab-pane" role="tabpanel" hidden>
+        <div class="pane-header">
+          <h2>Level Builder Staging</h2>
+          <p class="pane-desc">Guarded staging, visual diff verification, and safe save.</p>
+        </div>
+
+        <!-- Tab Detection & Destination -->
+        <div id="transfer-target-card" class="card target-card">
+          <div class="target-row">
+            <span class="target-icon">🎯</span>
+            <div class="target-info">
+              <h4 id="dest-label">Connecting to Level Builder...</h4>
+              <p id="dest-url" class="target-url">Open levelbuilder-studio.code.org tab</p>
+            </div>
+            <button id="btn-refresh-target" class="btn btn-secondary btn-xs" title="Refresh Tab">🔄</button>
+          </div>
+          <div class="target-actions mt-2">
+            <button id="btn-read-baseline" class="btn btn-secondary btn-sm w-full">
+              Read Baseline Only (No Writes)
+            </button>
+          </div>
+        </div>
+
+        <!-- Transfer Stepper -->
+        <div class="stepper mt-3">
+          <div id="step-1" class="step active">1. Plan</div>
+          <div id="step-2" class="step">2. Rehearse</div>
+          <div id="step-3" class="step">3. Confirm</div>
+          <div id="step-4" class="step">4. Verified</div>
+        </div>
+
+        <!-- Proposed Diff Viewer -->
+        <div class="card diff-card mt-3">
+          <div class="diff-header">
+            <h3>Visual Staging Diff</h3>
+            <span id="diff-ops-count" class="badge badge-primary">0 actions</span>
+          </div>
+          <div id="diff-summary-ai" class="ai-summary-note mt-2" hidden></div>
+          <div id="diff-blockers-container" class="blockers-container mt-2" hidden></div>
+          <div id="diff-operations-list" class="diff-list mt-2">
+            <p class="text-muted text-center py-3">Load a package or click "Build Transfer Plan" to preview changes.</p>
+          </div>
+        </div>
+
+        <!-- Guarded Save & Staging Controls -->
+        <div class="card guard-card mt-3">
+          <div class="guard-checkbox-row">
+            <input type="checkbox" id="chk-approve-save" class="checkbox">
+            <label for="chk-approve-save" class="guard-label">
+              <strong>I authorize staging these exact reviewed changes</strong>
+              <span class="guard-sub">All unrelated content & identities will remain strictly preserved.</span>
+            </label>
+          </div>
+          <div class="guard-buttons mt-2">
+            <button id="btn-stage-changes" class="btn btn-accent w-full" disabled>
+              ⚡ Stage Reviewed Changes
+            </button>
+            <button id="btn-verified-readback" class="btn btn-secondary w-full mt-2" disabled>
+              🔍 Run Readback Verification
+            </button>
+          </div>
+        </div>
+
+        <!-- Status Log -->
+        <div id="staging-status-box" class="log-box mt-3" hidden></div>
+      </section>
+
+      <!-- 5. EXPORT & BACKUP TAB -->
+      <section id="tab-pane-export" class="tab-pane" role="tabpanel" hidden>
+        <div class="pane-header">
+          <h2>Export & Sharing</h2>
+          <p class="pane-desc">Download review artifacts, Markdown, or full backup.</p>
+        </div>
+
+        <div class="card">
+          <h3>Markdown Export</h3>
+          <p class="card-sub">Standard curriculum review markdown with callouts & timing.</p>
+          <div class="btn-group mt-2">
+            <button id="btn-copy-markdown" class="btn btn-secondary btn-sm">Copy to Clipboard</button>
+            <button id="btn-download-markdown" class="btn btn-secondary btn-sm">Download .md</button>
+          </div>
+        </div>
+
+        <div class="card mt-3">
+          <h3>Review Package JSON</h3>
+          <p class="card-sub">Signed review package for Level Builder transfer verification.</p>
+          <button id="btn-download-package-json" class="btn btn-secondary btn-sm w-full mt-2">
+            Download Review Package (.json)
+          </button>
+        </div>
+
+        <div class="card mt-3">
+          <h3>Full Workspace Backup</h3>
+          <p class="card-sub">Snapshot of all drafts, sources, and revision history.</p>
+          <button id="btn-download-backup" class="btn btn-primary btn-sm w-full mt-2">
+            Download Workspace Snapshot
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="sidepanel-toast" class="toast" role="status" aria-live="polite" hidden></div>
+  </div>
+
+  <script type="module" src="sidepanel.mjs"></script>
+</body>
+</html>
