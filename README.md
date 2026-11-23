@@ -28,12 +28,12 @@ Load one in Chrome: `chrome://extensions` → Developer mode → **Load unpacked
 
 - **Saves go to any lesson the user confirms is theirs** (decided 2026-11-22). The Save tab shows the open lesson's name, unit and ID, and nothing is checked, added or saved until the user ticks "This is my lesson, not an official course lesson". Lesson Studio can't tell an official lesson from a dev lesson by its link, so that confirmation is the safeguard. Sandbox lesson 10 (8898984) holds the accepted AI Lab save and shows a warning; sandbox lesson 11 (8898985) is for tests.
 - **Resources and vocabulary:** Check resources looks each one up in the lesson's course. Ones Level Builder already has are linked. For each missing one the user chooses **Add** (Lesson Studio creates the shared record from its link, sends it once and checks it, never resending) or **Skip** (listed after preparing, with a Copy link button, to add in Level Builder). Items Level Builder can't accept, such as a vocabulary line without a definition, are skipped with the reason.
-- The save engine is the prototype's (`jacksj12/codeai-levelbuilder-prototype`, 0.15.3): it rehearses the changes in the editor and restores it exactly, needs your approval, records a receipt before saving, saves **once** with Level Builder's own Save control, never resends, then reads the whole lesson back and compares it with the approved result.
+- The save engine (`engine/`, 0.15.5) started in the prototype repo `jacksj12/codeai-levelbuilder-prototype`, which is now retired: **this repo is the engine's only home**, so fix and test it here. It rehearses the changes in the editor and restores it exactly, needs your approval, records a receipt before saving, saves **once** with Level Builder's own Save control, never resends, then reads the whole lesson back and compares it with the approved result.
 - Slides and Notion are only read, never changed.
 
 ## Report a problem
 
-⚑ Report (on any item, the save result, or the footer) opens a form filled from the current run: lesson and URL, source links, the flagged item, step and save result, version and date. The user picks a problem type and writes a note, and the report is sent to the team's Google Form (`shared/report-form.json`). If sending fails, the report is kept and can be retried from the footer.
+⚑ Report (on any item, the save result, or the footer) opens a form filled from the current run: lesson and URL, source links, the flagged item, step and save result, version and date. The user picks a problem type and writes a note, and the report is sent to the team's Google Form (`shared/report-form.json`). If sending fails, the report is kept until the browser closes and can be retried from the footer.
 
 ## Folders
 
@@ -41,12 +41,12 @@ Load one in Chrome: `chrome://extensions` → Developer mode → **Load unpacked
 |---|---|
 | `sidepanel/` | The side panel (both builds) |
 | `shared/` | Slides/Notion import, read-only lesson view, report |
-| `engine/` | The prototype's tested engine (`dist/`, `browser-fill/`, `api-companion/`) plus `session.mjs`, which connects it to the side panel. `engine/test/` holds its tests. |
+| `engine/` | The save engine (`dist/`, `browser-fill/`, `api-companion/`) plus `session.mjs`, which connects it to the side panel. `engine/test/` holds its tests. |
+| `docs/engine/` | The engine's design notes and live acceptance records, moved from the retired prototype repo. |
 | `advanced/` | Full build only: Advanced tab, wide editor (`studio/`), Notion connector |
 | `ai/` | AI helpers (Chrome built-in AI on the user's computer, or rules only; no cloud AI) |
 | `test/` | Report tests |
 | `scripts/` | `build.mjs` (makes both builds and checks them), `preview-server.mjs` (browser preview with a fake `chrome` API) |
-| `_legacy/` | The earlier AntiGrav side panel, popup and `core/` copy. Not shipped. |
 
 Run the tests on their own: `npm test` (309 tests).
 

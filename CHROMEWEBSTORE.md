@@ -27,10 +27,10 @@ How to Use:
 4. Review the visual diff and authorize staging to update your lesson seamlessly.
 
 Privacy & Permissions:
-All processing runs locally in your browser. Source notes and drafts remain on your device and are never sent to external servers unless you explicitly provide an API key for cloud AI features.
+Lesson text stays in your browser for the session and is deleted when the browser closes. AI suggestions run on your computer with Chrome's built-in model. Problem reports, sent only when you choose to, go to the CodeAI team's Google Form with your code.org email.
 
 Support & Feedback:
-For questions, issue reports, or feature suggestions, visit https://github.com/jacksj12/codeai-levelbuilder-prototype
+For questions, issue reports, or feature suggestions, visit https://github.com/JulianJacksonCODEAI/modern-lesson-studio/issues
 
 **Category**
 Developer Tools
@@ -94,7 +94,9 @@ Everything else stays in the user's browser. The imported lesson, save receipts 
 ## Privacy Policy
 
 **Privacy Policy URL**
-https://github.com/jacksj12/codeai-levelbuilder-prototype/blob/main/PRIVACY.md
+https://github.com/JulianJacksonCODEAI/modern-lesson-studio/blob/main/PRIVACY.md
+
+> The policy text is `PRIVACY.md` in this repo. The repo is private, so store reviewers can't open this link: before submitting, publish `PRIVACY.md` at a public address (GitHub Pages or a code.org page) and put that address here.
 
 ## Distribution
 
@@ -110,7 +112,7 @@ CodeAI Curriculum Team
 developer@code.org
 
 **Support URL / Email**
-https://github.com/jacksj12/codeai-levelbuilder-prototype/issues
+https://github.com/JulianJacksonCODEAI/modern-lesson-studio/issues
 
 ## Version History
 

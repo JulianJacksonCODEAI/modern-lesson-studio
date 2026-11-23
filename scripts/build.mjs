@@ -15,7 +15,7 @@ const manifest=JSON.parse(fs.readFileSync(path.join(root,'manifest.json'),'utf8'
 const builtAt=new Date().toISOString();
 const rel=p=>path.relative(root,p).split(path.sep).join('/');
 
-const EXCLUDE_ALWAYS=[/^build\//,/^docs\//,/^_legacy\//,/^test\//,/^engine\/test\//,/^scripts\//,/^node_modules\//,/^\.git/,/\.md$/i,/^package(-lock)?\.json$/,/^build\.ps1$/,/^core\//];
+const EXCLUDE_ALWAYS=[/^build\//,/^docs\//,/^test\//,/^engine\/test\//,/^scripts\//,/^node_modules\//,/^\.git/,/\.md$/i,/^package(-lock)?\.json$/,/^build\.ps1$/];
 const TEAM_ENTRIES=['sidepanel/sidepanel.html','background/service-worker.js'];
 const TEAM_ASSETS=['icons/icon-16.png','icons/icon-32.png','icons/icon-48.png','icons/icon-96.png','icons/icon-128.png','shared/report-form.json'];
 const ADVANCED=/^advanced\//;
@@ -72,7 +72,7 @@ for(const f of teamFiles.filter(f=>/\.(m?js|html)$/.test(f))){
  for(const marker of ['NotionConnector','setToken(','engine/browser-fill/workflow.html','installAdvanced'])
   if(text.includes(marker)&&!(f==='sidepanel/sidepanel.mjs'&&marker==='installAdvanced'))problems.push(`Team build: ${f} contains advanced code (${marker})`);
 }
-// Full build: every relative import must resolve too (the legacy core/ folder is not shipped).
+// Full build: every relative import must resolve too.
 const fullFiles=walk(path.join(out,'full')).map(f=>f.replace(/^build\/full\//,''));
 for(const f of fullFiles.filter(f=>/\.(m?js|html)$/.test(f)))for(const r of refsOf(path.posix.join('build','full',f)).map(r=>r.replace(/^build\/full\//,'')))
  if(!fs.existsSync(path.join(out,'full',r)))problems.push(`Full build: ${f} references missing ${r}`);

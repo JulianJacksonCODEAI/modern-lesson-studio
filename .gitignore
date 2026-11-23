@@ -10,6 +10,9 @@ node_modules/
 # Run reports and downloads can contain private lesson content
 lesson-studio-run-report*.json
 reviewed-transfer-*.json
+# Personal save approvals from the engine's companion tools (moved from the prototype repo)
+engine/browser-fill/accepted-rehearsal.json
+engine/browser-fill/local-save-*.json
 
 # OS and editor files
 .DS_Store
