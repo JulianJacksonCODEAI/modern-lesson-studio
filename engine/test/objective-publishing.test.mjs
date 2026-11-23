@@ -51,3 +51,23 @@ test('serialized native controls append and remove only a new unsaved objective'
  await assert.rejects(bridge({...base,action:'remove-created-objective',mode:'unsaved-structure-staging',operation:{index:0,expected:objectives[0]},expectedCaptureDigest:await digest(staged)}),/Only the exact appended/);
  const restored=await bridge({...base,action:'remove-created-objective',mode:'unsaved-structure-staging',operation:{index:1,expected:objectives[1]},expectedCaptureDigest:await digest(staged)});assert.equal(canonical(restored),canonical(initial));assert.equal(remote,0);
 });
+
+test('AntiGrav: live-style objective row opens with Edit, shows typed text at once, and is removed with its trash button',async()=>{
+ const destination={id:123,url:'https://levelbuilder-studio.code.org/lessons/123/edit'},objectives=[{id:10,key:'saved',description:'Keep original',scriptLevelIds:[456]}],saved={id:123,activities:[],resources:[],vocabularies:[],objectives:structuredClone(objectives)};let editing=null,editClicks=0,remote=0;
+ class Input{get value(){return this.pending;}set value(v){this.pending=v;if(editing!==null)objectives[editing].description=v;}dispatchEvent(){}}
+ const input=new Input(),save={parentElement:{dispatchEvent(){editing=null;}}};
+ const editButton=index=>({dispatchEvent(){editClicks++;editing=index;input.pending=objectives[index].description;},click(){}});
+ const rows=()=>objectives.map((record,index)=>({get children(){return [{textContent:record.description}];},get textContent(){return record.description;},getClientRects:()=>[{}],querySelectorAll:s=>{
+  if(s==='.fa-check')return editing===index?[save]:[];
+  if(s==='td:first-child input[type="text"]')return editing===index?[input]:[];
+  if(s==='.fa-pen-to-square,.fa-edit,.fa-pencil')return editing===index?[]:[{closest:()=>editButton(index),parentElement:editButton(index)}];
+  if(s==='.fa-trash,.fa-xmark,.fa-times')return [{closest:()=>({dispatchEvent(){objectives.splice(index,1);}})}];
+  return [];}}));
+ const makeTable=headers=>({querySelector:s=>s==='thead'?{textContent:headers.join(' ')}:s.includes('tbody tr > td:first-child')&&editing!==null&&headers[0]==='Description'?input:null,querySelectorAll:s=>s==='thead th'?headers.map(textContent=>({textContent})):s==='tbody tr'&&headers[0]==='Description'?rows():[]}),tables=[makeTable(['Key','Name','Type','Audience','URL','Actions']),makeTable(['Word','Definition','Actions']),makeTable(['Description','Levels','Actions'])];
+ const create={textContent:'Create New Objective',getClientRects:()=>[{}],dispatchEvent(){objectives.push({key:'objective-'+(objectives.length+1),description:'',scriptLevelIds:[]});},click(){throw Error('must not click Create twice');}},labels=['Title','Overview','Student Overview','Purpose','Preparation','Assessment Opportunities'].map(name=>({childNodes:[{nodeType:3,textContent:name}],querySelectorAll:()=>[{value:''}]}));
+ const document={querySelector:s=>s==='script[data-lesson]'?{getAttribute:()=>JSON.stringify(saved)}:null,querySelectorAll:s=>s==='#edit-container label'?labels:s==='#edit-container table'?tables:s==='#edit-container button'?[create]:s.includes('input[type="hidden"][name="objectives"]')?[{value:JSON.stringify(objectives)}]:s.includes('input[type="hidden"][name="activities"]')?[{value:'[]'}]:[]};
+ const context=vm.createContext({document,location:new URL(destination.url),structuredClone,crypto,TextEncoder,MessageChannel,HTMLInputElement:Input,Event:class{},MouseEvent:class{},fetch(){remote++;throw Error('No networking allowed');}}),bridge=vm.runInContext('('+nativeEditorBridge.toString()+')',context),base={destination,practiceConfirmed:true},initial=await bridge({...base,action:'read'});
+ const staged=await bridge({...base,action:'append-objective',mode:'unsaved-structure-staging',operation:{kind:'append',path:['frontMatter','objectives'],before:['Keep original'],after:'New objective'},expectedCaptureDigest:await digest(initial)});
+ assert.equal(editClicks,1);assert.equal(staged.blockers.length,0);assert.equal(objectives[1].description,'New objective');assert.deepEqual(objectives[0],saved.objectives[0]);
+ const restored=await bridge({...base,action:'remove-created-objective',mode:'unsaved-structure-staging',operation:{index:1,expected:objectives[1]},expectedCaptureDigest:await digest(staged)});assert.equal(canonical(restored),canonical(initial));assert.equal(remote,0);
+});
