@@ -189,7 +189,7 @@ export async function verifySavedReadback(review,saved){
    const id=String(sl.id);if(!/^[1-9]\d*$/.test(id)||!Number.isSafeInteger(Number(id))||newIds.has(id))mismatches.push('A new-section association has a missing, reused or duplicate identity.');else newIds.add(id);
    try{return newSectionLink(sl,index+1,{persisted:true});}catch(error){mismatches.push(error.message);return sl;}
   });
-  if(canonical(savedSectionBlanks(raw))!==canonical(savedSectionBlanks(change.section)))mismatches.push('A new section or its callouts differ from the exact reviewed structure.');
+  if(canonical(savedSectionBlanks(raw))!==canonical(savedSectionBlanks(change.section)))mismatches.push('A new section or its callouts differ from the exact reviewed structure ('+sectionDifferences(savedSectionBlanks(raw),savedSectionBlanks(change.section))+').');
   activity.activitySections.pop();
  }
  const activityIds=new Set(review.baseline.activities.map(a=>String(a.id)));
@@ -259,4 +259,17 @@ export function savedSectionBlanks(section){
  if(s.remarks==null)s.remarks=false;
  if(s.tips==null)s.tips=[];
  return s;
+}
+
+// Names what differs between a saved new section and its review, so a failed check can be diagnosed from the run report.
+export function sectionDifferences(saved,reviewed){
+ const short=v=>{const s=JSON.stringify(v);return s===undefined?'missing':s.length>60?s.slice(0,57)+'…':s;};
+ const out=[];
+ for(const k of [...new Set([...Object.keys(saved||{}),...Object.keys(reviewed||{})])].sort()){
+  if(canonical(saved?.[k])===canonical(reviewed?.[k]))continue;
+  if(Array.isArray(saved?.[k])&&Array.isArray(reviewed?.[k])&&saved[k].length===reviewed[k].length){
+   saved[k].forEach((item,i)=>{for(const key of [...new Set([...Object.keys(item||{}),...Object.keys(reviewed[k][i]||{})])].sort())if(canonical(item?.[key])!==canonical(reviewed[k][i]?.[key]))out.push(k+'['+i+'].'+key+': saved '+short(item?.[key])+', reviewed '+short(reviewed[k][i]?.[key]));});
+  }else out.push(k+': saved '+short(saved?.[k])+', reviewed '+short(reviewed?.[k]));
+ }
+ return out.join('; ')||'no field differences';
 }
