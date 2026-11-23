@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {buildReport,formBody,sendReport,suggestType,prefilledFormUrl,PROBLEM_TYPES} from '../shared/report.mjs';
+import {buildReport,formBody,sendReport,suggestType,prefilledFormUrl,sendReportViaFormTab,postReportInPage,PROBLEM_TYPES} from '../shared/report.mjs';
 
 const config=JSON.parse(readFileSync(new URL('../shared/report-form.json',import.meta.url)));
 const context={lesson:{title:'AI Lab',url:'https://levelbuilder-studio.code.org/lessons/8898985/edit'},
@@ -67,4 +67,33 @@ test('the Google Forms fallback is a pre-filled viewform link with every field',
  const long=new URL(prefilledFormUrl(config,{...fields,flaggedItem:'x'.repeat(20000)},'other','n'));
  assert.ok(long.href.length<9000,'long fields are shortened to keep the link usable');
  assert.ok(!new URL(prefilledFormUrl(config,fields,'not a type','n')).searchParams.has(config.fields.problemType),'unknown types are left for the user to choose');
+});
+function fakeBrowser(result){
+ const log={created:[],removed:[],injected:[]};const listeners=new Set();
+ const tabs={create:async o=>{log.created.push(o);setTimeout(()=>listeners.forEach(l=>l(7,{status:'complete'})),5);return {id:7};},get:async()=>({id:7,status:'loading'}),remove:async id=>{log.removed.push(id);},onUpdated:{addListener:l=>listeners.add(l),removeListener:l=>listeners.delete(l)}};
+ const scripting={executeScript:async o=>{log.injected.push(o);return [{result}];}};
+ return {tabs,scripting,log};
+}
+
+test('the background form tab sends from inside the form page and always closes the tab',async()=>{
+ const {fields}=buildReport(context);
+ const ok=fakeBrowser({ok:true,status:200,url:config.submitUrl});
+ const r=await sendReportViaFormTab(config,fields,'other','note',ok);
+ assert.equal(r.via,'form-tab');
+ assert.equal(ok.log.created[0].active,false,'opened in the background');
+ assert.match(ok.log.created[0].url,/\/viewform$/);
+ assert.equal(ok.log.injected[0].func,postReportInPage);
+ assert.equal(ok.log.injected[0].args[0],config.submitUrl);
+ assert.equal(new URLSearchParams(ok.log.injected[0].args[1]).get(config.fields.note),'note');
+ assert.deepEqual(ok.log.removed,[7]);
+ const signIn=fakeBrowser({ok:true,status:200,url:'https://accounts.google.com/ServiceLogin?x'});
+ await assert.rejects(sendReportViaFormTab(config,fields,'other','note',signIn),/sign in/);
+ assert.deepEqual(signIn.log.removed,[7],'tab closed after a failure too');
+ await assert.rejects(sendReportViaFormTab(config,fields,'other','note',fakeBrowser({ok:false,status:0,url:'',error:'NetworkError'})),/NetworkError/);
+});
+
+test('the in-page sender reports network errors instead of throwing',async()=>{
+ const saved=globalThis.fetch;globalThis.fetch=async()=>{throw Error('offline');};
+ try{assert.deepEqual(await postReportInPage('https://docs.google.com/forms/d/e/x/formResponse','a=1'),{ok:false,status:0,url:'',error:'offline'});}
+ finally{globalThis.fetch=saved;}
 });

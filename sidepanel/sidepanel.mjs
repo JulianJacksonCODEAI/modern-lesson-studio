@@ -1,7 +1,7 @@
 // Lesson Studio side panel (team v1): Import → Check (read-only) → Save to Level Builder → Report.
 import {loadImports,saveImports,clearImports,importSlides,importNotion,buildLesson} from '../shared/sources.mjs';
 import {renderLesson,renderReview} from '../shared/lesson-view.mjs';
-import {buildReport,sendReport,queueReport,pendingReports,removePending,prefilledFormUrl,PROBLEM_TYPES,PROBLEM_LABELS} from '../shared/report.mjs';
+import {buildReport,sendReport,sendReportViaFormTab,queueReport,pendingReports,removePending,prefilledFormUrl,PROBLEM_TYPES,PROBLEM_LABELS} from '../shared/report.mjs';
 import {createSession,destinationFromTab,editorUrlFromInput,lessonPageFromInput,lessonDescriptionInPage,reviewPackageFor,SANDBOX_LESSONS} from '../engine/session.mjs';
 import {AIService} from '../ai/ai-service.mjs';
 
@@ -348,12 +348,20 @@ $('btn-report').addEventListener('click',()=>openReport(null));
 $('btn-report-result').addEventListener('click',()=>openReport({label:'Save result',content:$('result-out').textContent}));
 $('report-cancel').addEventListener('click',()=>$('report-dialog').close());
 let queuedId=null;
+// Direct send first (works in Chromium). If the browser blocks it (Firefox drops the Google sign-in), send from a background form tab.
+async function sendAnyWay(config,fields,type,note){
+ try{return await sendReport(config,fields,type,note);}
+ catch(first){
+  try{return await sendReportViaFormTab(config,fields,type,note);}
+  catch(second){throw Error(second.message||first.message);}
+ }
+}
 $('report-form').addEventListener('submit',async e=>{
  e.preventDefault();
  const type=$('report-type').value,note=$('report-note').value,btn=$('report-send');
  if(!type||!note.trim()){$('report-error').textContent=!type?'Choose a type of problem.':'Write a short note about what is wrong.';return;}
  btn.disabled=true;btn.textContent='Sending…';$('report-fallback').hidden=true;
- try{await sendReport(reportConfig,reportDraft.fields,type,note);$('report-dialog').close();toast('Report sent. Thank you!');}
+ try{await sendAnyWay(reportConfig,reportDraft.fields,type,note);$('report-dialog').close();toast('Report sent. Thank you!');}
  catch(err){
   // Keep the report, and offer Google's own form (always works; seen needed in Firefox).
   await queueReport({fields:reportDraft.fields,type,note});queuedId=(await pendingReports()).at(-1)?.id??null;
@@ -372,7 +380,7 @@ async function showPending(){
  reportConfig??=await (await fetch(chrome.runtime.getURL('shared/report-form.json'))).json();
  const retry=Object.assign(document.createElement('button'),{type:'button',className:'linkish',textContent:`${list.length} report${list.length===1?'':'s'} waiting. Send now`});
  retry.addEventListener('click',async()=>{
-  let sent=0;for(const r of await pendingReports()){try{await sendReport(reportConfig,r.fields,r.type,r.note);await removePending(r.id);sent++;}catch(err){toast('Still not sent: '+err.message+'. Use "Open in Google Forms" instead.',6000);break;}}
+  let sent=0;for(const r of await pendingReports()){try{await sendAnyWay(reportConfig,r.fields,r.type,r.note);await removePending(r.id);sent++;}catch(err){toast('Still not sent: '+err.message+'. Use "Open in Google Forms" instead.',6000);break;}}
   if(sent)toast(`Sent ${sent} waiting report${sent===1?'':'s'}.`);showPending();
  });
  const viaForm=Object.assign(document.createElement('button'),{type:'button',className:'linkish',textContent:'Open in Google Forms'});

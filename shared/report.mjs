@@ -47,6 +47,36 @@ export function formBody(config,fields,problemType,note){
  return body;
 }
 
+// Injected into a docs.google.com/forms tab. Firefox sends an extension page's request without the user's
+// Google cookies (seen 2026-11-22: redirect to accounts.google.com, then CORS block). From inside the form's
+// own page (content.fetch in Firefox), the request is first-party, so the sign-in goes with it.
+export async function postReportInPage(submitUrl,body){
+ const pageFetch=globalThis.content&&typeof globalThis.content.fetch==='function'?globalThis.content.fetch.bind(globalThis.content):fetch;
+ try{
+  const response=await pageFetch(submitUrl,{method:'POST',body:new URLSearchParams(body),credentials:'include',redirect:'follow'});
+  return {ok:response.ok,status:response.status,url:String(response.url||'')};
+ }catch(error){return {ok:false,status:0,url:'',error:String(error?.message||error)};}
+}
+
+// Second attempt: open the form in a background tab, send from inside it, then close the tab.
+export async function sendReportViaFormTab(config,fields,problemType,note,{tabs=chrome.tabs,scripting=chrome.scripting,timeoutMs=30000}={}){
+ const body=formBody(config,fields,problemType,note).toString();
+ const tab=await tabs.create({url:config.submitUrl.replace(/\/formResponse$/,'/viewform'),active:false});
+ try{
+  await new Promise((resolve,reject)=>{
+   const timer=setTimeout(()=>{tabs.onUpdated.removeListener(on);reject(Error('The form page took too long to load.'));},timeoutMs);
+   const on=(id,info)=>{if(id===tab.id&&info.status==='complete'){clearTimeout(timer);tabs.onUpdated.removeListener(on);resolve();}};
+   tabs.onUpdated.addListener(on);
+   tabs.get(tab.id).then(t=>{if(t.status==='complete')on(tab.id,{status:'complete'});}).catch(()=>{});
+  });
+  const [r]=await scripting.executeScript({target:{tabId:tab.id},func:postReportInPage,args:[config.submitUrl,body]});
+  const result=r?.result||{};
+  if(/accounts\.google\.com|ServiceLogin/.test(result.url))throw Error('Google asked you to sign in. Sign in to your code.org Google account in this browser, then try again.');
+  if(!result.ok)throw Error(result.error||'The report form returned an error ('+result.status+').');
+  return {sent:true,via:'form-tab',at:new Date().toISOString()};
+ }finally{tabs.remove(tab.id).catch(()=>{});}
+}
+
 // Fallback when sending from the extension is blocked (seen in Firefox, 2026-11-22): the same report as a
 // pre-filled Google Form link; the user clicks Submit in Google's own page, which also records their email.
 export function prefilledFormUrl(config,fields,problemType,note){
