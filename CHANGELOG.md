@@ -6,6 +6,22 @@ Release steps: bump `manifest.json`, add a section here, merge the pull request,
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-11-23
+
+Lesson data is no longer kept on disk, plus accessibility and security audit fixes.
+
+### Changed
+- Lesson data (the imported deck and Notion page, the save engine's records and receipts, unsent problem reports, and the studio draft) is kept in `chrome.storage.session`, so it is deleted when the browser closes. Data saved to disk by earlier versions is moved there on first open and deleted from disk. Settings (AI choice, Notion token) stay on disk. Trade-off: a browser restart in the middle of a lesson means importing again, and an unsent report is lost if the browser closes first.
+- Store listing notes: the data-usage answer is now "Yes" (email and report content, only when a report is sent); the side panel says imports are kept only until the browser closes or Start over.
+
+### Fixed
+- The after-save check no longer reports "A saved teaching field differs from its exact reviewed value" when Level Builder returns the same value in another form the whole-lesson check already accepts (minutes as a digit string, an empty field as null). A real difference now names the field and shows both values.
+- Problem reports are filled into the Google Form on the page instead of passed in its link, so report text no longer lands in browser history. The pre-filled link is used only if filling fails. Multi-line fields are joined with " | " (the form's questions are short answers). Answers are also written to the form's submitted fields directly, because Chrome can hold back the page's own copy in a background tab; a question that still doesn't take is named in the error. "Record my email" is ticked in the "Send it in Google Forms" fallback too, and is read from the form's email field, since the box's checked state can lag.
+- Side panel: the step tabs always have tab roles and `aria-controls`; the search for a lesson editor waits until the Save step stays open, so arrowing past it doesn't start one; decorative ⚑ and → symbols are hidden from screen readers.
+- Studio (full build): icon-only buttons have names (for example "Delete word: model"); the Notion URL field has a label; the lesson title field has a name; the import dialog is a labelled dialog that takes focus, closes on Escape and returns focus; the file drop zone works from the keyboard; focus outlines and reduced motion are supported; decorative emoji are hidden from screen readers; inline styles moved to the stylesheet.
+- Studio: deleting an objective, resource, word or activity now uses the button's own index even when the click lands on its icon.
+- Studio: the audit score and grade are escaped like other inserted text.
+
 ## [1.5.0] - 2026-11-23
 
 Security audit follow-up. AI now runs only on the user's computer; a Code.org-hosted AI relay may come later.

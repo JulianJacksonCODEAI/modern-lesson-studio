@@ -149,6 +149,19 @@ export async function validateStagedSaveReview(review,capture){
  return true;
 }
 
+// A saved field matches its reviewed value under the same rules the whole-lesson check uses
+// (normalizeNativeCapture): whole-minute durations may come back as digit strings, and an empty text
+// field may come back as null. Anything else must match exactly.
+export function sameSavedField(path,got,want){
+ if(canonical(got)===canonical(want))return true;
+ const key=path.at(-1);
+ if(key==='duration'){const minutes=v=>v===''||v==null?null:typeof v==='string'&&/^(0|[1-9]\d*)$/.test(v)?Number(v):v;return minutes(got)===minutes(want);}
+ if(key==='remarks'||key==='assessment')return Boolean(got)===Boolean(want);
+ if(typeof got==='string'||typeof want==='string')return (got??'')===(want??'');
+ return false;
+}
+const fieldPreview=value=>{const text=value===undefined?'(missing)':JSON.stringify(value);return text.length>80?text.slice(0,77)+'…':text;};
+
 export async function verifySavedReadback(review,saved){
  await validateSaveReview(review,{checkExpiry:false});
  const mismatches=[];
@@ -200,7 +213,8 @@ export async function verifySavedReadback(review,saved){
  }
  for(const c of [...(review.calloutAdditions||[])].reverse()){const s=projection.activities[c.activityIndex]?.activitySections[c.sectionIndex];if(!s||s.id!==c.sectionId||s.tips.length!==c.tipIndex+1||canonical(s.tips[c.tipIndex])!==canonical(c.tip))mismatches.push('A new callout differs from its exact review.');else {s.tips.pop();if(!s.tips.length&&review.baseline.activities[c.activityIndex].activitySections[c.sectionIndex].tips===null)s.tips=null;}}
  for(const change of review.fieldChanges||[]){
-  if(canonical(fieldAt(change.path[0]==='objectives'?projection:saved,change.path))!==canonical(change.after))mismatches.push('A saved teaching field differs from its exact reviewed value.');
+  const got=fieldAt(change.path[0]==='objectives'?projection:saved,change.path);
+  if(!sameSavedField(change.path,got,change.after))mismatches.push('"'+(change.label||change.path.join(' / '))+'" was saved as '+fieldPreview(got)+', but the review had '+fieldPreview(change.after)+'.');
   try{putField(projection,change.path,change.before);}catch{mismatches.push('A reviewed native field is missing.');}
  }
  for(const change of review.changes){

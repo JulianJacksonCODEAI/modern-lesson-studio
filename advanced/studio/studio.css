@@ -656,8 +656,36 @@ body {
   background-color: var(--bg-surface-subtle);
 }
 
-.modal-drop-zone:hover {
+.modal-drop-zone:hover,
+.modal-drop-zone:focus-visible {
   border-color: var(--primary);
+}
+
+:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.field-label {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.url-row {
+  display: flex;
+  gap: 0.375rem;
+  align-items: center;
+}
+
+.url-row-input { flex: 1; }
+.nowrap { white-space: nowrap; }
+.text-center { text-align: center; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }
 
 /* Form Controls & Buttons */

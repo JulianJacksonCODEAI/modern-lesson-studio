@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {buildReport,formBody,sendReport,suggestType,prefilledFormUrl,sendReportViaFormTab,submitReportFormInPage,reportFormOutcome,PROBLEM_TYPES} from '../shared/report.mjs';
+import {buildReport,formBody,sendReport,suggestType,prefilledFormUrl,sendReportViaFormTab,openFilledReportForm,submitReportFormInPage,reportFormOutcome,PROBLEM_TYPES} from '../shared/report.mjs';
 
 const config=JSON.parse(readFileSync(new URL('../shared/report-form.json',import.meta.url)));
 const context={lesson:{title:'AI Lab',url:'https://levelbuilder-studio.code.org/lessons/8898985/edit'},
@@ -76,7 +76,7 @@ function fakeBrowser(results,{landUrl=undefined}={}){
  return {tabs,scripting,log};
 }
 
-test('the background form tab opens the pre-filled form, submits it in the page, checks the confirmation and closes the tab',async()=>{
+test('the background form tab opens the empty form, fills and submits it in the page, checks the confirmation and closes the tab',async()=>{
  const {fields}=buildReport(context);
  const ok=fakeBrowser({submitReportFormInPage:{ok:true,emailBox:true},reportFormOutcome:{recorded:true}});
  const r=await sendReportViaFormTab(config,fields,'other','note',ok);
@@ -84,9 +84,14 @@ test('the background form tab opens the pre-filled form, submits it in the page,
  assert.equal(ok.log.created[0].active,false,'opened in the background');
  const url=new URL(ok.log.created[0].url);
  assert.match(url.pathname,/\/viewform$/);
- assert.equal(url.searchParams.get(config.fields.note),'note');
- assert.equal(url.searchParams.get(config.fields.problemType),'other');
+ assert.equal(url.search,'','no report text in the URL');
  assert.deepEqual(ok.log.injected.map(i=>i.func),[submitReportFormInPage,reportFormOutcome]);
+ const [values]=ok.log.injected[0].args;
+ const id=e=>e.replace(/^entry\./,'');
+ assert.equal(values[id(config.fields.note)],'note');
+ assert.equal(values[id(config.fields.problemType)],'other');
+ assert.deepEqual(Object.keys(values).sort(),Object.values(config.fields).map(id).sort());
+ assert.ok(Object.values(values).every(v=>!v.includes('\n')),'line breaks joined for short-answer questions');
  assert.deepEqual(ok.log.removed,[7]);
  const signIn=fakeBrowser({},{landUrl:'https://accounts.google.com/ServiceLogin?x'});
  await assert.rejects(sendReportViaFormTab(config,fields,'other','note',signIn),/sign in/);
@@ -94,6 +99,19 @@ test('the background form tab opens the pre-filled form, submits it in the page,
  await assert.rejects(sendReportViaFormTab(config,fields,'other','note',fakeBrowser({submitReportFormInPage:{ok:false,error:'sign-in'}})),/sign in/);
  await assert.rejects(sendReportViaFormTab(config,fields,'other','note',fakeBrowser({submitReportFormInPage:{ok:true},reportFormOutcome:{recorded:false}})),/did not accept/);
  await assert.rejects(sendReportViaFormTab(config,fields,'other','',fakeBrowser({})),/short note/);
+});
+
+test('the visible fallback fills the form in the page and only uses the pre-filled link if that fails',async()=>{
+ const {fields}=buildReport(context);
+ const filled=fakeBrowser({submitReportFormInPage:{ok:true,filled:true}});filled.tabs.update=async(id,o)=>{filled.log.updated=o;};
+ assert.deepEqual(await openFilledReportForm(config,fields,'other','note',filled),{filled:true});
+ assert.equal(new URL(filled.log.created[0].url).search,'');
+ assert.equal(filled.log.created[0].active,true);
+ assert.deepEqual(filled.log.injected[0].args[1],{submit:false});
+ assert.equal(filled.log.updated,undefined);
+ const failed=fakeBrowser({submitReportFormInPage:{ok:false,error:'changed'}});failed.tabs.update=async(id,o)=>{failed.log.updated=o;};
+ assert.deepEqual(await openFilledReportForm(config,fields,'other','note',failed),{filled:false});
+ assert.equal(new URL(failed.log.updated.url).searchParams.get(config.fields.note),'note');
 });
 
 test('the confirmation check treats a returned form or a validation error as rejected',()=>{
