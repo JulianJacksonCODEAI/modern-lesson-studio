@@ -365,7 +365,15 @@ export async function nativeEditorBridge(request={action:'read'}){
    const buttons=[...document.querySelectorAll('#edit-container button')].filter(b=>b.textContent.trim()==='Create New Objective');if(buttons.length!==1||buttons[0].disabled)throw Error('The new objective control is unavailable.');if(!buttons[0].getClientRects().length)expand();checkDeadline();buttons[0].dispatchEvent(new MouseEvent('mousedown',{bubbles:true,button:0,buttons:1}));await settle();
    /* AntiGrav (first live run, 2026-11-22): mousedown alone opened no row. Click once more only if the row count is unchanged, so a row is never added twice. */
    if(table.querySelectorAll('tbody tr').length===before.live.objectives.length){checkDeadline();buttons[0].click();await settle();}
-   const row=table.querySelectorAll('tbody tr')[before.live.objectives.length],inputs=row?.querySelectorAll('td:first-child input[type="text"]'),save=row?.querySelectorAll('.fa-check');if(inputs?.length!==1||save?.length!==1||inputs[0].value!=='')throw Error('The new objective row did not open uniquely.');
+   const row=table.querySelectorAll('tbody tr')[before.live.objectives.length];
+   /* AntiGrav (live, 2026-11-22): the new row opens in display mode with Edit and Delete buttons; its text box and green check appear only after Edit. */
+   if(row&&!row.querySelectorAll('td:first-child input[type="text"]').length){
+    const edits=[...row.querySelectorAll('.fa-pen-to-square,.fa-edit,.fa-pencil')].map(i=>i.closest('button,[role="button"]')||i.parentElement);
+    if(edits.length!==1)throw Error('The new objective row has no single Edit button.');
+    checkDeadline();edits[0].dispatchEvent(new MouseEvent('mousedown',{bubbles:true,button:0,buttons:1}));await settle();
+    if(!row.querySelectorAll('td:first-child input[type="text"]').length){checkDeadline();edits[0].click();await settle();}
+   }
+   const inputs=row?.querySelectorAll('td:first-child input[type="text"]'),save=row?.querySelectorAll('.fa-check');if(inputs?.length!==1||save?.length!==1||inputs[0].value!=='')throw Error('The new objective row did not open uniquely.');
    checkDeadline();Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(inputs[0],op.after);inputs[0].dispatchEvent(new Event('input',{bubbles:true}));inputs[0].dispatchEvent(new Event('change',{bubbles:true}));await settle();
    const immediate=read(),record=immediate.live.objectives.at(-1),project=structuredClone(immediate);project.live.objectives.pop();project.protection.objectives.pop();project.blockers=[];if(stable(project)!==stable(before)||record?.id!=null||record?.description!==''||stable(record.scriptLevelIds)!=='[]')throw Error('Outside edits appeared while creating the objective.');
    checkDeadline();save[0].parentElement.dispatchEvent(new MouseEvent('mousedown',{bubbles:true,button:0,buttons:1}));await settle();return read();
