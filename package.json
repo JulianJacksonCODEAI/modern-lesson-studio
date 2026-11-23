@@ -1,0 +1,9 @@
+{
+  "name": "lesson-studio",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"test/*.test.mjs\" \"engine/test/*.test.mjs\"",
+    "build": "powershell -ExecutionPolicy Bypass -File build.ps1"
+  }
+}
