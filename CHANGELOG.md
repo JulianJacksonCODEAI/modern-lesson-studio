@@ -6,6 +6,19 @@ Release steps: bump `manifest.json`, add a section here, merge the pull request,
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-22
+
+### Changed
+- Objectives: Notion objectives that Level Builder doesn't already have are added (matched ignoring quote style, spacing and capitals); existing ones keep their exact text and order. If adding fails, the Save tab offers "Prepare again without adding objectives", which lists them to add by hand.
+
+### Fixed
+- Adding an objective now follows Level Builder's real steps: Create New Objective, then the row's Edit button, type, then the green check. The check after typing accepts the text Level Builder shows right away, and allows the one text box the open row adds to the page's controls. Restoring a rehearsal removes the row with its trash button.
+- A failed objective check now names what differed (editor path, before → after).
+
+### Tested live (lesson 8898985, 2026-11-22)
+- Linking existing resources ("AI Lab", "AI Lab Activity Guide"): saved and checked, 0 mismatches.
+- Adding three objectives: rehearsed and restored, then saved and checked, 0 mismatches.
+
 ## [1.2.0] - 2026-11-22
 
 ### Changed

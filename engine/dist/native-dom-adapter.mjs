@@ -363,13 +363,32 @@ export async function nativeEditorBridge(request={action:'read'}){
   if(request.action==='append-objective'){
    if(op?.kind!=='append'||stable(op.path)!=='["frontMatter","objectives"]'||stable(op.before)!==stable(before.live.objectives.map(o=>o.description))||typeof op.after!=='string'||!op.after.trim()||op.after.length>100000)throw Error('The proposed new objective is invalid.');
    const buttons=[...document.querySelectorAll('#edit-container button')].filter(b=>b.textContent.trim()==='Create New Objective');if(buttons.length!==1||buttons[0].disabled)throw Error('The new objective control is unavailable.');if(!buttons[0].getClientRects().length)expand();checkDeadline();buttons[0].dispatchEvent(new MouseEvent('mousedown',{bubbles:true,button:0,buttons:1}));await settle();
-   const row=table.querySelectorAll('tbody tr')[before.live.objectives.length],inputs=row?.querySelectorAll('td:first-child input[type="text"]'),save=row?.querySelectorAll('.fa-check');if(inputs?.length!==1||save?.length!==1||inputs[0].value!=='')throw Error('The new objective row did not open uniquely.');
+   /* AntiGrav (first live run, 2026-11-22): mousedown alone opened no row. Click once more only if the row count is unchanged, so a row is never added twice. */
+   if(table.querySelectorAll('tbody tr').length===before.live.objectives.length){checkDeadline();buttons[0].click();await settle();}
+   const row=table.querySelectorAll('tbody tr')[before.live.objectives.length];
+   /* AntiGrav (live, 2026-11-22): the new row opens in display mode with Edit and Delete buttons; its text box and green check appear only after Edit. */
+   if(row&&!row.querySelectorAll('td:first-child input[type="text"]').length){
+    const edits=[...row.querySelectorAll('.fa-pen-to-square,.fa-edit,.fa-pencil')].map(i=>i.closest('button,[role="button"]')||i.parentElement);
+    if(edits.length!==1)throw Error('The new objective row has no single Edit button.');
+    checkDeadline();edits[0].dispatchEvent(new MouseEvent('mousedown',{bubbles:true,button:0,buttons:1}));await settle();
+    if(!row.querySelectorAll('td:first-child input[type="text"]').length){checkDeadline();edits[0].click();await settle();}
+   }
+   const inputs=row?.querySelectorAll('td:first-child input[type="text"]'),save=row?.querySelectorAll('.fa-check');if(inputs?.length!==1||save?.length!==1||inputs[0].value!=='')throw Error('The new objective row did not open uniquely.');
    checkDeadline();Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(inputs[0],op.after);inputs[0].dispatchEvent(new Event('input',{bubbles:true}));inputs[0].dispatchEvent(new Event('change',{bubbles:true}));await settle();
-   const immediate=read(),record=immediate.live.objectives.at(-1),project=structuredClone(immediate);project.live.objectives.pop();project.protection.objectives.pop();project.blockers=[];if(stable(project)!==stable(before)||record?.id!=null||record?.description!==''||stable(record.scriptLevelIds)!=='[]')throw Error('Outside edits appeared while creating the objective.');
-   checkDeadline();save[0].parentElement.dispatchEvent(new MouseEvent('mousedown',{bubbles:true,button:0,buttons:1}));await settle();return read();
+   const immediate=read(),record=immediate.live.objectives.at(-1),project=structuredClone(immediate);project.live.objectives.pop();project.protection.objectives.pop();project.blockers=[];
+   /* AntiGrav (live, 2026-11-22): the open row's text box joins the page's control list (it was at index 6), shifting later controls.
+      Allow exactly one extra text input holding '' or the typed text, only when removing it leaves the original list unchanged. */
+   {const ctl=project.protection?.controls,orig=before.protection?.controls;if(Array.isArray(ctl)&&Array.isArray(orig)&&ctl.length===orig.length+1){for(let i=0;i<ctl.length;i++){const c=ctl[i];if(c?.tag==='INPUT'&&c.type==='text'&&['',op.after].includes(c.value)){const rest=[...ctl];rest.splice(i,1);if(stable(rest)===stable(orig)){project.protection.controls=rest;break;}}}}}
+   if(stable(project)!==stable(before)||record?.id!=null||!['',op.after].includes(record?.description)||stable(record.scriptLevelIds||[])!=='[]'){ /* AntiGrav (live): Level Builder shows typed text in the row state before the check is clicked. */
+    /* AntiGrav: name what differed, so live failures can be diagnosed from the message alone. */
+    const where=[];const walk=(a,b,path)=>{if(where.length>=6||stable(a)===stable(b))return;if(a&&b&&typeof a==='object'&&typeof b==='object'){for(const k of new Set([...Object.keys(a),...Object.keys(b)]))walk(a[k],b[k],path+'.'+k);}else where.push(path+': '+JSON.stringify(b??null).slice(0,60)+' → '+JSON.stringify(a??null).slice(0,60));};
+    walk(project,before,'editor');if(!record)where.push('no new objective row was read');else{if(record.id!=null)where.push('new row id '+record.id);if(!['',op.after].includes(record.description))where.push('new row text '+JSON.stringify(String(record.description)).slice(0,60));if(stable(record.scriptLevelIds||[])!=='[]')where.push('new row levels '+stable(record.scriptLevelIds));}
+    throw Error('Outside edits appeared while creating the objective ('+where.join('; ')+').');
+   }
+   if(save[0].isConnected!==false){checkDeadline();save[0].parentElement.dispatchEvent(new MouseEvent('mousedown',{bubbles:true,button:0,buttons:1}));await settle();}return read();
   }
   const record=before.live.objectives[op?.index];if(!Number.isInteger(op?.index)||op.index!==before.live.objectives.length-1||op.index<before.saved.objectives.length||record?.id!=null||stable(record)!==stable(op.expected))throw Error('Only the exact appended unsaved objective may be removed.');
-  const row=table.querySelectorAll('tbody tr')[op.index],remove=row?.querySelectorAll('.unit-test-remove-objective');if(remove?.length!==1)throw Error('The new objective removal control is ambiguous.');if(!row.getClientRects().length)expand();checkDeadline();remove[0].dispatchEvent(new MouseEvent('mousedown',{bubbles:true,button:0,buttons:1}));await settle();const after=read(),expected=structuredClone(before);expected.live.objectives.pop();expected.protection.objectives.pop();if(stable(after)!==stable(expected))throw Error('Objective cleanup changed unrelated content.');return after;
+  const row=table.querySelectorAll('tbody tr')[op.index];let remove=row?.querySelectorAll('.unit-test-remove-objective');if(!remove?.length){/* AntiGrav fallback: the live row shows a single trash button */remove=[...(row?.querySelectorAll('.fa-trash,.fa-xmark,.fa-times')||[])].map(i=>i.closest('button,[role="button"]')||i.parentElement);}if(remove?.length!==1)throw Error('The new objective removal control is ambiguous.');if(!row.getClientRects().length)expand();checkDeadline();remove[0].dispatchEvent(new MouseEvent('mousedown',{bubbles:true,button:0,buttons:1}));await settle();const after=read(),expected=structuredClone(before);expected.live.objectives.pop();expected.protection.objectives.pop();if(stable(after)!==stable(expected))throw Error('Objective cleanup changed unrelated content.');return after;
  }
  if(request.action!=='set-scalar'||request.mode!=='unsaved-scalar-staging')throw Error('Unsupported native action. Saving and collection mutations are unavailable.');
  const current=read();if(current.blockers.length)throw Error(current.blockers.join(' '));
@@ -409,7 +428,7 @@ export async function nativeEditorBridge(request={action:'read'}){
   if(inputs.length!==1||save.length!==1||inputs[0].value!==op.before)throw Error('Objective edit did not open with the reviewed value.');
   const node=inputs[0];checkDeadline();Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(node,op.after);node.dispatchEvent(new Event('input',{bubbles:true}));node.dispatchEvent(new Event('change',{bubbles:true}));await settle();
   const immediate=read();if(stable(immediate.live)!==stable(current.live)||stable(immediate.saved)!==stable(current.saved))throw Error('Outside edits appeared during objective editing.');
-  checkDeadline();save[0].parentElement.dispatchEvent(new MouseEvent('mousedown',{bubbles:true,button:0,buttons:1}));await settle();return read();
+  if(save[0].isConnected!==false){checkDeadline();save[0].parentElement.dispatchEvent(new MouseEvent('mousedown',{bubbles:true,button:0,buttons:1}));await settle();}return read();
  }
  if(path.length===7&&path[0]==='activities'&&path[2]==='sections'&&path[4]==='callouts'&&[path[1],path[3],path[5]].every(n=>Number.isInteger(n)&&n>=0)&&['type','body'].includes(path[6])){
   const types={'Teaching Tip':'teachingTip','Content Corner':'contentCorner','Discussion Goal':'discussionGoal','Assessment Opportunity':'assessmentOpportunity','Ethics Opportunity':'ethicsOpportunity'};

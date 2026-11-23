@@ -45,8 +45,8 @@ Run the tests on their own: `npm test` (309 tests).
 
 ## Known limits
 
-- Live testing so far (2026-11-22): import, Check, Report and Prepare work in Chrome. The first live save (lesson 11, 5 changes) landed, but the readback flagged the new untitled section because Level Builder saves its empty fields as null. That check is fixed: the same saved lesson now passes with 0 mismatches. Linking an existing resource and adding a new one haven't been run live from the side panel yet.
-- Objectives: the team build keeps the objectives Level Builder already has and lists Notion objectives that aren't there (with a Copy text button) to add by hand. Adding objectives in the editor failed its first live run on 2026-11-22: the new row didn't open.
+- Live testing so far (2026-11-22): import, Check, Report and Prepare work in Chrome. The first live save (lesson 11, 5 changes) landed, but the readback flagged the new untitled section because Level Builder saves its empty fields as null. That check is fixed: the same saved lesson now passes with 0 mismatches. Later saves linking two existing resources and adding three objectives passed with 0 mismatches. Adding a brand-new shared resource hasn't been run live yet.
+- Objectives: Notion objectives Level Builder doesn't have are added (live-tested 2026-11-22). If adding ever fails, the Save tab can prepare without them and list them to add by hand.
 - Level links: slides with "Lesson N, Level M" text need confirmed level mappings. The team build doesn't map levels, so those levels aren't added; Check lists them under "Things to look at".
 - The team build's AI module still contains the Gemini code path, but the team build has no way to enter a key and drops the Gemini host permission.
 

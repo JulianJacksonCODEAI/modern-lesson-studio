@@ -208,15 +208,26 @@ function pendingChoices(){
  return items.filter(c=>c.status==='missing'&&!sharedChoices.has(choiceKey(c))).length;
 }
 
-$('btn-prepare').addEventListener('click',e=>withBusy(e.currentTarget,'Preparing… keep the Level Builder tab open',async()=>{
- try{
-  const pkg=reviewPackageFor(built.source,built.lesson,destination);
-  const add=(session.state.sharedCheck?.items||[]).filter(c=>sharedChoices.get(choiceKey(c))==='add').map(({kind,index})=>({kind,index}));
-  const skip=(session.state.sharedCheck?.items||[]).filter(c=>c.status==='found'&&sharedChoices.get(choiceKey(c))==='skip').map(({kind,index})=>({kind,index}));
-  await session.prepare(pkg,{add,skip});say('save-msg','Ready. The editor was put back exactly as it was. Nothing is saved to the lesson yet.','ok');
- }catch(err){say('save-msg','Could not prepare: '+err.message,'error');}
- renderShared();renderSession();
-}));
+async function runPrepare(button,{addObjectives}){
+ return withBusy(button,'Preparing… keep the Level Builder tab open',async()=>{
+  $('btn-prepare-no-obj').hidden=true;
+  try{
+   const pkg=reviewPackageFor(built.source,built.lesson,destination);
+   const items=session.state.sharedCheck?.items||[];
+   const add=items.filter(c=>sharedChoices.get(choiceKey(c))==='add').map(({kind,index})=>({kind,index}));
+   const skip=items.filter(c=>c.status==='found'&&sharedChoices.get(choiceKey(c))==='skip').map(({kind,index})=>({kind,index}));
+   await session.prepare(pkg,{add,skip,addObjectives});
+   say('save-msg','Ready. The editor was put back exactly as it was. Nothing is saved to the lesson yet.','ok');
+  }catch(err){
+   const objectiveStep=addObjectives&&/objective/i.test(err.message);
+   say('save-msg','Could not prepare: '+err.message+(objectiveStep?' You can prepare again without adding objectives; they will be listed to add by hand.':''),'error');
+   $('btn-prepare-no-obj').hidden=!objectiveStep;
+  }
+  renderShared();renderSession();
+ });
+}
+$('btn-prepare').addEventListener('click',e=>runPrepare(e.currentTarget,{addObjectives:true}));
+$('btn-prepare-no-obj').addEventListener('click',e=>runPrepare(e.currentTarget,{addObjectives:false}));
 $('approve').addEventListener('change',refresh);
 $('btn-save').addEventListener('click',e=>withBusy(e.currentTarget,'Saving and checking…',async()=>{
  try{await session.approveAndSave();}catch(err){say('save-msg','Save stopped: '+err.message,'error');}
@@ -240,6 +251,7 @@ function renderSkipped(){
  const st=session?.state,out=$('skipped-out');
  if(!st?.job||st.receipt?.attempted){out.replaceChildren();return;}
  const parts=[];
+ if(st.objectivesAdded?.length)parts.push(Object.assign(document.createElement('p'),{className:'ok-text',textContent:`Objectives to add (not in Level Builder yet): ${st.objectivesAdded.length}. They're listed with the changes below.`}));
  if(st.added?.length){parts.push(Object.assign(document.createElement('p'),{className:'ok-text',textContent:`Added to Level Builder: ${st.added.map(a=>a.label).join(', ')}.`}));}
  if(st.skipped?.length){
   parts.push(Object.assign(document.createElement('h3'),{textContent:'Not copied: add these in Level Builder after saving'}));

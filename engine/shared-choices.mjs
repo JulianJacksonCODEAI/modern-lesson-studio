@@ -32,13 +32,17 @@ export function withoutCandidates(pkg,remove){
 // (first live run, 2026-11-22, the new row did not open). So the lesson keeps Level Builder's objectives
 // exactly, and Notion objectives that aren't already there are listed for the user to add by hand.
 export const normalizeObjective=text=>String(text??'').normalize('NFKC').replace(/[‘’‛′]/g,"'").replace(/[“”‟″]/g,'"').replace(/\s+/g,' ').trim().replace(/[.;]$/,'').toLowerCase();
-export function keepSavedObjectives(pkg,savedDescriptions){
- const saved=(savedDescriptions||[]).map(String),savedKeys=new Set(saved.map(normalizeObjective));
+// With addMissing (Julian, 2026-11-22), Notion objectives that Level Builder doesn't have are appended after the
+// saved ones; existing objectives keep their exact saved text and order. Without it, they're only listed.
+export function keepSavedObjectives(pkg,savedDescriptions,{addMissing=false}={}){
+ const saved=(savedDescriptions||[]).map(String),seen=new Set(saved.map(normalizeObjective));
  const proposed=pkg.lesson.frontMatter.objectives||[];
- const notCopied=proposed.filter(o=>!savedKeys.has(normalizeObjective(o)));
+ const missing=[];
+ for(const o of proposed){const key=normalizeObjective(o);if(!key||seen.has(key))continue;seen.add(key);missing.push(String(o).trim());}
+ const objectives=addMissing?[...saved,...missing]:saved;
  const next=clone(pkg);
- for(const part of [next.lesson,next.baseline])if(part)part.frontMatter.objectives=clone(saved);
- return {pkg:next,notCopied,alreadyThere:proposed.length-notCopied.length};
+ for(const part of [next.lesson,next.baseline])if(part)part.frontMatter.objectives=clone(objectives);
+ return {pkg:next,added:addMissing?missing:[],notCopied:addMissing?[]:missing,alreadyThere:proposed.length-missing.length};
 }
 
 // Matches a shared-review item back to its candidate.

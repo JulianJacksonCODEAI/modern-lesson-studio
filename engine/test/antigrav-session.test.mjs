@@ -65,3 +65,17 @@ test("objectives: Level Builder's are kept exactly; Notion-only ones are listed,
  assert.equal(normalizeObjective('A  “B” ’c’.'),"a \"b\" 'c'");
  assert.deepEqual(keepSavedObjectives(pkg,[]).notCopied.length,3);
 });
+test('objectives: with addMissing, only Notion objectives Level Builder lacks are appended, once each',()=>{
+ const lesson=generate(source);
+ lesson.frontMatter.objectives=['Test an AI chatbot against your own criteria.','Explain who is affected by AI mistakes.','explain who is affected by AI mistakes','  '];
+ const pkg=reviewPackageFor(source,lesson,dest);
+ const saved=['Test an AI chatbot against your own criteria','Evaluate whether an AI system needs human oversight.'];
+ const r=keepSavedObjectives(pkg,saved,{addMissing:true});
+ assert.deepEqual(r.added,['Explain who is affected by AI mistakes.']);
+ assert.deepEqual(r.notCopied,[]);
+ assert.deepEqual(r.pkg.lesson.frontMatter.objectives,[...saved,'Explain who is affected by AI mistakes.']);
+ assert.deepEqual(r.pkg.baseline.frontMatter.objectives,r.pkg.lesson.frontMatter.objectives);
+ assert.deepEqual(packageProblems(r.pkg),[]);
+ const none=keepSavedObjectives(pkg,[...saved,'EXPLAIN who is affected by AI mistakes'],{addMissing:true});
+ assert.deepEqual(none.added,[],'nothing is added when every Notion objective is already there');
+});
