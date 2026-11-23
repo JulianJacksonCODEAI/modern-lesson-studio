@@ -1,3 +1,7 @@
+# Engine home moved — 0.15.5 (2026-11-23)
+
+This engine now lives only in Lesson Studio's repo (`JulianJacksonCODEAI/modern-lesson-studio`, `engine/`). The prototype repo `jacksj12/codeai-levelbuilder-prototype` is retired and archived; don't copy engine files from it. Its 0.15.5 accessibility changes to the workspace, workflow and transfer pages are included here, and its design notes and acceptance records are in `docs/engine/`. The handoff links below point to the archived prototype repo.
+
 # Shared-record live test passed — source 0.15.3
 
 Companion **0.15.2** passed the user-operated live test on lesson **8898985**: both approved test records were verified, the two associations rehearsed and restored, and a separately approved native save independently verified with zero mismatches and no resend. Removing only those two associations from the saved readback reproduces the entire original lesson exactly. Protected lesson 8898984 was untouched.

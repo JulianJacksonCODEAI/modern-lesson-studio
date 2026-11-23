@@ -6,6 +6,16 @@ Release steps: bump `manifest.json`, add a section here, merge the pull request,
 
 ## [Unreleased]
 
+One home for the engine. The prototype repo `jacksj12/codeai-levelbuilder-prototype` is retired; this repo is now the only place the save engine is fixed and tested.
+
+### Changed
+- Engine updated to the prototype's last version, 0.15.5: accessibility changes to the full build's workspace, workflow, transfer, Notion and publish pages (page titles per view, skip link, labelled dialogs, focus returned after saving a flag, larger text and targets that follow the system text size) and a content security policy on the local preview server. No save logic changed.
+- The engine's design notes and live acceptance records moved to `docs/engine/`.
+- `PRIVACY.md` added. The store listing's privacy and support links point to this repo; the privacy policy still needs a public address before submitting.
+
+### Removed
+- `_legacy/`, the earlier AntiGrav side panel, popup and engine copy (never shipped; kept in git history).
+
 ## [1.6.0] - 2026-11-23
 
 Lesson data is no longer kept on disk, plus accessibility and security audit fixes.
