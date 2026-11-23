@@ -9,7 +9,7 @@ Release steps: bump `manifest.json`, add a section here, merge the pull request,
 ## [1.4.1] - 2026-11-22
 
 ### Changed
-- New icon: a slide card behind a lesson card with a check mark (copy from Slides, checked save), in the panel's blue. Adds 32 px and 96 px sizes for Windows and Firefox.
+- New icon: a slide card behind a Level Builder lesson card marked "LB", with a green check badge for the checked save, in the panel's blue. At 16 and 32 px it shows just the LB card so it stays readable. Adds 32 px and 96 px sizes for Windows and Firefox.
 
 ## [1.4.0] - 2026-11-22
 
