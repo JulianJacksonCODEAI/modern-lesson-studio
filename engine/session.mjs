@@ -114,7 +114,7 @@ export function createSession({tabId,destination,storage=globalThis.localStorage
   }),
 
   // Step B: remove skipped items, create the added ones (one attempt each), then rehearse and build the save review.
-  prepare:(pkg,{add=[],skip=[]}={})=>locked(async()=>{
+  prepare:(pkg,{add=[],skip=[],addObjectives=true}={})=>locked(async()=>{
    requireOwnership();
    if(state.receipt?.attempted)throw Error('This lesson already has a save attempt in this run. Use Check again.');
    const io=await makeIO();
@@ -125,9 +125,9 @@ export function createSession({tabId,destination,storage=globalThis.localStorage
    const skipped=candidates.filter(c=>c.problem||(statusOf(c)==='missing'&&!chosen(add,c))||(statusOf(c)==='found'&&chosen(skip,c)));
    await showEditor();
    const {fresh}=await readTransferBaseline(io); // read-only; also stops if the editor has unsaved edits
-   const objectives=keepSavedObjectives(withoutCandidates(pkg,skipped),(fresh.lesson.objectives||[]).map(o=>o.description));
+   const objectives=keepSavedObjectives(withoutCandidates(pkg,skipped),(fresh.lesson.objectives||[]).map(o=>o.description),{addMissing:addObjectives});
    const reduced=objectives.pkg;
-   state.objectivesNotCopied=objectives.notCopied;
+   state.objectivesNotCopied=objectives.notCopied;state.objectivesAdded=objectives.added;
    const review=await prepareSharedReview(reduced,io.shared);
    const unexpected=review.items.filter(i=>i.action==='create'&&!candidates.some(c=>sameIntent(c,i)&&add.some(a=>a.kind===c.kind&&a.index===c.index)));
    if(unexpected.length)throw Error('Level Builder changed while you were choosing. Check the resources again.');
