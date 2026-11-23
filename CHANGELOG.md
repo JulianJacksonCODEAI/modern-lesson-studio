@@ -18,8 +18,11 @@ Release steps: bump `manifest.json`, add a section here, merge the pull request,
 - Page reads that Lesson Studio runs inside Level Builder and Google Slides use the page's own `fetch` in Firefox (`content.fetch`) so they carry the user's sign-in. Chromium is unchanged.
 - The toolbar icon opens Chrome's side panel in Chromium and toggles the sidebar in Firefox.
 
-### Not yet tested live
-- Firefox, end to end.
+- Report a problem: when sending from Lesson Studio fails, the Report window offers "Send it in Google Forms instead", which opens the form with every field filled in for the user to Submit. Waiting reports have the same option in the footer.
+
+### Tested live (Firefox, 2026-11-22)
+- Sidebar, Allow access, Import, Check, Prepare, Save and the new lesson links all work.
+- Sending a report from Lesson Studio fails in Firefox ("NetworkError when attempting to fetch resource"); the Google Forms fallback covers it until the cause is fixed.
 
 ## [1.3.1] - 2026-11-22
 

@@ -47,6 +47,17 @@ export function formBody(config,fields,problemType,note){
  return body;
 }
 
+// Fallback when sending from the extension is blocked (seen in Firefox, 2026-11-22): the same report as a
+// pre-filled Google Form link; the user clicks Submit in Google's own page, which also records their email.
+export function prefilledFormUrl(config,fields,problemType,note){
+ const params=new URLSearchParams({usp:'pp_url'});
+ for(const [name,entry] of Object.entries(config.fields)){
+  const value=name==='problemType'?(PROBLEM_TYPES.includes(problemType)?problemType:''):name==='note'?clip(note,1500):clip(fields[name],1200);
+  if(value)params.append(entry,value);
+ }
+ return config.submitUrl.replace(/\/formResponse$/,'/viewform')+'?'+params.toString();
+}
+
 // Sends from the extension (host permission for docs.google.com/forms). Signed-in cookies go with it,
 // so a form limited to code.org users records the sender's email.
 export async function sendReport(config,fields,problemType,note,{fetchImpl=fetch}={}){

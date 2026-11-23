@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {buildReport,formBody,sendReport,suggestType,PROBLEM_TYPES} from '../shared/report.mjs';
+import {buildReport,formBody,sendReport,suggestType,prefilledFormUrl,PROBLEM_TYPES} from '../shared/report.mjs';
 
 const config=JSON.parse(readFileSync(new URL('../shared/report-form.json',import.meta.url)));
 const context={lesson:{title:'AI Lab',url:'https://levelbuilder-studio.code.org/lessons/8898985/edit'},
@@ -54,4 +54,17 @@ test('sending reports success, and a Google sign-in redirect as a failure',async
  assert.equal(ok.sent,true);assert.equal(seen.opts.method,'POST');assert.equal(seen.opts.credentials,'include');
  await assert.rejects(sendReport(config,fields,'other','note',{fetchImpl:async()=>({ok:true,status:200,url:'https://accounts.google.com/v3/signin/identifier'})}),/sign in/);
  await assert.rejects(sendReport(config,fields,'other','note',{fetchImpl:async()=>({ok:false,status:400,url:config.submitUrl})}),/error \(400\)/);
+});
+
+test('the Google Forms fallback is a pre-filled viewform link with every field',()=>{
+ const {fields}=buildReport(context);
+ const url=new URL(prefilledFormUrl(config,fields,'missing content','Objectives are missing.'));
+ assert.equal(url.origin+url.pathname,config.submitUrl.replace(/\/formResponse$/,'/viewform'));
+ assert.equal(url.searchParams.get('usp'),'pp_url');
+ for(const entry of Object.values(config.fields))assert.ok(url.searchParams.has(entry),entry);
+ assert.equal(url.searchParams.get(config.fields.problemType),'missing content');
+ assert.equal(url.searchParams.get(config.fields.note),'Objectives are missing.');
+ const long=new URL(prefilledFormUrl(config,{...fields,flaggedItem:'x'.repeat(20000)},'other','n'));
+ assert.ok(long.href.length<9000,'long fields are shortened to keep the link usable');
+ assert.ok(!new URL(prefilledFormUrl(config,fields,'not a type','n')).searchParams.has(config.fields.problemType),'unknown types are left for the user to choose');
 });

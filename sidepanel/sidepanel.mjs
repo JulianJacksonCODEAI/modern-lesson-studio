@@ -1,7 +1,7 @@
 // Lesson Studio side panel (team v1): Import → Check (read-only) → Save to Level Builder → Report.
 import {loadImports,saveImports,clearImports,importSlides,importNotion,buildLesson} from '../shared/sources.mjs';
 import {renderLesson,renderReview} from '../shared/lesson-view.mjs';
-import {buildReport,sendReport,queueReport,pendingReports,removePending,PROBLEM_TYPES,PROBLEM_LABELS} from '../shared/report.mjs';
+import {buildReport,sendReport,queueReport,pendingReports,removePending,prefilledFormUrl,PROBLEM_TYPES,PROBLEM_LABELS} from '../shared/report.mjs';
 import {createSession,destinationFromTab,editorUrlFromInput,lessonPageFromInput,lessonDescriptionInPage,reviewPackageFor,SANDBOX_LESSONS} from '../engine/session.mjs';
 import {AIService} from '../ai/ai-service.mjs';
 
@@ -347,26 +347,38 @@ async function openReport(item=null){
 $('btn-report').addEventListener('click',()=>openReport(null));
 $('btn-report-result').addEventListener('click',()=>openReport({label:'Save result',content:$('result-out').textContent}));
 $('report-cancel').addEventListener('click',()=>$('report-dialog').close());
+let queuedId=null;
 $('report-form').addEventListener('submit',async e=>{
  e.preventDefault();
  const type=$('report-type').value,note=$('report-note').value,btn=$('report-send');
  if(!type||!note.trim()){$('report-error').textContent=!type?'Choose a type of problem.':'Write a short note about what is wrong.';return;}
- btn.disabled=true;btn.textContent='Sending…';
+ btn.disabled=true;btn.textContent='Sending…';$('report-fallback').hidden=true;
  try{await sendReport(reportConfig,reportDraft.fields,type,note);$('report-dialog').close();toast('Report sent. Thank you!');}
- catch(err){await queueReport({fields:reportDraft.fields,type,note});$('report-dialog').close();toast('Report not sent: '+err.message+' It was saved and will be retried.',6000);}
+ catch(err){
+  // Keep the report, and offer Google's own form (always works; seen needed in Firefox).
+  await queueReport({fields:reportDraft.fields,type,note});queuedId=(await pendingReports()).at(-1)?.id??null;
+  $('report-error').textContent='Lesson Studio could not send this ('+err.message+'). It is saved to retry later, or send it now in Google Forms: everything is filled in, you just click Submit.';
+  $('report-fallback').hidden=false;$('report-fallback').focus();
+ }
  finally{btn.disabled=false;btn.textContent='Send report';showPending();}
 });
+$('report-fallback').addEventListener('click',async()=>{
+ await chrome.tabs.create({url:prefilledFormUrl(reportConfig,reportDraft.fields,$('report-type').value,$('report-note').value)});
+ if(queuedId)await removePending(queuedId);queuedId=null;
+ $('report-fallback').hidden=true;$('report-dialog').close();toast('Opened in Google Forms. Click Submit there to send it.',6000);showPending();
+});
 async function showPending(){
- const list=await pendingReports(),note=$('pending-note');note.hidden=!list.length;if(!list.length)return;
- const b=Object.assign(document.createElement('button'),{type:'button',className:'linkish',textContent:`${list.length} report${list.length===1?'':'s'} waiting. Send now`});
- b.addEventListener('click',async()=>{
-  reportConfig??=await (await fetch(chrome.runtime.getURL('shared/report-form.json'))).json();
-  let sent=0;for(const r of await pendingReports()){try{await sendReport(reportConfig,r.fields,r.type,r.note);await removePending(r.id);sent++;}catch(err){toast('Still not sent: '+err.message,5000);break;}}
+ const list=await pendingReports(),note=$('pending-note');note.hidden=!list.length;if(!list.length){note.replaceChildren();return;}
+ reportConfig??=await (await fetch(chrome.runtime.getURL('shared/report-form.json'))).json();
+ const retry=Object.assign(document.createElement('button'),{type:'button',className:'linkish',textContent:`${list.length} report${list.length===1?'':'s'} waiting. Send now`});
+ retry.addEventListener('click',async()=>{
+  let sent=0;for(const r of await pendingReports()){try{await sendReport(reportConfig,r.fields,r.type,r.note);await removePending(r.id);sent++;}catch(err){toast('Still not sent: '+err.message+'. Use "Open in Google Forms" instead.',6000);break;}}
   if(sent)toast(`Sent ${sent} waiting report${sent===1?'':'s'}.`);showPending();
  });
- note.replaceChildren(b);
+ const viaForm=Object.assign(document.createElement('button'),{type:'button',className:'linkish',textContent:'Open in Google Forms'});
+ viaForm.addEventListener('click',async()=>{const [first]=await pendingReports();if(!first)return;await chrome.tabs.create({url:prefilledFormUrl(reportConfig,first.fields,first.type,first.note)});await removePending(first.id);toast('Opened in Google Forms. Click Submit there to send it.',6000);showPending();});
+ note.replaceChildren(retry,document.createTextNode(' · '),viaForm);
 }
-
 // ---------- full build only: Advanced tab ----------
 async function loadAdvanced(){
  try{
