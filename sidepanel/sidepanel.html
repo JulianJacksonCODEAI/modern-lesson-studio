@@ -16,10 +16,10 @@
     <p id="lesson-label" class="sub">No lesson imported yet</p>
    </div>
   </div>
-  <div id="tablist" class="tablist" focusgroup="tablist nomemory" aria-label="Lesson Studio steps">
-   <button type="button" id="tab-import" aria-selected="true" focusgroupstart>1 · Import</button>
-   <button type="button" id="tab-check" aria-selected="false">2 · Check</button>
-   <button type="button" id="tab-save" aria-selected="false">3 · Save</button>
+  <div id="tablist" class="tablist" role="tablist" focusgroup="tablist nomemory" aria-label="Lesson Studio steps">
+   <button type="button" role="tab" id="tab-import" aria-controls="panel-import" aria-selected="true" focusgroupstart>1 · Import</button>
+   <button type="button" role="tab" id="tab-check" aria-controls="panel-check" aria-selected="false">2 · Check</button>
+   <button type="button" role="tab" id="tab-save" aria-controls="panel-save" aria-selected="false">3 · Save</button>
   </div>
  </header>
 
@@ -27,7 +27,7 @@
   <div id="access-banner" class="pad access" hidden>
    <section class="card warnbox" aria-labelledby="access-h">
     <h2 id="access-h">Allow Lesson Studio to read your lesson pages</h2>
-    <p>This browser asks before an extension can read Google Slides, Notion and Level Builder. Lesson Studio only reads the pages you import from and saves to the lesson you choose.</p>
+    <p>This browser asks before an extension can read Google Slides, Notion and Level Builder. Lesson Studio only reads the pages you import from and saves to the lesson you choose. What you import is kept only until you close the browser or choose Start over.</p>
     <button type="button" id="btn-allow-access" class="btn primary">Allow access</button>
    </section>
   </div>
@@ -52,7 +52,7 @@
     <p id="import-msg" class="msg" role="status" aria-live="polite"></p>
 
     <div class="row">
-     <button type="button" id="btn-to-check" class="btn primary" disabled>Check the lesson →</button>
+     <button type="button" id="btn-to-check" class="btn primary" disabled>Check the lesson <span aria-hidden="true">→</span></button>
      <button type="button" id="btn-reset" class="btn quiet">Start over</button>
     </div>
    </div>
@@ -61,7 +61,7 @@
   <!-- 2 · CHECK -->
   <div role="tabpanel" id="panel-check" aria-labelledby="tab-check" hidden>
    <div class="pad">
-    <p class="lead">This is exactly what will go into Level Builder. You can't edit it here: make edits in Level Builder after saving. If something looks wrong, use <strong>⚑ Report</strong> on that item.</p>
+    <p class="lead">This is exactly what will go into Level Builder. You can't edit it here: make edits in Level Builder after saving. If something looks wrong, use <strong><span aria-hidden="true">⚑</span> Report</strong> on that item.</p>
     <div id="check-empty" class="empty-state">Import a Slides deck first.</div>
     <div id="check-warnings" class="notes" hidden></div>
     <div id="lesson-view"></div>
@@ -78,7 +78,7 @@
      <p id="ai-note" class="muted"></p>
     </details>
 
-    <div class="row"><button type="button" id="btn-to-save" class="btn primary" disabled>Looks right — go to Save →</button></div>
+    <div class="row"><button type="button" id="btn-to-save" class="btn primary" disabled>Looks right — go to Save <span aria-hidden="true">→</span></button></div>
    </div>
   </div>
 
@@ -133,7 +133,7 @@
      <div class="row wrap">
       <button type="button" id="btn-check-again" class="btn" hidden>Check again (no resend)</button>
       <button type="button" id="btn-restore" class="btn" hidden>Restore the editor</button>
-      <button type="button" id="btn-report-result" class="btn quiet">⚑ Report a problem with this save</button>
+      <button type="button" id="btn-report-result" class="btn quiet"><span aria-hidden="true">⚑</span> Report a problem with this save</button>
      </div>
     </section>
     <p id="save-msg" class="msg" role="status" aria-live="polite"></p>
@@ -142,7 +142,7 @@
  </main>
 
  <footer class="foot">
-  <button type="button" id="btn-report" class="linkish">⚑ Report a problem</button>
+  <button type="button" id="btn-report" class="linkish"><span aria-hidden="true">⚑</span> Report a problem</button>
   <span id="pending-note" hidden></span>
   <span id="version" class="muted"></span>
  </footer>

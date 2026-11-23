@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Lesson Studio",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "Copies a lesson's Google Slides speaker notes and Notion page into a Code.org Level Builder lesson, with a checked save.",
   "icons": {
     "16": "icons/icon-16.png",

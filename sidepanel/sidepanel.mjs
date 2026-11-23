@@ -1,15 +1,19 @@
 // Lesson Studio side panel (team v1): Import → Check (read-only) → Save to Level Builder → Report.
 import {loadImports,saveImports,clearImports,importSlides,importNotion,buildLesson} from '../shared/sources.mjs';
 import {renderLesson,renderReview} from '../shared/lesson-view.mjs';
-import {buildReport,sendReport,sendReportViaFormTab,queueReport,pendingReports,removePending,prefilledFormUrl,PROBLEM_TYPES,PROBLEM_LABELS} from '../shared/report.mjs';
+import {buildReport,sendReport,sendReportViaFormTab,queueReport,pendingReports,removePending,openFilledReportForm,PROBLEM_TYPES,PROBLEM_LABELS} from '../shared/report.mjs';
 import {createSession,destinationFromTab,editorUrlFromInput,lessonPageFromInput,lessonDescriptionInPage,reviewPackageFor,SANDBOX_LESSONS} from '../engine/session.mjs';
 import {AIService} from '../ai/ai-service.mjs';
+import {moveLessonDataToSession,sessionRecordStore} from '../shared/lesson-store.mjs';
 
 const $=id=>document.getElementById(id);
 const VERSION=chrome.runtime.getManifest().version;
 const STEPS=['import','check','save'];
 let imports={slides:null,brief:null},built=null,session=null,destination=null,destTabId=null,currentStep='import',busy=false;
 let reportConfig=null,reportDraft=null;
+// Lesson data is kept only until the browser closes. Moves anything an earlier version saved to disk first.
+const moved=moveLessonDataToSession().catch(err=>console.warn('Moving old lesson data failed:',err));
+const recordStore=moved.then(()=>sessionRecordStore({onError:err=>console.warn('Save record not kept:',err)}));
 
 // ---------- small helpers ----------
 function toast(text,ms=3500){const t=$('toast');t.textContent=text;t.hidden=false;clearTimeout(toast.timer);toast.timer=setTimeout(()=>{t.hidden=true;},ms);}
@@ -35,7 +39,9 @@ function selectStep(step,{focus=false}={}){
   panel.hidden=!on;if(on)panel.tabIndex=0;else panel.removeAttribute('tabindex');
  }
  if(focus)$('tab-'+step).focus();
- if(step==='save')findDestination();
+ // Look for the lesson editor only once the Save step stays open, so arrowing past the tab doesn't start a search.
+ clearTimeout(selectStep.timer);
+ if(step==='save')selectStep.timer=setTimeout(()=>{if(currentStep==='save')findDestination();},300);
 }
 for(const s of STEPS){
  $('tab-'+s).addEventListener('click',()=>selectStep(s));
@@ -43,7 +49,6 @@ for(const s of STEPS){
 }
 if(!Object.hasOwn(HTMLElement.prototype,'focusGroup')){
  for(const b of tabButtons)b.tabIndex=b.getAttribute('aria-selected')==='true'?0:-1;
- $('tablist').setAttribute('role','tablist');tabButtons.forEach(b=>b.setAttribute('role','tab'));
  $('tablist').addEventListener('keydown',e=>{
   const i=tabButtons.indexOf(document.activeElement);if(i<0)return;
   const next={ArrowRight:i+1,ArrowLeft:i-1,Home:0,End:tabButtons.length-1}[e.key];if(next===undefined)return;
@@ -115,7 +120,7 @@ async function findDestination(){
  const next=chosen?destinationFromTab(chosen):null;
  if(next?.id!==destination?.id||chosen?.id!==destTabId){
   destination=next;destTabId=chosen?.id??null;lessonInfo=null;sharedChoices.clear();
-  session=destination?createSession({tabId:destTabId,destination,onProgress:m=>say('save-msg',m)}):null;
+  session=destination?createSession({tabId:destTabId,destination,storage:await recordStore,onProgress:m=>say('save-msg',m)}):null;
   if(session){try{lessonInfo=await session.describe();}catch(err){lessonInfo={error:err.message};}}
   renderDestination();renderShared();renderSession();
  }else if(session&&(!lessonInfo||lessonInfo.error)){ // the editor may still have been loading
@@ -365,13 +370,13 @@ $('report-form').addEventListener('submit',async e=>{
  catch(err){
   // Keep the report, and offer Google's own form (always works; seen needed in Firefox).
   await queueReport({fields:reportDraft.fields,type,note});queuedId=(await pendingReports()).at(-1)?.id??null;
-  $('report-error').textContent='Lesson Studio could not send this ('+err.message+'). It is saved to retry later, or send it now in Google Forms: everything is filled in, you just click Submit.';
+  $('report-error').textContent='Lesson Studio could not send this ('+err.message+'). It is kept to retry until you close the browser, or send it now in Google Forms: everything is filled in, you just click Submit.';
   $('report-fallback').hidden=false;$('report-fallback').focus();
  }
  finally{btn.disabled=false;btn.textContent='Send report';showPending();}
 });
 $('report-fallback').addEventListener('click',async()=>{
- await chrome.tabs.create({url:prefilledFormUrl(reportConfig,reportDraft.fields,$('report-type').value,$('report-note').value)});
+ await openFilledReportForm(reportConfig,reportDraft.fields,$('report-type').value,$('report-note').value);
  if(queuedId)await removePending(queuedId);queuedId=null;
  $('report-fallback').hidden=true;$('report-dialog').close();toast('Opened in Google Forms. Click Submit there to send it.',6000);showPending();
 });
@@ -384,7 +389,7 @@ async function showPending(){
   if(sent)toast(`Sent ${sent} waiting report${sent===1?'':'s'}.`);showPending();
  });
  const viaForm=Object.assign(document.createElement('button'),{type:'button',className:'linkish',textContent:'Open in Google Forms'});
- viaForm.addEventListener('click',async()=>{const [first]=await pendingReports();if(!first)return;await chrome.tabs.create({url:prefilledFormUrl(reportConfig,first.fields,first.type,first.note)});await removePending(first.id);toast('Opened in Google Forms. Click Submit there to send it.',6000);showPending();});
+ viaForm.addEventListener('click',async()=>{const [first]=await pendingReports();if(!first)return;await openFilledReportForm(reportConfig,first.fields,first.type,first.note);await removePending(first.id);toast('Opened in Google Forms. Click Submit there to send it.',6000);showPending();});
  note.replaceChildren(retry,document.createTextNode(' · '),viaForm);
 }
 // ---------- full build only: Advanced tab ----------
@@ -410,6 +415,6 @@ $('btn-allow-access').addEventListener('click',()=>{
 
 // ---------- start ----------
 $('version').textContent='v'+VERSION;
-checkAccess();imports=await loadImports();rebuild();setupAI();showPending();loadAdvanced();
+checkAccess();await moved;imports=await loadImports();rebuild();setupAI();showPending();loadAdvanced();
 const pending=await chrome.storage.session.get('openStep').catch(()=>({}));
 selectStep(pending.openStep&&STEPS.includes(pending.openStep)?pending.openStep:(built?'check':'import'));

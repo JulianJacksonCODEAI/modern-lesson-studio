@@ -10,11 +10,11 @@ export const isSlidesUrl=url=>/^https:\/\/docs\.google\.com\/presentation\//.tes
 export const isNotionUrl=url=>/^https:\/\/([a-z0-9-]+\.)?(notion\.so|notion\.site)\/|^https:\/\/app\.notion\.com\//.test(url||'');
 
 export async function loadImports(){
- const {[STORE_KEY]:saved}=await chrome.storage.local.get(STORE_KEY);
+ const {[STORE_KEY]:saved}=await chrome.storage.session.get(STORE_KEY);
  return saved||{slides:null,brief:null};
 }
-export async function saveImports(imports){await chrome.storage.local.set({[STORE_KEY]:imports});}
-export async function clearImports(){await chrome.storage.local.remove(STORE_KEY);}
+export async function saveImports(imports){await chrome.storage.session.set({[STORE_KEY]:imports});}
+export async function clearImports(){await chrome.storage.session.remove(STORE_KEY);}
 
 export async function importSlides(tab){
  if(!tab?.id||!isSlidesUrl(tab.url))throw Error('Switch to the Google Slides deck first, then try again.');

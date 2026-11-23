@@ -64,7 +64,7 @@ English
 | Permission | Type | Justification |
 |------------|------|---------------|
 | `scripting` | permissions | Runs the read-only exporter in the open Google Slides or Notion tab when the user clicks Import, and runs the lesson reader and save control in the open Level Builder sandbox lesson after the user approves a save. |
-| `storage` | permissions | Keeps the imported lesson, save receipts and unsent problem reports in the browser so work survives closing the panel. |
+| `storage` | permissions | Keeps the imported lesson, save receipts and unsent problem reports for the browser session (`chrome.storage.session`, cleared when the browser closes) so work survives closing the panel. Settings (the AI choice) are kept in `chrome.storage.local`. |
 | `tabs` | permissions | Finds the open Level Builder sandbox lesson by its address, and checks the tab is still that lesson before every read or save. |
 | `sidePanel` | permissions | Shows Lesson Studio in Chrome's side panel next to Slides, Notion and Level Builder. |
 | `https://docs.google.com/presentation/*` | host_permissions | Reads the open Slides deck's speaker notes when the user clicks "Import the open Slides deck". |
@@ -76,9 +76,15 @@ English
 
 ### Data Collection
 
-**Does the extension collect user data?** No
+**Does the extension collect user data?** Yes, only when the user sends a problem report.
 
-The extension operates completely locally in the user's browser. Lesson drafts, notes, and evidence are stored in local extension storage (`chrome.storage.local`). AI features use Chrome's on-device model, so curriculum text is not sent to any AI service. When the user chooses "Report a problem", the report (the lesson and source links, the flagged item and the user's note) is sent to the team's Google Form, which records the user's code.org email. No third-party telemetry or tracking exists.
+In the dashboard's data-usage form, tick:
+- **Personally identifiable information:** the user's code.org email address, recorded by the team's Google Form with each report.
+- **Website content:** the report's lesson title and links, Slides and Notion links, the flagged item's text and the user's note.
+
+Leave every other category unticked.
+
+Everything else stays in the user's browser. The imported lesson, save receipts and unsent reports are kept in memory for the browser session (`chrome.storage.session`) and are deleted when the browser closes, when the user chooses "Start over", or when the report is sent. Nothing from a lesson is written to disk. AI features use Chrome's on-device model, so curriculum text is not sent to any AI service. Reports are filled into the Google Form on the page, not passed in its link, so report text does not land in browser history. No third-party telemetry or tracking exists.
 
 ### Data Use Certification
 - [x] Data is NOT sold to third parties

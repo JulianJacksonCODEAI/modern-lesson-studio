@@ -4,6 +4,7 @@ import { importSourceFile, combineSourceImports, unzipOffice, presentationParts,
 import { sourcePageExport } from '../../engine/browser-fill/source-page-export.mjs';
 import { notionPageExport } from '../../shared/notion-page-export.mjs';
 import { NotionConnector } from '../notion-connector.mjs';
+import { lessonArea, moveLessonDataToSession } from '../../shared/lesson-store.mjs';
 
 const $ = id => document.getElementById(id);
 
@@ -35,16 +36,18 @@ function updateHistoryButtons() {
   $('btn-studio-redo').disabled = state.redoStack.length === 0;
 }
 
+// The draft is lesson content, so it lives only for the browser session (see shared/lesson-store.mjs).
 function saveDraft() {
   if (state.draft) {
-    chrome.storage?.local?.set({ activeLessonDraft: state.draft });
+    lessonArea().set({ activeLessonDraft: state.draft }).catch(err => toast(`Draft not kept: ${err.message}`));
   }
 }
 
 async function init() {
   // 1. Load active draft
   try {
-    const data = await chrome.storage?.local?.get(['activeLessonDraft']);
+    await moveLessonDataToSession().catch(err => console.warn('Moving old lesson data failed:', err));
+    const data = await lessonArea().get(['activeLessonDraft']);
     if (data?.activeLessonDraft) {
       state.draft = data.activeLessonDraft;
     } else {
@@ -136,9 +139,9 @@ function renderObjectives() {
     const li = document.createElement('li');
     li.className = 'objective-item';
     li.innerHTML = `
-      <span class="obj-bullet">🎯</span>
+      <span class="obj-bullet" aria-hidden="true">🎯</span>
       <span class="flex-1">${escapeHtml(obj)}</span>
-      <button class="btn-icon text-danger" data-del-obj="${idx}" title="Remove objective">✕</button>
+      <button class="btn-icon text-danger" data-del-obj="${idx}" title="Remove objective" aria-label="Remove objective ${idx + 1}"><span aria-hidden="true">✕</span></button>
     `;
     list.appendChild(li);
   });
@@ -146,7 +149,7 @@ function renderObjectives() {
   list.querySelectorAll('[data-del-obj]').forEach(btn => {
     btn.onclick = e => {
       pushHistory();
-      const idx = parseInt(e.target.dataset.delObj, 10);
+      const idx = parseInt(e.currentTarget.dataset.delObj, 10);
       fm.objectives.splice(idx, 1);
       saveDraft();
       renderObjectives();
@@ -172,7 +175,7 @@ function renderResources() {
           </a>
         </div>
       </td>
-      <td style="text-align: center;"><button class="btn-icon text-danger" data-del-res="${idx}" title="Delete Resource">✕</button></td>
+      <td class="text-center"><button class="btn-icon text-danger" data-del-res="${idx}" title="Delete resource" aria-label="Delete resource: ${escapeHtml(r.name || `row ${idx + 1}`)}"><span aria-hidden="true">✕</span></button></td>
     `;
     tbody.appendChild(tr);
   });
@@ -180,7 +183,7 @@ function renderResources() {
   tbody.querySelectorAll('[data-del-res]').forEach(btn => {
     btn.onclick = e => {
       pushHistory();
-      const idx = parseInt(e.target.dataset.delRes, 10);
+      const idx = parseInt(e.currentTarget.dataset.delRes, 10);
       resources.splice(idx, 1);
       saveDraft();
       renderResources();
@@ -207,7 +210,7 @@ function renderVocabulary() {
     card.innerHTML = `
       <div class="flex items-center justify-between">
         <span class="vocab-word">${escapeHtml(word)}</span>
-        <button class="btn-icon text-danger" data-del-vocab="${idx}">✕</button>
+        <button class="btn-icon text-danger" data-del-vocab="${idx}" title="Delete word" aria-label="Delete word: ${escapeHtml(word)}"><span aria-hidden="true">✕</span></button>
       </div>
       <p class="vocab-def">${escapeHtml(def || 'No definition.')}</p>
     `;
@@ -217,7 +220,7 @@ function renderVocabulary() {
   grid.querySelectorAll('[data-del-vocab]').forEach(btn => {
     btn.onclick = e => {
       pushHistory();
-      const idx = parseInt(e.target.dataset.delVocab, 10);
+      const idx = parseInt(e.currentTarget.dataset.delVocab, 10);
       vocab.splice(idx, 1);
       saveDraft();
       renderVocabulary();
@@ -241,7 +244,7 @@ function renderActivities() {
           <h3>${escapeHtml(act.title || 'Untitled Activity')}</h3>
           <span class="text-secondary text-sm">(${minutes(act.duration)} min)</span>
         </div>
-        <button class="btn-icon text-danger" data-del-act="${aIdx}" title="Delete Activity">✕</button>
+        <button class="btn-icon text-danger" data-del-act="${aIdx}" title="Delete activity" aria-label="Delete activity ${aIdx + 1}"><span aria-hidden="true">✕</span></button>
       </div>
       <div class="sections-container" id="sections-for-${aIdx}"></div>
       <button class="btn btn-secondary btn-xs mt-3" data-add-sec="${aIdx}">+ Add Section</button>
@@ -285,7 +288,7 @@ function renderActivities() {
   container.querySelectorAll('[data-del-act]').forEach(btn => {
     btn.onclick = e => {
       pushHistory();
-      const idx = parseInt(e.target.dataset.delAct, 10);
+      const idx = parseInt(e.currentTarget.dataset.delAct, 10);
       state.draft.activities.splice(idx, 1);
       saveDraft();
       renderAll();
@@ -296,7 +299,7 @@ function renderActivities() {
   container.querySelectorAll('[data-add-sec]').forEach(btn => {
     btn.onclick = e => {
       pushHistory();
-      const aIdx = parseInt(e.target.dataset.addSec, 10);
+      const aIdx = parseInt(e.currentTarget.dataset.addSec, 10);
       state.draft.activities[aIdx].sections ??= [];
       state.draft.activities[aIdx].sections.push({
         id: `sec-${Date.now()}`,
@@ -480,11 +483,28 @@ function setupEventListeners() {
   $('btn-studio-transfer').onclick = useSaveTab;
   $('btn-inspector-sync-lb').onclick = useSaveTab;
   // Import Modal
+  // The import modal moves focus in when it opens, closes on Escape, and returns focus to
+  // the Import button when it closes (however it closes).
   $('btn-studio-import').onclick = () => {
     $('modal-import').hidden = false;
+    $('modal-import').querySelector('.modal-close').focus();
   };
+  new MutationObserver(() => {
+    if ($('modal-import').hidden && $('modal-import').contains(document.activeElement)) {
+      $('btn-studio-import').focus();
+    }
+  }).observe($('modal-import'), { attributes: true, attributeFilter: ['hidden'] });
+  $('modal-import').addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      $('modal-import').hidden = true;
+      $('btn-studio-import').focus();
+    }
+  });
   document.querySelectorAll('.modal-close').forEach(btn => {
-    btn.onclick = () => { $('modal-import').hidden = true; };
+    btn.onclick = () => {
+      $('modal-import').hidden = true;
+      $('btn-studio-import').focus();
+    };
   });
 
   // Notion Clipper from Studio
@@ -568,6 +588,12 @@ function setupEventListeners() {
   const dropZone = $('modal-drop-zone');
   const fileInput = $('modal-file-input');
   dropZone.onclick = () => fileInput.click();
+  dropZone.onkeydown = e => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      fileInput.click();
+    }
+  };
   // Notion URL import in Studio modal
   (async () => {
     const token = await NotionConnector.getToken();
@@ -646,10 +672,10 @@ async function runAudit() {
 
     const body = $('inspector-audit-body');
     body.innerHTML = `
-      <div class="mb-2"><strong>Score:</strong> ${audit.score}/100 (${audit.grade})</div>
+      <div class="mb-2"><strong>Score:</strong> ${escapeHtml(audit.score)}/100 (${escapeHtml(audit.grade)})</div>
       <div class="text-xs">
-        ${audit.strengths.map(s => `<div class="text-success mb-1">✓ ${escapeHtml(s)}</div>`).join('')}
-        ${audit.issues.map(i => `<div class="text-warning mb-1">⚠️ ${escapeHtml(i.message)}</div>`).join('')}
+        ${audit.strengths.map(s => `<div class="text-success mb-1"><span aria-hidden="true">✓</span> ${escapeHtml(s)}</div>`).join('')}
+        ${audit.issues.map(i => `<div class="text-warning mb-1"><span aria-hidden="true">⚠️</span> ${escapeHtml(i.message)}</div>`).join('')}
       </div>
     `;
     toast(`✓ Quality Score: ${audit.score}/100 (Grade ${audit.grade})`);
