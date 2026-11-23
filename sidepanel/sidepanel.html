@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width,initial-scale=1">
+ <title>Lesson Studio</title>
+ <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+<div class="layout">
+ <header class="top">
+  <div class="brand">
+   <img src="../icons/icon-48.png" alt="" width="24" height="24">
+   <div>
+    <h1>Lesson Studio</h1>
+    <p id="lesson-label" class="sub">No lesson imported yet</p>
+   </div>
+  </div>
+  <div id="tablist" class="tablist" focusgroup="tablist nomemory" aria-label="Lesson Studio steps">
+   <button type="button" id="tab-import" aria-selected="true" focusgroupstart>1 · Import</button>
+   <button type="button" id="tab-check" aria-selected="false">2 · Check</button>
+   <button type="button" id="tab-save" aria-selected="false">3 · Save</button>
+  </div>
+ </header>
+
+ <main>
+  <!-- 1 · IMPORT -->
+  <div role="tabpanel" id="panel-import" aria-labelledby="tab-import" tabindex="0">
+   <div class="pad">
+    <p class="lead">Open the lesson's Google Slides deck and its Notion page in this window. Import each one from its tab. Nothing is changed in Slides or Notion.</p>
+
+    <section class="card" aria-labelledby="slides-h">
+     <h2 id="slides-h">Google Slides deck <span class="req">required</span></h2>
+     <p id="slides-status" class="status-line">Not imported</p>
+     <button type="button" id="btn-slides" class="btn primary">Import the open Slides deck</button>
+    </section>
+
+    <section class="card" aria-labelledby="notion-h">
+     <h2 id="notion-h">Notion lesson page</h2>
+     <p id="notion-status" class="status-line">Not imported</p>
+     <button type="button" id="btn-notion" class="btn">Import the open Notion page</button>
+    </section>
+
+    <div id="import-warnings" class="notes" hidden></div>
+    <p id="import-msg" class="msg" role="status" aria-live="polite"></p>
+
+    <div class="row">
+     <button type="button" id="btn-to-check" class="btn primary" disabled>Check the lesson →</button>
+     <button type="button" id="btn-reset" class="btn quiet">Start over</button>
+    </div>
+   </div>
+  </div>
+
+  <!-- 2 · CHECK -->
+  <div role="tabpanel" id="panel-check" aria-labelledby="tab-check" hidden>
+   <div class="pad">
+    <p class="lead">This is exactly what will go into Level Builder. You can't edit it here: make edits in Level Builder after saving. If something looks wrong, use <strong>⚑ Report</strong> on that item.</p>
+    <div id="check-empty" class="empty-state">Import a Slides deck first.</div>
+    <div id="check-warnings" class="notes" hidden></div>
+    <div id="lesson-view"></div>
+
+    <details id="ai-box" class="card ai" hidden>
+     <summary>AI suggestions (read-only)</summary>
+     <p class="muted">Suggestions only. They are never added to the lesson.</p>
+     <button type="button" id="btn-audit" class="btn">Run quality check</button>
+     <div id="audit-out" aria-live="polite"></div>
+     <div id="ai-extra" hidden>
+      <button type="button" id="btn-vocab" class="btn">Suggest vocabulary definitions</button>
+      <div id="vocab-out" aria-live="polite"></div>
+     </div>
+     <p id="ai-note" class="muted"></p>
+    </details>
+
+    <div class="row"><button type="button" id="btn-to-save" class="btn primary" disabled>Looks right — go to Save →</button></div>
+   </div>
+  </div>
+
+  <!-- 3 · SAVE -->
+  <div role="tabpanel" id="panel-save" aria-labelledby="tab-save" hidden>
+   <div class="pad">
+    <section class="card" aria-labelledby="dest-h">
+     <h2 id="dest-h">Level Builder lesson</h2>
+     <p id="dest-status" class="status-line">Looking for an open lesson editor…</p>
+     <div id="dest-found" hidden>
+      <dl id="dest-info" class="auto"></dl>
+      <p id="dest-warn" class="warn" hidden></p>
+      <label class="check"><input type="checkbox" id="own-lesson"> This is my lesson, not an official course lesson.</label>
+      <button type="button" id="btn-change-lesson" class="linkish">Use a different lesson</button>
+     </div>
+     <form id="dest-open" class="dest-open">
+      <label for="lesson-link">Lesson editor link or lesson ID</label>
+      <div class="row">
+       <input id="lesson-link" name="lesson" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://levelbuilder-studio.code.org/lessons/123/edit">
+       <button type="submit" class="btn">Open</button>
+      </div>
+      <p class="muted">Or use a practice lesson:
+       <button type="button" class="linkish" data-open-lesson="8898985">sandbox lesson 11</button> ·
+       <button type="button" class="linkish" data-open-lesson="8898984">sandbox lesson 10</button></p>
+     </form>
+    </section>
+
+    <section class="card" aria-labelledby="shared-h" id="shared-card">
+     <h2 id="shared-h">Resources and vocabulary</h2>
+     <p class="muted">Lesson Studio looks for each resource and vocabulary word in this lesson's course. For any that Level Builder doesn't have yet, choose Skip or Add.</p>
+     <button type="button" id="btn-check-shared" class="btn" disabled>Check resources</button>
+     <div id="shared-out"></div>
+    </section>
+
+    <section class="card" aria-labelledby="review-h">
+     <h2 id="review-h">What will change</h2>
+     <p class="muted">Lesson Studio tries the changes in the open editor, puts it back exactly as it was, and lists the changes. Nothing is saved to the lesson yet.</p>
+     <button type="button" id="btn-prepare" class="btn primary" disabled>Prepare changes</button>
+     <div id="skipped-out"></div>
+     <div id="review-out"></div>
+     <div id="approve-box" hidden>
+      <label class="check"><input type="checkbox" id="approve"> I checked these changes. Save them to this lesson once.</label>
+      <button type="button" id="btn-save" class="btn primary" disabled>Save to Level Builder</button>
+      <p class="muted">The review expires 10 minutes after it's prepared.</p>
+     </div>
+    </section>
+
+    <section class="card" aria-labelledby="result-h" id="result-card" hidden>
+     <h2 id="result-h">Result</h2>
+     <div id="result-out"></div>
+     <div class="row wrap">
+      <button type="button" id="btn-check-again" class="btn" hidden>Check again (no resend)</button>
+      <button type="button" id="btn-restore" class="btn" hidden>Restore the editor</button>
+      <button type="button" id="btn-report-result" class="btn quiet">⚑ Report a problem with this save</button>
+     </div>
+    </section>
+    <p id="save-msg" class="msg" role="status" aria-live="polite"></p>
+   </div>
+  </div>
+ </main>
+
+ <footer class="foot">
+  <button type="button" id="btn-report" class="linkish">⚑ Report a problem</button>
+  <span id="pending-note" hidden></span>
+  <span id="version" class="muted"></span>
+ </footer>
+</div>
+
+<dialog id="report-dialog" aria-labelledby="report-h">
+ <form id="report-form" method="dialog">
+  <h2 id="report-h">Report a problem</h2>
+  <p class="muted">These details from your current run are sent with the report:</p>
+  <dl id="report-auto" class="auto"></dl>
+  <label for="report-type">Type of problem <span class="req">required</span></label>
+  <select id="report-type" name="type" required></select>
+  <label for="report-note">What's wrong? <span class="req">required</span></label>
+  <textarea id="report-note" name="note" rows="4" required autofocus></textarea>
+  <p id="report-error" class="error" role="alert"></p>
+  <div class="row end">
+   <button type="button" id="report-cancel" class="btn quiet" value="cancel">Cancel</button>
+   <button type="submit" id="report-send" class="btn primary">Send report</button>
+  </div>
+ </form>
+</dialog>
+
+<p id="toast" class="toast" role="status" aria-live="polite" hidden></p>
+<script type="module" src="sidepanel.mjs"></script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "Lesson Studio",
+  "version": "1.2.0",
+  "description": "Copies a lesson's Google Slides speaker notes and Notion page into a Code.org Level Builder lesson, with a checked save.",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "action": {
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    },
+    "default_title": "Open Lesson Studio"
+  },
+  "side_panel": {
+    "default_path": "sidepanel/sidepanel.html"
+  },
+  "background": {
+    "service_worker": "background/service-worker.js",
+    "type": "module"
+  },
+  "permissions": [
+    "scripting",
+    "storage",
+    "tabs",
+    "sidePanel"
+  ],
+  "host_permissions": [
+    "https://docs.google.com/presentation/*",
+    "https://docs.google.com/forms/*",
+    "https://levelbuilder-studio.code.org/*",
+    "https://*.notion.so/*",
+    "https://*.notion.site/*",
+    "https://app.notion.com/*",
+    "https://api.notion.com/*",
+    "https://generativelanguage.googleapis.com/*"
+  ]
+}

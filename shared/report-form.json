@@ -1,0 +1,15 @@
+{
+  "mode": "send-from-extension",
+  "formId": "1FAIpQLSf5eWwDlrm490E1wSHpxMz9XNkALYrTFxMSZxhcQyacuA4LEw",
+  "submitUrl": "https://docs.google.com/forms/d/e/1FAIpQLSf5eWwDlrm490E1wSHpxMz9XNkALYrTFxMSZxhcQyacuA4LEw/formResponse",
+  "fields": {
+    "lesson": "entry.1725155028",
+    "sources": "entry.809629770",
+    "flaggedItem": "entry.1450129022",
+    "stepAndReadback": "entry.1644206612",
+    "versionAndDate": "entry.2038675867",
+    "problemType": "entry.1603661704",
+    "note": "entry.2062910186"
+  },
+  "problemTypes": ["wrong content", "missing content", "in the wrong place", "didnt save", "other"]
+}
