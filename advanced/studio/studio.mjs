@@ -3,11 +3,6 @@ import { generate, exportMarkdown } from '../../engine/dist/core.mjs';
 import { importSourceFile, combineSourceImports, unzipOffice, presentationParts, notionMarkdown } from '../../engine/dist/source-imports.mjs';
 import { sourcePageExport } from '../../engine/browser-fill/source-page-export.mjs';
 import { notionPageExport } from '../../shared/notion-page-export.mjs';
-import { buildTransferPlan } from '../../engine/dist/transfer-core.mjs';
-import { normalizeNativeCapture } from '../../engine/dist/transfer-native.mjs';
-import { stageNativeTransferPlan } from '../../engine/dist/native-transfer-runner.mjs';
-import { nativeEditorBridge } from '../../engine/dist/native-dom-adapter.mjs';
-import { createNativeTransport } from '../../engine/browser-fill/native-transport.mjs';
 import { NotionConnector } from '../notion-connector.mjs';
 
 const $ = id => document.getElementById(id);
@@ -17,12 +12,6 @@ let state = {
   undoStack: [],
   redoStack: [],
   audit: null
-};
-
-let stagingState = {
-  targetTabId: null,
-  destinationSnapshot: null,
-  transferPlan: null
 };
 
 function toast(message, duration = 3000) {
@@ -178,7 +167,7 @@ function renderResources() {
       <td><span class="badge ${r.audience === 'Student' ? 'badge-primary' : 'badge-neutral'}">${escapeHtml(r.audience || '')}</span></td>
       <td>
         <div class="url-link-wrapper">
-          <a href="${escapeHtml(r.url || '#')}" target="_blank" rel="noopener noreferrer" class="url-link" title="${escapeHtml(r.url || '')}">
+          <a href="${escapeHtml(safeUrl(r.url))}" target="_blank" rel="noopener noreferrer" class="url-link" title="${escapeHtml(r.url || '')}">
             ${escapeHtml(r.url || '')}
           </a>
         </div>
@@ -250,7 +239,7 @@ function renderActivities() {
         <div class="flex items-center gap-2">
           <span class="pill pill-primary">Activity ${aIdx + 1}</span>
           <h3>${escapeHtml(act.title || 'Untitled Activity')}</h3>
-          <span class="text-secondary text-sm">(${act.duration || 0} min)</span>
+          <span class="text-secondary text-sm">(${minutes(act.duration)} min)</span>
         </div>
         <button class="btn-icon text-danger" data-del-act="${aIdx}" title="Delete Activity">✕</button>
       </div>
@@ -281,7 +270,7 @@ function renderActivities() {
       secBlock.innerHTML = `
         <div class="section-title-bar">
           <h4>${escapeHtml(sec.title || `Section ${sIdx + 1}`)}</h4>
-          <span class="text-secondary text-xs">${sec.duration ? `${sec.duration} min` : ''}</span>
+          <span class="text-secondary text-xs">${minutes(sec.duration) ? `${minutes(sec.duration)} min` : ''}</span>
         </div>
         <div class="prose text-xs">${escapeHtml(sec.body || '')}</div>
         <div class="callouts-area mt-2">${calloutsHtml}</div>
@@ -490,23 +479,6 @@ function setupEventListeners() {
   const useSaveTab = () => toast('To save to Level Builder, use the Save tab in the Lesson Studio side panel.', 5000);
   $('btn-studio-transfer').onclick = useSaveTab;
   $('btn-inspector-sync-lb').onclick = useSaveTab;
-  document.querySelectorAll('.modal-staging-close').forEach(btn => {
-    btn.onclick = () => { $('modal-staging').hidden = true; };
-  });
-
-  $('btn-modal-refresh-dest').onclick = detectLevelBuilderTabForModal;
-  $('btn-modal-read-baseline').onclick = handleModalReadBaseline;
-  $('btn-modal-build-plan').onclick = handleModalBuildPlan;
-
-  $('chk-modal-approve-save').onchange = () => {
-    const checked = $('chk-modal-approve-save').checked;
-    $('btn-modal-stage-changes').disabled = !checked || !stagingState.transferPlan || (stagingState.transferPlan.blockers || []).length > 0;
-  };
-
-  $('btn-modal-stage-changes').onclick = handleModalStageChanges;
-
-  $('btn-modal-verify-readback').onclick = useSaveTab;
-
   // Import Modal
   $('btn-studio-import').onclick = () => {
     $('modal-import').hidden = false;
@@ -689,158 +661,24 @@ async function runAudit() {
   }
 }
 
-async function detectLevelBuilderTabForModal() {
-  try {
-    const tabs = await chrome.tabs.query({ url: '*://levelbuilder-studio.code.org/*' });
-    if (tabs.length > 0) {
-      const tab = tabs[0];
-      stagingState.targetTabId = tab.id;
-      $('modal-dest-label').textContent = 'Level Builder Connected';
-      $('modal-dest-url').textContent = tab.url;
-      $('btn-modal-read-baseline').disabled = false;
-    } else {
-      $('modal-dest-label').textContent = 'No Level Builder Tab Detected';
-      $('modal-dest-url').textContent = 'Open levelbuilder-studio.code.org/lessons/.../edit in another tab';
-      $('btn-modal-read-baseline').disabled = true;
-    }
-  } catch (err) {
-    console.warn('Tab detection error:', err);
-  }
-}
-
-async function handleModalReadBaseline() {
-  if (!stagingState.targetTabId) {
-    toast('Please open or focus the Level Builder editor tab first.');
-    return;
-  }
-  const btn = $('btn-modal-read-baseline');
-  btn.disabled = true;
-  btn.textContent = 'Reading Baseline...';
-
-  try {
-    const transport = createNativeTransport(async encoded => {
-      const [result] = await chrome.scripting.executeScript({
-        target: { tabId: stagingState.targetTabId },
-        func: nativeEditorBridge,
-        args: [encoded]
-      });
-      return result?.result;
-    });
-
-    const capture = await transport({ action: 'read' });
-    stagingState.destinationSnapshot = normalizeNativeCapture(capture);
-    toast('✓ Baseline read successfully! (Zero writes performed)');
-    await handleModalBuildPlan();
-  } catch (err) {
-    toast(`Baseline read error: ${err.message}`, 4000);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Read Baseline Only (No Writes)';
-  }
-}
-
-async function handleModalBuildPlan() {
-  if (!state.draft) return;
-  if (!stagingState.destinationSnapshot) {
-    toast('Read the destination baseline first.');
-    return;
-  }
-
-  try {
-    const pkg = {
-      schemaVersion: 1,
-      sandbox: 'https://levelbuilder-studio.code.org/courses/6-12-dev-playground/units/16/lessons/11',
-      status: 'approved-locally',
-      conflicts: [],
-      lesson: state.draft,
-      baseline: state.draft
-    };
-
-    const plan = await buildTransferPlan(pkg, stagingState.destinationSnapshot, {});
-    stagingState.transferPlan = plan;
-
-    $('modal-diff-count').textContent = `${plan.operations.length} actions`;
-
-    // AI plain English explanation
-    const summary = AIService.explainPlan(plan);
-    $('modal-diff-summary').textContent = summary;
-
-    // Render blockers if any
-    const blockersEl = $('modal-diff-blockers');
-    if (plan.blockers.length > 0) {
-      blockersEl.innerHTML = plan.blockers.map(b => `<div class="issue-item issue-critical">🚫 ${escapeHtml(b)}</div>`).join('');
-      blockersEl.hidden = false;
-    } else {
-      blockersEl.hidden = true;
-    }
-
-    // Render operations list
-    const opList = $('modal-diff-list');
-    opList.innerHTML = '';
-
-    plan.operations.forEach(op => {
-      const item = document.createElement('div');
-      item.className = `diff-item ${op.kind === 'append' ? 'add' : op.requiresDecision ? 'conflict' : 'update'}`;
-      item.innerHTML = `
-        <div class="diff-item-header flex justify-between items-center">
-          <strong>${escapeHtml(op.label)}</strong>
-          <span class="badge ${op.kind === 'append' ? 'badge-primary' : 'badge-neutral'}">${op.kind}</span>
-        </div>
-        <div class="diff-values">
-          ${op.before ? `<span class="diff-val-before">- ${escapeHtml(typeof op.before === 'string' ? op.before.slice(0, 80) : JSON.stringify(op.before).slice(0, 80))}</span>` : ''}
-          <span class="diff-val-after">+ ${escapeHtml(typeof op.after === 'string' ? op.after.slice(0, 80) : JSON.stringify(op.after).slice(0, 80))}</span>
-        </div>
-      `;
-      opList.appendChild(item);
-    });
-
-    $('modal-plan-container').hidden = false;
-    $('chk-modal-approve-save').disabled = false;
-  } catch (err) {
-    toast(`Plan building error: ${err.message}`);
-  }
-}
-
-async function handleModalStageChanges() {
-  if (!$('chk-modal-approve-save').checked || !stagingState.transferPlan) return;
-  const btn = $('btn-modal-stage-changes');
-  btn.disabled = true;
-  btn.textContent = 'Staging Changes into Editor...';
-
-  const logBox = $('modal-staging-log');
-  logBox.hidden = false;
-  logBox.textContent = 'Initializing native transfer runner...\n';
-
-  try {
-    const transport = createNativeTransport(async encoded => {
-      const [result] = await chrome.scripting.executeScript({
-        target: { tabId: stagingState.targetTabId },
-        func: nativeEditorBridge,
-        args: [encoded]
-      });
-      return result?.result;
-    });
-
-    const report = await stageNativeTransferPlan(stagingState.transferPlan, transport, {
-      onProgress: rep => {
-        logBox.textContent += `Action completed: ${rep.completed} operations.\n`;
-      }
-    });
-
-    logBox.textContent += `Staging completed: Status ${report.status}. Ready for readback verification.\n`;
-    $('btn-modal-verify-readback').disabled = false;
-    toast('✓ Changes staged into Level Builder! Verify the tab.');
-  } catch (err) {
-    logBox.textContent += `ERROR: ${err.message}\n`;
-    toast(`Staging failed: ${err.message}`, 4500);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '⚡ Stage Changes to Level Builder';
-  }
-}
-
 function escapeHtml(str) {
-  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// Durations come from imports and AI output: show only a whole number of minutes.
+function minutes(value) {
+  const n = Math.round(Number(value));
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+// Resource links open only if they are http(s); anything else (javascript:, data:, …) becomes '#'.
+function safeUrl(value) {
+  try {
+    const url = new URL(String(value || ''));
+    return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : '#';
+  } catch {
+    return '#';
+  }
 }
 
 document.addEventListener('DOMContentLoaded', init);
