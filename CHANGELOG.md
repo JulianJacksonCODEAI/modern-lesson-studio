@@ -11,7 +11,7 @@ One home for the engine. The prototype repo `jacksj12/codeai-levelbuilder-protot
 ### Changed
 - Engine updated to the prototype's last version, 0.15.5: accessibility changes to the full build's workspace, workflow, transfer, Notion and publish pages (page titles per view, skip link, labelled dialogs, focus returned after saving a flag, larger text and targets that follow the system text size) and a content security policy on the local preview server. No save logic changed.
 - The engine's design notes and live acceptance records moved to `docs/engine/`.
-- `PRIVACY.md` added. The store listing's privacy and support links point to this repo; the privacy policy still needs a public address before submitting.
+- Privacy policy published with GitHub Pages at https://julianjacksoncodeai.github.io/modern-lesson-studio/privacy/ (source `docs/privacy/index.html`; `PRIVACY.md` links to it). The store listing's privacy and support links point to this repo.
 
 ### Removed
 - `_legacy/`, the earlier AntiGrav side panel, popup and engine copy (never shipped; kept in git history).

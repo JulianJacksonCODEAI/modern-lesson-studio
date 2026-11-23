@@ -94,9 +94,9 @@ Everything else stays in the user's browser. The imported lesson, save receipts 
 ## Privacy Policy
 
 **Privacy Policy URL**
-https://github.com/JulianJacksonCODEAI/modern-lesson-studio/blob/main/PRIVACY.md
+https://julianjacksoncodeai.github.io/modern-lesson-studio/privacy/
 
-> The policy text is `PRIVACY.md` in this repo. The repo is private, so store reviewers can't open this link: before submitting, publish `PRIVACY.md` at a public address (GitHub Pages or a code.org page) and put that address here.
+> Published with GitHub Pages from `docs/privacy/index.html` on `main`.
 
 ## Distribution
 
