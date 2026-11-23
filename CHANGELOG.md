@@ -6,6 +6,11 @@ Release steps: bump `manifest.json`, add a section here, merge the pull request,
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-11-22
+
+### Changed
+- New icon: a slide card behind a lesson card with a check mark (copy from Slides, checked save), in the panel's blue. Adds 32 px and 96 px sizes for Windows and Firefox.
+
 ## [1.4.0] - 2026-11-22
 
 ### Added

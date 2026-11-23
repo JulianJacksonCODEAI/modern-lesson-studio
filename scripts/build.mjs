@@ -17,7 +17,7 @@ const rel=p=>path.relative(root,p).split(path.sep).join('/');
 
 const EXCLUDE_ALWAYS=[/^build\//,/^docs\//,/^_legacy\//,/^test\//,/^engine\/test\//,/^scripts\//,/^node_modules\//,/^\.git/,/\.md$/i,/^package(-lock)?\.json$/,/^build\.ps1$/,/^core\//];
 const TEAM_ENTRIES=['sidepanel/sidepanel.html','background/service-worker.js'];
-const TEAM_ASSETS=['icons/icon-16.png','icons/icon-48.png','icons/icon-128.png','shared/report-form.json'];
+const TEAM_ASSETS=['icons/icon-16.png','icons/icon-32.png','icons/icon-48.png','icons/icon-96.png','icons/icon-128.png','shared/report-form.json'];
 const ADVANCED=/^advanced\//;
 const TEAM_DROPPED_HOSTS=['https://api.notion.com/*','https://generativelanguage.googleapis.com/*'];
 
