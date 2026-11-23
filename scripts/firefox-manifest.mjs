@@ -9,6 +9,6 @@ export function firefoxManifest(m,{edition}){
  f.background={scripts:[m.background.service_worker]};
  f.sidebar_action={default_panel:m.side_panel.default_path,default_title:'Lesson Studio',default_icon:m.action.default_icon,open_at_install:false};
  // Problem reports send lesson text from the user's pages to the team's Google Form.
- f.browser_specific_settings={gecko:{id:FIREFOX_IDS[edition],strict_min_version:'128.0',data_collection_permissions:{required:['websiteContent']}}};
+ f.browser_specific_settings={gecko:{id:FIREFOX_IDS[edition],strict_min_version:'140.0',data_collection_permissions:{required:['websiteContent']}},gecko_android:{strict_min_version:'142.0'}}; // the first versions that support data_collection_permissions
  return f;
 }

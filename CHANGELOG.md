@@ -6,6 +6,13 @@ Release steps: bump `manifest.json`, add a section here, merge the pull request,
 
 ## [Unreleased]
 
+## [1.4.2] - 2026-11-22
+
+### Fixed
+- Firefox builds now need Firefox 140 or later (Firefox for Android 142), the first versions that support the data-collection declaration. Clears Mozilla's two "strict_min_version" warnings on upload.
+- Saving a new activity with new sections no longer reports a false mismatch: Level Builder stores those sections' durations as text ("5"), which the check now treats as the reviewed number. Found in a live save to sandbox lesson 11.
+- When a new section does fail the check, the message now names each differing field with its saved and reviewed values.
+
 ## [1.4.1] - 2026-11-22
 
 ### Changed
