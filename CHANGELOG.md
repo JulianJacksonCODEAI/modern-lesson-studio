@@ -6,6 +6,22 @@ Release steps: bump `manifest.json`, add a section here, merge the pull request,
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-11-23
+
+Security audit follow-up. AI now runs only on the user's computer; a Code.org-hosted AI relay may come later.
+
+### Removed
+- Gemini: the full build's API key setting, the Gemini code path and the `generativelanguage.googleapis.com` host permission. Lesson text is no longer sent to any cloud AI. A Gemini key saved by an earlier version is deleted from the browser the next time the AI settings load.
+- The wide editor's old Level Builder staging window. Nothing opened it, but it could write to Level Builder without the "this is my lesson" confirmation. Saving stays in the side panel's Save tab.
+
+### Changed
+- AI choices are now Automatic, Chrome built-in AI or Rules only. If built-in AI isn't available, the rules engine runs.
+- The Report dialog says that your code.org email is recorded with the report.
+- Notion token: a "Forget Notion token" button deletes it, and saving an empty box deletes it instead of storing an empty value.
+
+### Fixed
+- Wide editor: activity and section durations show only as whole minutes, resource links open only if they are http(s), and text escaping also covers single quotes, so imported or AI-written text can't add markup to the page.
+
 ## [1.4.2] - 2026-11-22
 
 ### Fixed

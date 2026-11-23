@@ -15,7 +15,7 @@ Lesson Studio AI helps computer science curriculum developers and instructional 
 
 Key Features:
 - 1-Click Google Slides Ingestion: Reads active presentation tabs directly, extracting slide titles, timing, speaker notes, and callout blocks without manual copying.
-- AI Curriculum Copilot: Uses on-device Chrome AI or Gemini to audit lesson pacing, verify alignment between learning objectives and student activities, identify key vocabulary, and generate pedagogical discussion prompts.
+- AI Curriculum Copilot: Uses on-device Chrome AI to audit lesson pacing, verify alignment between learning objectives and student activities, identify key vocabulary, and generate pedagogical discussion prompts.
 - Persistent Side Panel: Work side-by-side with your Google Slides deck or Level Builder editor without switching tabs or losing your drafting context.
 - Full Studio Workstation: An accessible, modern lesson workspace with document outline navigation, inline editing, and multi-level undo/redo.
 - Safe, Guarded Level Builder Staging: Visual diff inspection highlights exact proposed changes (additions, updates, callouts, and level progressions) while keeping all unrelated destination content and existing level identities strictly preserved. Requires explicit approval before any staging action.
@@ -78,7 +78,7 @@ English
 
 **Does the extension collect user data?** No
 
-The extension operates completely locally in the user's browser. Lesson drafts, notes, and evidence are stored in local extension storage (`chrome.storage.local`). If the user enters a Gemini API key for cloud AI processing, curriculum text is sent directly to Google Gemini via standard HTTPS API calls; no third-party telemetry, tracking, or user data collection exists.
+The extension operates completely locally in the user's browser. Lesson drafts, notes, and evidence are stored in local extension storage (`chrome.storage.local`). AI features use Chrome's on-device model, so curriculum text is not sent to any AI service. When the user chooses "Report a problem", the report (the lesson and source links, the flagged item and the user's note) is sent to the team's Google Form, which records the user's code.org email. No third-party telemetry or tracking exists.
 
 ### Data Use Certification
 - [x] Data is NOT sold to third parties

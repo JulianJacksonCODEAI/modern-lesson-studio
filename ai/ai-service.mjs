@@ -1,51 +1,30 @@
 /**
  * AI Service for Lesson Studio AI
- * Multi-backend AI support:
+ * On-device AI only, so lesson text never leaves the computer:
  * 1. Chrome Built-in Prompt API (LanguageModel / window.ai)
- * 2. Gemini API (user-configured API key)
- * 3. Smart Heuristic Curriculum AI Engine (reliable offline fallback)
+ * 2. Smart Heuristic Curriculum AI Engine (reliable offline fallback)
+ * A Code.org-hosted relay may be added later; there is no cloud AI path today.
  */
+
+const ENGINES = ['auto', 'builtin', 'heuristic'];
 
 export class AIService {
   static async getSettings() {
-    return new Promise(resolve => {
-      if (typeof chrome !== 'undefined' && chrome.storage?.local) {
-        chrome.storage.local.get(['geminiApiKey', 'preferredAiModel', 'aiTemperature'], result => {
-          resolve({
-            geminiApiKey: result.geminiApiKey || '',
-            preferredAiModel: result.preferredAiModel || 'auto',
-            aiTemperature: typeof result.aiTemperature === 'number' ? result.aiTemperature : 0.7
-          });
-        });
-      } else if (typeof localStorage !== 'undefined') {
-        resolve({
-          geminiApiKey: localStorage.getItem('lesson_studio_gemini_key') || '',
-          preferredAiModel: 'auto',
-          aiTemperature: 0.7
-        });
-      } else {
-        resolve({
-          geminiApiKey: '',
-          preferredAiModel: 'auto',
-          aiTemperature: 0.7
-        });
-      }
-    });
+    if (typeof chrome !== 'undefined' && chrome.storage?.local) {
+      // 1.5.0 removed Gemini: delete any key an earlier version saved.
+      await chrome.storage.local.remove(['geminiApiKey', 'aiTemperature']).catch(() => {});
+      const { preferredAiModel } = await chrome.storage.local.get('preferredAiModel');
+      return { preferredAiModel: ENGINES.includes(preferredAiModel) ? preferredAiModel : 'auto' };
+    }
+    if (typeof localStorage !== 'undefined') localStorage.removeItem('lesson_studio_gemini_key');
+    return { preferredAiModel: 'auto' };
   }
 
-  static async saveSettings(settings) {
-    return new Promise(resolve => {
-      if (typeof chrome !== 'undefined' && chrome.storage?.local) {
-        chrome.storage.local.set(settings, () => resolve(true));
-      } else if (typeof localStorage !== 'undefined') {
-        if (settings.geminiApiKey !== undefined) {
-          localStorage.setItem('lesson_studio_gemini_key', settings.geminiApiKey);
-        }
-        resolve(true);
-      } else {
-        resolve(true);
-      }
-    });
+  static async saveSettings({ preferredAiModel }) {
+    if (typeof chrome !== 'undefined' && chrome.storage?.local) {
+      await chrome.storage.local.set({ preferredAiModel: ENGINES.includes(preferredAiModel) ? preferredAiModel : 'auto' });
+    }
+    return true;
   }
 
   static async detectCapabilities() {
@@ -76,23 +55,11 @@ export class AIService {
     }
 
     const settings = await this.getSettings();
-    const hasGeminiKey = Boolean(settings.geminiApiKey && settings.geminiApiKey.trim().length > 10);
-
-    let activeEngine = 'heuristic';
-    if (settings.preferredAiModel === 'gemini' && hasGeminiKey) {
-      activeEngine = 'gemini';
-    } else if (settings.preferredAiModel === 'builtin' && hasPromptApi) {
-      activeEngine = 'builtin';
-    } else if (hasPromptApi) {
-      activeEngine = 'builtin';
-    } else if (hasGeminiKey) {
-      activeEngine = 'gemini';
-    }
+    const activeEngine = settings.preferredAiModel !== 'heuristic' && hasPromptApi ? 'builtin' : 'heuristic';
 
     return {
       hasPromptApi,
       promptApiVersion,
-      hasGeminiKey,
       activeEngine,
       heuristicFallbackAvailable: true
     };
@@ -100,7 +67,6 @@ export class AIService {
 
   static async executePrompt({ systemInstruction, prompt, temperature = 0.7 }) {
     const caps = await this.detectCapabilities();
-    const settings = await this.getSettings();
 
     const langConfig = {
       expectedInputs: [{ type: 'text', languages: ['en'] }],
@@ -132,45 +98,7 @@ export class AIService {
       }
     }
 
-    // 2. Gemini API
-    if ((caps.activeEngine === 'gemini' || caps.hasGeminiKey) && settings.geminiApiKey) {
-      try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(settings.geminiApiKey)}`;
-        const body = {
-          contents: [
-            {
-              role: 'user',
-              parts: [{ text: `${systemInstruction ? systemInstruction + '\n\n' : ''}${prompt}` }]
-            }
-          ],
-          generationConfig: {
-            temperature,
-            maxOutputTokens: 2048
-          }
-        };
-
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
-        });
-
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          throw new Error(errData.error?.message || `Gemini API HTTP ${res.status}`);
-        }
-
-        const data = await res.json();
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!text) throw new Error('Empty response from Gemini API');
-
-        return { text, engine: 'Gemini 2.0 Flash' };
-      } catch (err) {
-        console.warn('Gemini API call failed, falling back to heuristic engine:', err);
-      }
-    }
-
-    // 3. Smart Heuristic Engine
+    // 2. Smart Heuristic Engine
     return {
       text: null,
       engine: 'Heuristic Curriculum Engine',
@@ -470,7 +398,7 @@ Format strictly as JSON with this schema:
     // Optional LLM enhancement for deeper reasoning if available
     let aiInsight = '';
     const caps = await this.detectCapabilities();
-    if (caps.hasPromptApi || caps.hasGeminiKey) {
+    if (caps.activeEngine === 'builtin') {
       try {
         const prompt = `Review this lesson overview:
 Title: ${lesson.title}

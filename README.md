@@ -43,7 +43,7 @@ Load one in Chrome: `chrome://extensions` → Developer mode → **Load unpacked
 | `shared/` | Slides/Notion import, read-only lesson view, report |
 | `engine/` | The prototype's tested engine (`dist/`, `browser-fill/`, `api-companion/`) plus `session.mjs`, which connects it to the side panel. `engine/test/` holds its tests. |
 | `advanced/` | Full build only: Advanced tab, wide editor (`studio/`), Notion connector |
-| `ai/` | AI helpers (Chrome built-in AI, Gemini with a key, or rules only) |
+| `ai/` | AI helpers (Chrome built-in AI on the user's computer, or rules only; no cloud AI) |
 | `test/` | Report tests |
 | `scripts/` | `build.mjs` (makes both builds and checks them), `preview-server.mjs` (browser preview with a fake `chrome` API) |
 | `_legacy/` | The earlier AntiGrav side panel, popup and `core/` copy. Not shipped. |
@@ -55,7 +55,7 @@ Run the tests on their own: `npm test` (309 tests).
 - Live testing so far (2026-11-22): import, Check, Report and Prepare work in Chrome. The first live save (lesson 11, 5 changes) landed, but the readback flagged the new untitled section because Level Builder saves its empty fields as null. That check is fixed: the same saved lesson now passes with 0 mismatches. Later saves linking two existing resources and adding three objectives passed with 0 mismatches. Adding a brand-new shared resource hasn't been run live yet.
 - Objectives: Notion objectives Level Builder doesn't have are added (live-tested 2026-11-22). If adding ever fails, the Save tab can prepare without them and list them to add by hand.
 - Level links: slides with "Lesson N, Level M" text need confirmed level mappings. The team build doesn't map levels, so those levels aren't added; Check lists them under "Things to look at".
-- The team build's AI module still contains the Gemini code path, but the team build has no way to enter a key and drops the Gemini host permission.
+- AI runs only through Chrome's built-in model (recent Chrome on suitable hardware); elsewhere the rules engine runs. A Code.org-hosted AI relay is planned, not built.
 
 ## Working on Lesson Studio
 

@@ -35,9 +35,20 @@ export class NotionConnector {
     });
   }
 
+  static async clearToken() {
+    if (typeof chrome !== 'undefined' && chrome.storage?.local) {
+      await chrome.storage.local.remove('notionIntegrationToken');
+    } else {
+      localStorage.removeItem('lesson_studio_notion_token');
+    }
+    return true;
+  }
+
   static async setToken(token) {
     return new Promise(resolve => {
       const clean = (token || '').trim();
+      // An empty box deletes the token rather than storing an empty string.
+      if (!clean) return this.clearToken().then(resolve);
       if (typeof chrome !== 'undefined' && chrome.storage?.local) {
         chrome.storage.local.set({ notionIntegrationToken: clean }, () => resolve(true));
       } else {

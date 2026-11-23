@@ -38,20 +38,20 @@ export function installAdvanced({tablist,main,tabButtons,getContext}){
  const wide=el('section',{className:'card'},el('h2',{textContent:'Wide editor'}),el('p',{className:'muted',textContent:'Full editing, Markdown export and workspace backups. To save to Level Builder, come back to the Save tab.'}),el('div',{className:'row'},studio));
 
  // AI settings.
- const model=el('select',{id:'adv-model'},...[['auto','Automatic'],['builtin','Chrome built-in AI'],['gemini','Gemini (needs a key)'],['heuristic','Rules only, no AI']].map(([value,textContent])=>el('option',{value,textContent})));
- const key=el('input',{id:'adv-gemini',type:'password',autocomplete:'off',spellcheck:false});
+ const model=el('select',{id:'adv-model'},...[['auto','Automatic'],['builtin','Chrome built-in AI (on this computer)'],['heuristic','Rules only, no AI']].map(([value,textContent])=>el('option',{value,textContent})));
  const notion=el('input',{id:'adv-notion',type:'password',autocomplete:'off',spellcheck:false});
  const saveBtn=el('button',{type:'submit',className:'btn primary',textContent:'Save settings'});
+ const forgetBtn=el('button',{type:'button',className:'btn',textContent:'Forget Notion token'});
  const form=el('form',{className:'card'},el('h2',{textContent:'AI and Notion settings'}),
   el('label',{htmlFor:'adv-model',textContent:'Which AI runs'}),model,
-  el('label',{htmlFor:'adv-gemini',textContent:'Gemini API key'}),key,
   el('label',{htmlFor:'adv-notion',textContent:'Notion integration token (for importing from a pasted link)'}),notion,
-  el('p',{className:'muted',textContent:'Keys are stored only in this browser. With a Gemini key, lesson text is sent to Google Gemini.'}),
-  el('div',{className:'row'},saveBtn));
+  el('p',{className:'muted',textContent:'AI runs on this computer; lesson text is not sent anywhere. The Notion token is stored only in this browser. Leave the box empty and save, or press Forget Notion token, to delete it.'}),
+  el('div',{className:'row'},saveBtn,forgetBtn));
  form.addEventListener('submit',async e=>{e.preventDefault();
-  await AIService.saveSettings({preferredAiModel:model.value,geminiApiKey:key.value.trim()});
+  await AIService.saveSettings({preferredAiModel:model.value});
   await NotionConnector.setToken(notion.value.trim());say('Settings saved.','ok');});
- (async()=>{const s=await AIService.getSettings();model.value=s.preferredAiModel||'auto';key.value=s.geminiApiKey||'';notion.value=(await NotionConnector.getToken())||'';})();
+ forgetBtn.addEventListener('click',async()=>{await NotionConnector.clearToken();notion.value='';say('Notion token deleted from this browser.','ok');});
+ (async()=>{const s=await AIService.getSettings();model.value=s.preferredAiModel||'auto';notion.value=(await NotionConnector.getToken())||'';})();
 
  panel.append(el('div',{className:'pad'},el('p',{className:'lead',textContent:'Advanced tools for Julian and Angi. Not in the team build.'}),diag,wide,form,msg));
  main.append(panel);
