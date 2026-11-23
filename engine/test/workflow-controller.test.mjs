@@ -157,7 +157,11 @@ function sharedScreenHarness(store,run,{uncertain=false}={}){
  const demo=createDemo({title:'Shared controller fixture',objectives:['Explain evidence'],resources:[],slides:[{id:'a',number:1,notes:'Activity (5 minutes)'},{id:'s',number:2,notes:'Discuss evidence'}]});
  demo.pkg.lesson.resources=[{key:'guide',name:'Evidence guide',type:'Handout',audience:'Student',url:'https://example.org/guide'}];
  demo.pkg.lesson.frontMatter.vocabulary=[{word:'Evidence',definition:'Support for a claim.'}];demo.pkg.baseline=structuredClone(demo.pkg.lesson);
- const destination=demo.destination,catalog={resources:[],vocabularies:[]},calls=[];let posts=0;
+ // AntiGrav write guard: native runs may only target sandbox lessons, so the synthetic demo destination is re-pointed at lesson 11.
+ const destination={id:8898985,url:'https://levelbuilder-studio.code.org/lessons/8898985/edit'};demo.destination=destination;demo.pkg.sandbox=destination.url;
+ for(const capture of [demo.editor,demo.server])if(capture?.destination)capture.destination=structuredClone(destination);
+ for(const saved of [demo.server,demo.editor?.saved])if(saved&&'id' in saved)saved.id=destination.id;
+ const catalog={resources:[],vocabularies:[]},calls=[];let posts=0;
  const key='reviewed-transfer-session-'+run;
  store.setItem(key,JSON.stringify({mode:'native',tabId:33,pkg:demo.pkg,destination,practiceConfirmed:true}));
  const overrides={location:new URL('chrome-extension://test/browser-fill/workflow.html?run='+run+'#33'),chrome:{

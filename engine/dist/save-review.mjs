@@ -189,7 +189,7 @@ export async function verifySavedReadback(review,saved){
    const id=String(sl.id);if(!/^[1-9]\d*$/.test(id)||!Number.isSafeInteger(Number(id))||newIds.has(id))mismatches.push('A new-section association has a missing, reused or duplicate identity.');else newIds.add(id);
    try{return newSectionLink(sl,index+1,{persisted:true});}catch(error){mismatches.push(error.message);return sl;}
   });
-  if(canonical(raw)!==canonical(change.section))mismatches.push('A new section or its callouts differ from the exact reviewed structure.');
+  if(canonical(savedSectionBlanks(raw))!==canonical(savedSectionBlanks(change.section)))mismatches.push('A new section or its callouts differ from the exact reviewed structure.');
   activity.activitySections.pop();
  }
  const activityIds=new Set(review.baseline.activities.map(a=>String(a.id)));
@@ -248,4 +248,15 @@ export function buildSavedLessonPayload(freshSaved,candidate,originalLessonJson)
  assert(freshSaved.announcements===null||Array.isArray(freshSaved.announcements),'Saved announcements are incomplete.');payload.announcements=JSON.stringify(freshSaved.announcements);
  payload.originalLessonData=originalLessonJson;
  return payload;
+}
+
+// AntiGrav (first live save, 2026-11-22): Level Builder saves an empty new section's title, remarks, callouts and
+// level-group name as null, where the reviewed section has '', false, [] and ''. Treat those blanks as equal; any real content still must match.
+export function savedSectionBlanks(section){
+ if(!section||typeof section!=='object')return section;
+ const s=clone(section);
+ for(const k of ['name','progressionName','description'])if(s[k]==null)s[k]='';
+ if(s.remarks==null)s.remarks=false;
+ if(s.tips==null)s.tips=[];
+ return s;
 }

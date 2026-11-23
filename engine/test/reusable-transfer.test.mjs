@@ -17,7 +17,8 @@ function harness(){
  return {state,io,storage};
 }
 test('destination selection requires explicit practice confirmation and an exact canonical HTTPS lesson editor',()=>{
- assert.deepEqual(selectDestination('https://levelbuilder-studio.code.org/lessons/123/edit',true),{id:123,url:'https://levelbuilder-studio.code.org/lessons/123/edit'});
+ for(const id of [8898984,8898985,123])assert.deepEqual(selectDestination(`https://levelbuilder-studio.code.org/lessons/${id}/edit`,true),{id,url:`https://levelbuilder-studio.code.org/lessons/${id}/edit`});
+ assert.throws(()=>selectDestination('https://levelbuilder-studio.code.org/lessons/8898985/edit',false),/Confirm/);
  assert.throws(()=>selectDestination('https://levelbuilder-studio.code.org/lessons/123/edit',false),/Confirm/);
  for(const url of ['http://levelbuilder-studio.code.org/lessons/123/edit','https://code.org/lessons/123/edit','https://levelbuilder-studio.code.org/lessons/123/edit?other=1','https://levelbuilder-studio.code.org/lessons/0/edit','https://levelbuilder-studio.code.org/lessons/999999999999999999/edit'])assert.throws(()=>selectDestination(url,true));
 });
