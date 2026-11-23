@@ -1,3 +1,4 @@
+// Firefox: content scripts must use content.fetch so requests carry the page's own sign-in (AntiGrav 1.4.0).
 import {reviewedLevelGroups} from './reviewed-structure.mjs';
 // Serialized into the assigned editor. GET only; never submit the level forms.
 export async function readAssignedLevelUsage(request={}){
@@ -11,7 +12,7 @@ export async function readAssignedLevelUsage(request={}){
   if(JSON.parse(document.querySelector('script[data-lesson]')?.getAttribute('data-lesson')||'null')?.id!==destination.id)throw Error('The assigned lesson identity is missing.');
   const {levelId,name}=request;
   if(!/^\d+$/.test(String(levelId))||Number(levelId)<1||typeof name!=='string'||!name.trim())throw Error('An exact existing-level identity is required.');
-  const response=await fetch('/levels/'+levelId+'/edit',{credentials:'same-origin',redirect:'error',cache:'no-store'});
+  const response=await (globalThis.content&&typeof globalThis.content.fetch==='function'?globalThis.content.fetch.bind(globalThis.content):fetch)('/levels/'+levelId+'/edit',{credentials:'same-origin',redirect:'error',cache:'no-store'});
   if(!response.ok)throw Error('Could not read existing level usage.');
   const doc=new DOMParser().parseFromString(await response.text(),'text/html');
   if(doc.querySelector('#level_name')?.getAttribute('value')!==name)throw Error('The returned level name does not match its approved identity.');

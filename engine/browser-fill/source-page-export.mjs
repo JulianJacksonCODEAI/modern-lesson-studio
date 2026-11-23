@@ -1,9 +1,10 @@
+// Firefox: content scripts must use content.fetch so requests carry the page's own sign-in (AntiGrav 1.4.0).
 // Serialized into the user-selected Slides tab. Read-only, same-origin export.
 export async function sourcePageExport(expectedUrl){
  const here=new URL(location.href),expected=new URL(expectedUrl),pattern=/^\/presentation\/(?:u\/\d+\/)?d\/([A-Za-z0-9_-]+)\/(?:edit|preview)(?:\/|$)/;
  const id=here.pathname.match(pattern)?.[1];
  if(here.origin!=='https://docs.google.com'||expected.origin!==here.origin||!id||expected.pathname.match(pattern)?.[1]!==id)throw Error('Return to the selected Google Slides deck before importing.');
- const response=await fetch('/presentation/d/'+id+'/export/pptx',{method:'GET',credentials:'same-origin',signal:AbortSignal.timeout(30000)});
+ const response=await (globalThis.content&&typeof globalThis.content.fetch==='function'?globalThis.content.fetch.bind(globalThis.content):fetch)('/presentation/d/'+id+'/export/pptx',{method:'GET',credentials:'same-origin',signal:AbortSignal.timeout(30000)});
  if(!response.ok)throw Error('Google could not export this deck. Check access or import a downloaded PowerPoint file.');
  if(!response.body)throw Error('Google returned an empty export.');
  const reader=response.body.getReader(),chunks=[];let size=0;

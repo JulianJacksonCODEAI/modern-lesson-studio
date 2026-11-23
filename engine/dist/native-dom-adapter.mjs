@@ -1,3 +1,4 @@
+// Firefox: content scripts must use content.fetch so requests carry the page's own sign-in (AntiGrav 1.4.0).
 import {clone,digest,canonical,TEXT_FIELDS} from './transfer-core.mjs';
 import {normalizeNativeCapture} from './transfer-native.mjs';
 
@@ -73,7 +74,7 @@ export async function nativeEditorBridge(request={action:'read'}){
  if(request.action==='read')return read();
  if(request.action==='authorize-reviewed-reload'){
   if(request.mode!=='restore-reviewed-rehearsal'||request.initialCapture?.saved?.id!==destination.id)throw Error('Invalid rehearsal restore point.');const current=read();if(current.blockers.length||await fingerprint(current)!==request.expectedCaptureDigest||stable(current.saved)!==stable(request.initialCapture.saved))throw Error('Outside edits prevent editor restoration.');
-  const response=await fetch('/lessons/'+destination.id+'/edit',{credentials:'same-origin',redirect:'error',cache:'no-store'});if(!response.ok)throw Error('Saved baseline verification failed before restoration.');const doc=new DOMParser().parseFromString(await response.text(),'text/html'),saved=JSON.parse(doc.querySelector('script[data-lesson]')?.getAttribute('data-lesson')||'null');if(stable(saved)!==stable(request.initialCapture.saved))throw Error('The saved lesson changed. Preserve the editor instead of reloading.');checkDeadline();if(await fingerprint(read())!==request.expectedCaptureDigest)throw Error('Outside edits appeared during restoration checks.');return {kind:'reviewed-reload-authorization',captureDigest:request.expectedCaptureDigest,baselineDigest:await fingerprint(saved)};
+  const response=await (globalThis.content&&typeof globalThis.content.fetch==='function'?globalThis.content.fetch.bind(globalThis.content):fetch)('/lessons/'+destination.id+'/edit',{credentials:'same-origin',redirect:'error',cache:'no-store'});if(!response.ok)throw Error('Saved baseline verification failed before restoration.');const doc=new DOMParser().parseFromString(await response.text(),'text/html'),saved=JSON.parse(doc.querySelector('script[data-lesson]')?.getAttribute('data-lesson')||'null');if(stable(saved)!==stable(request.initialCapture.saved))throw Error('The saved lesson changed. Preserve the editor instead of reloading.');checkDeadline();if(await fingerprint(read())!==request.expectedCaptureDigest)throw Error('Outside edits appeared during restoration checks.');return {kind:'reviewed-reload-authorization',captureDigest:request.expectedCaptureDigest,baselineDigest:await fingerprint(saved)};
  }
 
  checkDeadline();
@@ -89,7 +90,7 @@ export async function nativeEditorBridge(request={action:'read'}){
   const approvedDigest=await fingerprint({method:req.method,url:req.url,contentType:req.contentType,payload:semantic,...(review.transport?{transport:review.transport}:{}),...(review.preservationTest?{preservationTest:true}:{})});
   if(approvedDigest!==request.approval.approvedRequestDigest)throw Error('The request does not match the user-approved save.');
   const current=read();if(current.blockers.length||await fingerprint(current)!==request.expectedCaptureDigest)throw Error('The editor changed before saving.');
-  const fresh=await fetch('/lessons/'+destination.id+'/edit',{credentials:'same-origin',redirect:'error',cache:'no-store'});
+  const fresh=await (globalThis.content&&typeof globalThis.content.fetch==='function'?globalThis.content.fetch.bind(globalThis.content):fetch)('/lessons/'+destination.id+'/edit',{credentials:'same-origin',redirect:'error',cache:'no-store'});
   if(!fresh.ok)throw Error('The final saved-baseline check failed.');
   const doc=new DOMParser().parseFromString(await fresh.text(),'text/html'),raw=doc.querySelector('script[data-lesson]')?.getAttribute('data-lesson');
   if(!raw||raw!==payload.originalLessonData||await fingerprint(JSON.parse(raw))!==review.baselineDigest)throw Error('Saved content changed. The save was blocked.');
@@ -138,7 +139,7 @@ export async function nativeEditorBridge(request={action:'read'}){
   checkDeadline();if(await fingerprint(read())!==request.expectedCaptureDigest)throw Error('The editor changed during the final check.');
   // The controller persisted the attempt before this call. Never retry here.
   try{
-   const response=await fetch('/lessons/'+destination.id,{method:'PUT',credentials:'same-origin',redirect:'error',headers:{'Content-Type':req.contentType,'Accept':'application/json','X-Requested-With':'XMLHttpRequest','X-CSRF-Token':csrf},body:req.body});
+   const response=await (globalThis.content&&typeof globalThis.content.fetch==='function'?globalThis.content.fetch.bind(globalThis.content):fetch)('/lessons/'+destination.id,{method:'PUT',credentials:'same-origin',redirect:'error',headers:{'Content-Type':req.contentType,'Accept':'application/json','X-Requested-With':'XMLHttpRequest','X-CSRF-Token':csrf},body:req.body});
    let errorMessage,responseSummary;
    if(response.ok){
     // Keep only allowlisted lesson identities/counts, never an HTML page,
@@ -172,7 +173,7 @@ export async function nativeEditorBridge(request={action:'read'}){
   if(!['resources','vocabularies'].includes(kind)||!record||!Number.isSafeInteger(record.id)||!record.key)throw Error('The shared-record identity is missing.');
   const script=document.querySelector('script[data-lesson][data-unitforlesson]'),unit=JSON.parse(script?.getAttribute('data-unitforlesson')||'null');if(!Number.isSafeInteger(unit?.courseVersionId)||unit.courseVersionId<1||request.action==='lookup-shared-record'&&unit.courseVersionId!==request.courseVersionId)throw Error('The native course scope differs from the shared-record review.');
   const query=kind==='resources'?record.name:record.word;if(typeof query!=='string'||query.trim().length<3||query.length>255)throw Error('Shared records require a searchable name.');
-  checkDeadline();const response=await fetch('/'+kind+'/search?'+new URLSearchParams({query,limit:'40',courseVersionId:String(unit.courseVersionId)}),{credentials:'same-origin',redirect:'error',cache:'no-store',headers:{'X-Requested-With':'XMLHttpRequest'}});if(!response.ok)throw Error('Shared-record verification failed.');const records=await response.json();if(!Array.isArray(records)||records.length>=40||records.filter(r=>stable(r)===stable(record)).length!==1)throw Error('The shared record changed or its search is incomplete.');
+  checkDeadline();const response=await (globalThis.content&&typeof globalThis.content.fetch==='function'?globalThis.content.fetch.bind(globalThis.content):fetch)('/'+kind+'/search?'+new URLSearchParams({query,limit:'40',courseVersionId:String(unit.courseVersionId)}),{credentials:'same-origin',redirect:'error',cache:'no-store',headers:{'X-Requested-With':'XMLHttpRequest'}});if(!response.ok)throw Error('Shared-record verification failed.');const records=await response.json();if(!Array.isArray(records)||records.length>=40||records.filter(r=>stable(r)===stable(record)).length!==1)throw Error('The shared record changed or its search is incomplete.');
   // React Select shows labels, not identities, and may return only seven options.
   // A unique visible option cannot distinguish same-label records outside that window.
   const sharedLabel=value=>kind==='resources'?value.name+' - '+value.url:value.word+' - '+value.definition;
