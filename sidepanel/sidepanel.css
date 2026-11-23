@@ -96,6 +96,9 @@ fieldset.choice legend{font-size:.85rem;color:var(--warn);font-weight:600;paddin
 .radio-row{display:flex;gap:8px;align-items:start}
 .radio-row input{margin-top:.3rem}
 
+.warnbox{border-color:var(--warn);background:var(--warn-bg)}
+.access{padding-bottom:0}
+
 .foot{display:flex;gap:12px;justify-content:space-between;align-items:center;padding:10px 16px;border-top:1px solid var(--border);background:var(--surface);font-size:.85rem;flex-wrap:wrap}
 
 /* Report dialog */

@@ -356,8 +356,19 @@ async function loadAdvanced(){
  }catch{/* team build: no Advanced tab */}
 }
 
+// ---------- site access (Firefox asks the user after install; Chromium grants it at install) ----------
+const ORIGINS=chrome.runtime.getManifest().host_permissions||[];
+async function checkAccess(){
+ let ok=true;try{ok=await chrome.permissions.contains({origins:ORIGINS});}catch{ok=true;}
+ $('access-banner').hidden=ok;return ok;
+}
+$('btn-allow-access').addEventListener('click',()=>{
+ // request() must be the first call in the click handler (user gesture); nothing is awaited before it.
+ chrome.permissions.request({origins:ORIGINS}).then(granted=>{checkAccess();toast(granted?'Access allowed. You can import now.':"Access not allowed. Lesson Studio can't read your pages without it.",5000);}).catch(err=>toast('Could not ask for access: '+err.message,5000));
+});
+
 // ---------- start ----------
 $('version').textContent='v'+VERSION;
-imports=await loadImports();rebuild();setupAI();showPending();loadAdvanced();
+checkAccess();imports=await loadImports();rebuild();setupAI();showPending();loadAdvanced();
 const pending=await chrome.storage.session.get('openStep').catch(()=>({}));
 selectStep(pending.openStep&&STEPS.includes(pending.openStep)?pending.openStep:(built?'check':'import'));
