@@ -16,6 +16,15 @@ INSTALL (about 2 minutes)
 
 Sign in to Chrome with your code.org Google account, and to Level Builder.
 
+Microsoft Edge, Brave, Arc and Opera work the same way. Use their extensions page
+instead (Edge: edge://extensions) and turn on Developer mode there.
+
+FIREFOX
+Use the Firefox file (lesson-studio-team-firefox-....xpi) from the same folder.
+Open it in Firefox and click Add. The first time you open Lesson Studio, click
+"Allow access" so it can read Slides, Notion and Level Builder. In Firefox,
+Lesson Studio opens in the sidebar.
+
 USE IT
 1. Import: open the lesson's Slides deck and click "Import the open Slides deck".
    Then open its Notion page and click "Import the open Notion page".

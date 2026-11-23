@@ -6,6 +6,23 @@ Release steps: bump `manifest.json`, add a section here, merge the pull request,
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-11-22
+
+### Added
+- Firefox: `build.ps1` also makes `build/team-firefox` and `build/full-firefox` (same files, Firefox manifest: sidebar instead of side panel, background script, fixed add-on IDs, Firefox 128 or later) and `build/lesson-studio-team-firefox-<version>.zip` for signing on addons.mozilla.org. Mozilla's `web-ext lint` runs in the build: the team build must have no errors or warnings, the full build no errors.
+- An "Allow access" banner appears when the browser hasn't granted access to Slides, Notion and Level Builder (Firefox asks after install; Chromium grants it at install, so it never shows there).
+- The install guide covers Edge, Brave, Arc, Opera and Firefox.
+- The Save tab's lesson field accepts unit and course lesson links (`/s/<unit>/lessons/<n>/edit`, `/courses/<course>/units/<u>/lessons/<n>`): Lesson Studio opens the page, reads the lesson's ID and switches to its editor.
+
+### Changed
+- Page reads that Lesson Studio runs inside Level Builder and Google Slides use the page's own `fetch` in Firefox (`content.fetch`) so they carry the user's sign-in. Chromium is unchanged.
+- The toolbar icon opens Chrome's side panel in Chromium and toggles the sidebar in Firefox.
+- Report a problem: if the direct send is blocked, Lesson Studio opens the pre-filled form in a background tab, ticks "Record my email" (the form collects verified emails), presses Google's own Submit, checks for the confirmation page and closes the tab. This carries the user's Google sign-in in Firefox. If that fails too, the Report window offers "Send it in Google Forms instead", which opens the form with every field filled in for the user to Submit. Waiting reports have the same option in the footer.
+
+### Tested live (Firefox, 2026-11-22)
+- Sidebar, Allow access, Import, Check, Prepare, Save and the new lesson links all work.
+- Sending a report directly fails in Firefox (no Google sign-in on the request; and since the form collects verified emails, Google returns HTTP 400 without the "Record my email" consent). The background-tab send works: reports arrive with the sender's verified email.
+
 ## [1.3.1] - 2026-11-22
 
 ### Added

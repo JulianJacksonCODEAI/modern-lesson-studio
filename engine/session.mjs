@@ -26,6 +26,17 @@ export function destinationFromTab(tab){
  const d=m?{id:Number(m[1]),url}:null;
  return validDestination(d)?d:null;
 }
+// Other Level Builder lesson links name the lesson by its position in a unit (/s/<unit>/lessons/<n>/edit) or
+// course (/courses/<course>/units/<u>/lessons/<n>). Those are opened, then the page's own lesson ID is read.
+export function lessonPageFromInput(text){
+ const t=String(text||'').trim().replace(/^(?!https?:\/\/)(levelbuilder-studio\.code\.org)/,'https://$1');
+ let u;try{u=new URL(t);}catch{return null;}
+ if(u.protocol!=='https:'||u.hostname!=='levelbuilder-studio.code.org')return null;
+ const p=u.pathname.replace(/\/+$/,'');
+ const unit=/^\/s\/[\w-]+\/lessons\/[1-9]\d*(?:\/edit)?$/.test(p),course=/^\/courses\/[\w-]+\/units\/[1-9]\d*\/lessons\/[1-9]\d*(?:\/edit)?$/.test(p);
+ if(!unit&&!course)return null;
+ return 'https://levelbuilder-studio.code.org'+(p.endsWith('/edit')?p:p+'/edit');
+}
 export function editorUrlFromInput(text){
  const t=String(text||'').trim();
  const id=t.match(/levelbuilder-studio\.code\.org\/lessons\/([1-9]\d*)(?:\/edit)?\/?(?:[?#].*)?$/)?.[1]||t.match(/^([1-9]\d*)$/)?.[1];

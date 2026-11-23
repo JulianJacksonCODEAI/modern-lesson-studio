@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {writeZip,readZip} from './zip.mjs';
+import {firefoxManifest} from './firefox-manifest.mjs';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const out=path.join(root,'build');
@@ -93,8 +94,27 @@ if(!problems.length){
  const info=JSON.parse(back.find(e=>e.name==='lesson-studio/build-info.json').data);if(info.edition!=='team')problems.push('Team zip: not the team edition.');
 }
 
+// ---- Firefox builds: same files, Firefox manifest (sidebar instead of side panel, background script, gecko id) ----
+const firefoxZips=[];
+if(!problems.length)for(const [edition,from,mf] of [['team','team',teamManifest],['full','full',{...manifest,name:manifest.name+' (full)'}]]){
+ const target=path.join(out,from+'-firefox');fs.rmSync(target,{recursive:true,force:true});fs.cpSync(path.join(out,from),target,{recursive:true});
+ writeJson(path.join(target,'manifest.json'),firefoxManifest(mf,{edition}));
+ writeJson(path.join(target,'build-info.json'),{edition,browser:'firefox',version:manifest.version,builtAt});
+ if(edition==='team'){
+  // Firefox wants manifest.json at the zip root (for signing and about:debugging).
+  const files=walk(target).map(f=>f.replace(/^build\/team-firefox\//,'')).sort();
+  const name=`lesson-studio-team-firefox-${manifest.version}.zip`;
+  fs.writeFileSync(path.join(out,name),writeZip(files.map(f=>({name:f,data:fs.readFileSync(path.join(target,f))}))));
+  const back=readZip(fs.readFileSync(path.join(out,name)));
+  if(!back.some(e=>e.name==='manifest.json'))problems.push('Firefox zip: manifest.json is not at the root.');
+  if(back.some(e=>/^advanced\//.test(e.name)))problems.push('Firefox zip: contains advanced files.');
+  firefoxZips.push(name);
+ }
+}
+
 console.log(`full: ${all.length+2} files → build/full`);
 console.log(`team: ${teamFiles.length} files → build/team`);
 if(zipName)console.log(`share: build/${zipName} (team build + install guide)`);
+if(firefoxZips.length)console.log(`firefox: build/team-firefox, build/full-firefox, build/${firefoxZips[0]} (unsigned; sign before sharing)`);
 if(problems.length){console.error('\nBUILD CHECK FAILED:\n- '+problems.join('\n- '));process.exit(1);}
 console.log('Build checks passed: no broken imports in either build, and no advanced code in the team build.');

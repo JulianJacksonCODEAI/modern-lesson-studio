@@ -24,6 +24,13 @@
  </header>
 
  <main>
+  <div id="access-banner" class="pad access" hidden>
+   <section class="card warnbox" aria-labelledby="access-h">
+    <h2 id="access-h">Allow Lesson Studio to read your lesson pages</h2>
+    <p>This browser asks before an extension can read Google Slides, Notion and Level Builder. Lesson Studio only reads the pages you import from and saves to the lesson you choose.</p>
+    <button type="button" id="btn-allow-access" class="btn primary">Allow access</button>
+   </section>
+  </div>
   <!-- 1 · IMPORT -->
   <div role="tabpanel" id="panel-import" aria-labelledby="tab-import" tabindex="0">
    <div class="pad">
@@ -88,7 +95,7 @@
       <button type="button" id="btn-change-lesson" class="linkish">Use a different lesson</button>
      </div>
      <form id="dest-open" class="dest-open">
-      <label for="lesson-link">Lesson editor link or lesson ID</label>
+      <label for="lesson-link">Lesson link or lesson ID</label>
       <div class="row">
        <input id="lesson-link" name="lesson" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://levelbuilder-studio.code.org/lessons/123/edit">
        <button type="submit" class="btn">Open</button>
@@ -151,6 +158,7 @@
   <label for="report-note">What's wrong? <span class="req">required</span></label>
   <textarea id="report-note" name="note" rows="4" required autofocus></textarea>
   <p id="report-error" class="error" role="alert"></p>
+  <button type="button" id="report-fallback" class="btn" hidden>Send it in Google Forms instead</button>
   <div class="row end">
    <button type="button" id="report-cancel" class="btn quiet" value="cancel">Cancel</button>
    <button type="submit" id="report-send" class="btn primary">Send report</button>

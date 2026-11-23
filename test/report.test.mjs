@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {buildReport,formBody,sendReport,suggestType,PROBLEM_TYPES} from '../shared/report.mjs';
+import {buildReport,formBody,sendReport,suggestType,prefilledFormUrl,sendReportViaFormTab,submitReportFormInPage,reportFormOutcome,PROBLEM_TYPES} from '../shared/report.mjs';
 
 const config=JSON.parse(readFileSync(new URL('../shared/report-form.json',import.meta.url)));
 const context={lesson:{title:'AI Lab',url:'https://levelbuilder-studio.code.org/lessons/8898985/edit'},
@@ -54,4 +54,55 @@ test('sending reports success, and a Google sign-in redirect as a failure',async
  assert.equal(ok.sent,true);assert.equal(seen.opts.method,'POST');assert.equal(seen.opts.credentials,'include');
  await assert.rejects(sendReport(config,fields,'other','note',{fetchImpl:async()=>({ok:true,status:200,url:'https://accounts.google.com/v3/signin/identifier'})}),/sign in/);
  await assert.rejects(sendReport(config,fields,'other','note',{fetchImpl:async()=>({ok:false,status:400,url:config.submitUrl})}),/error \(400\)/);
+});
+
+test('the Google Forms fallback is a pre-filled viewform link with every field',()=>{
+ const {fields}=buildReport(context);
+ const url=new URL(prefilledFormUrl(config,fields,'missing content','Objectives are missing.'));
+ assert.equal(url.origin+url.pathname,config.submitUrl.replace(/\/formResponse$/,'/viewform'));
+ assert.equal(url.searchParams.get('usp'),'pp_url');
+ for(const entry of Object.values(config.fields))assert.ok(url.searchParams.has(entry),entry);
+ assert.equal(url.searchParams.get(config.fields.problemType),'missing content');
+ assert.equal(url.searchParams.get(config.fields.note),'Objectives are missing.');
+ const long=new URL(prefilledFormUrl(config,{...fields,flaggedItem:'x'.repeat(20000)},'other','n'));
+ assert.ok(long.href.length<9000,'long fields are shortened to keep the link usable');
+ assert.ok(!new URL(prefilledFormUrl(config,fields,'not a type','n')).searchParams.has(config.fields.problemType),'unknown types are left for the user to choose');
+});
+function fakeBrowser(results,{landUrl=undefined}={}){
+ const log={created:[],removed:[],injected:[]};const listeners=new Set();
+ const fire=url=>setTimeout(()=>listeners.forEach(l=>l(7,{status:'complete'},{id:7,url})),5);
+ const tabs={create:async o=>{log.created.push(o);fire(landUrl??o.url);return {id:7};},get:async()=>({id:7,status:'loading'}),remove:async id=>{log.removed.push(id);},onUpdated:{addListener:l=>listeners.add(l),removeListener:l=>listeners.delete(l)}};
+ const scripting={executeScript:async o=>{log.injected.push(o);const result=results[o.func.name];if(o.func===submitReportFormInPage&&result?.ok)fire(config.submitUrl);return [{result}];}};
+ return {tabs,scripting,log};
+}
+
+test('the background form tab opens the pre-filled form, submits it in the page, checks the confirmation and closes the tab',async()=>{
+ const {fields}=buildReport(context);
+ const ok=fakeBrowser({submitReportFormInPage:{ok:true,emailBox:true},reportFormOutcome:{recorded:true}});
+ const r=await sendReportViaFormTab(config,fields,'other','note',ok);
+ assert.equal(r.via,'form-tab');
+ assert.equal(ok.log.created[0].active,false,'opened in the background');
+ const url=new URL(ok.log.created[0].url);
+ assert.match(url.pathname,/\/viewform$/);
+ assert.equal(url.searchParams.get(config.fields.note),'note');
+ assert.equal(url.searchParams.get(config.fields.problemType),'other');
+ assert.deepEqual(ok.log.injected.map(i=>i.func),[submitReportFormInPage,reportFormOutcome]);
+ assert.deepEqual(ok.log.removed,[7]);
+ const signIn=fakeBrowser({},{landUrl:'https://accounts.google.com/ServiceLogin?x'});
+ await assert.rejects(sendReportViaFormTab(config,fields,'other','note',signIn),/sign in/);
+ assert.deepEqual(signIn.log.removed,[7],'tab closed after a failure too');
+ await assert.rejects(sendReportViaFormTab(config,fields,'other','note',fakeBrowser({submitReportFormInPage:{ok:false,error:'sign-in'}})),/sign in/);
+ await assert.rejects(sendReportViaFormTab(config,fields,'other','note',fakeBrowser({submitReportFormInPage:{ok:true},reportFormOutcome:{recorded:false}})),/did not accept/);
+ await assert.rejects(sendReportViaFormTab(config,fields,'other','',fakeBrowser({})),/short note/);
+});
+
+test('the confirmation check treats a returned form or a validation error as rejected',()=>{
+ const saved=globalThis.document,savedLoc=globalThis.location;
+ globalThis.location={href:'x'};
+ try{
+  globalThis.document={querySelector:()=>null,body:{innerText:'Your response has been recorded.'}};
+  assert.equal(reportFormOutcome().recorded,true);
+  globalThis.document={querySelector:s=>s.includes('data-validation-failed')?{}:null,body:{innerText:''}};
+  assert.equal(reportFormOutcome().recorded,false);
+ }finally{globalThis.document=saved;globalThis.location=savedLoc;}
 });

@@ -1,8 +1,8 @@
 // Lesson Studio side panel (team v1): Import → Check (read-only) → Save to Level Builder → Report.
 import {loadImports,saveImports,clearImports,importSlides,importNotion,buildLesson} from '../shared/sources.mjs';
 import {renderLesson,renderReview} from '../shared/lesson-view.mjs';
-import {buildReport,sendReport,queueReport,pendingReports,removePending,PROBLEM_TYPES,PROBLEM_LABELS} from '../shared/report.mjs';
-import {createSession,destinationFromTab,editorUrlFromInput,reviewPackageFor,SANDBOX_LESSONS} from '../engine/session.mjs';
+import {buildReport,sendReport,sendReportViaFormTab,queueReport,pendingReports,removePending,prefilledFormUrl,PROBLEM_TYPES,PROBLEM_LABELS} from '../shared/report.mjs';
+import {createSession,destinationFromTab,editorUrlFromInput,lessonPageFromInput,lessonDescriptionInPage,reviewPackageFor,SANDBOX_LESSONS} from '../engine/session.mjs';
 import {AIService} from '../ai/ai-service.mjs';
 
 const $=id=>document.getElementById(id);
@@ -137,11 +137,32 @@ function renderDestination(){
 }
 $('own-lesson').addEventListener('change',()=>{session?.confirmOwnership($('own-lesson').checked);refresh();});
 $('btn-change-lesson').addEventListener('click',()=>{$('dest-open').hidden=false;$('lesson-link').focus();});
+// Resolves when the tab finishes loading (or already has).
+async function tabLoaded(tabId,ms=30000){
+ const now=await chrome.tabs.get(tabId);if(now.status==='complete')return now;
+ return new Promise((resolve,reject)=>{
+  const on=(id,info,tab)=>{if(id===tabId&&info.status==='complete'){clearTimeout(timer);chrome.tabs.onUpdated.removeListener(on);resolve(tab);}};
+  const timer=setTimeout(()=>{chrome.tabs.onUpdated.removeListener(on);reject(Error('The lesson page took too long to load.'));},ms);
+  chrome.tabs.onUpdated.addListener(on);
+ });
+}
 $('dest-open').addEventListener('submit',async e=>{
  e.preventDefault();
- const url=editorUrlFromInput($('lesson-link').value);
- if(!url){say('dest-status',"That isn't a Level Builder lesson link. Paste the lesson's editor link, like https://levelbuilder-studio.code.org/lessons/123/edit, or its ID.",'error');return;}
- const tab=await chrome.tabs.create({url});pinnedTabId=tab.id;$('lesson-link').value='';
+ const text=$('lesson-link').value,direct=editorUrlFromInput(text);
+ if(direct){const tab=await chrome.tabs.create({url:direct});pinnedTabId=tab.id;$('lesson-link').value='';return;}
+ const page=lessonPageFromInput(text);
+ if(!page){say('dest-status',"That isn't a Level Builder lesson link. Paste a lesson link from levelbuilder-studio.code.org (for example …/lessons/123/edit or …/s/unit-name/lessons/4/edit), or the lesson's ID.",'error');return;}
+ // Links like /s/<unit>/lessons/<n>/edit name the lesson by its position, so open it and read its real ID.
+ say('dest-status','Opening the lesson to find its ID…');
+ const tab=await chrome.tabs.create({url:page});pinnedTabId=tab.id;
+ try{
+  await tabLoaded(tab.id);
+  const [r]=await chrome.scripting.executeScript({target:{tabId:tab.id},func:lessonDescriptionInPage});
+  const id=r?.result?.id;
+  if(!Number.isSafeInteger(id)||id<1)throw Error(r?.result?.error||'That page is not a Level Builder lesson editor.');
+  await chrome.tabs.update(tab.id,{url:`https://levelbuilder-studio.code.org/lessons/${id}/edit`});
+  $('lesson-link').value='';say('dest-status',`Found lesson ${id}. Opening its editor…`);
+ }catch(err){say('dest-status','Could not open that lesson: '+err.message,'error');}
 });
 document.querySelectorAll('[data-open-lesson]').forEach(b=>b.addEventListener('click',async()=>{
  const tab=await chrome.tabs.create({url:`https://levelbuilder-studio.code.org/lessons/${b.dataset.openLesson}/edit`});pinnedTabId=tab.id;
@@ -326,26 +347,46 @@ async function openReport(item=null){
 $('btn-report').addEventListener('click',()=>openReport(null));
 $('btn-report-result').addEventListener('click',()=>openReport({label:'Save result',content:$('result-out').textContent}));
 $('report-cancel').addEventListener('click',()=>$('report-dialog').close());
+let queuedId=null;
+// Direct send first (works in Chromium). If the browser blocks it (Firefox drops the Google sign-in), send from a background form tab.
+async function sendAnyWay(config,fields,type,note){
+ try{return await sendReport(config,fields,type,note);}
+ catch(first){
+  try{return await sendReportViaFormTab(config,fields,type,note);}
+  catch(second){throw Error(second.message||first.message);}
+ }
+}
 $('report-form').addEventListener('submit',async e=>{
  e.preventDefault();
  const type=$('report-type').value,note=$('report-note').value,btn=$('report-send');
  if(!type||!note.trim()){$('report-error').textContent=!type?'Choose a type of problem.':'Write a short note about what is wrong.';return;}
- btn.disabled=true;btn.textContent='Sending…';
- try{await sendReport(reportConfig,reportDraft.fields,type,note);$('report-dialog').close();toast('Report sent. Thank you!');}
- catch(err){await queueReport({fields:reportDraft.fields,type,note});$('report-dialog').close();toast('Report not sent: '+err.message+' It was saved and will be retried.',6000);}
+ btn.disabled=true;btn.textContent='Sending…';$('report-fallback').hidden=true;
+ try{await sendAnyWay(reportConfig,reportDraft.fields,type,note);$('report-dialog').close();toast('Report sent. Thank you!');}
+ catch(err){
+  // Keep the report, and offer Google's own form (always works; seen needed in Firefox).
+  await queueReport({fields:reportDraft.fields,type,note});queuedId=(await pendingReports()).at(-1)?.id??null;
+  $('report-error').textContent='Lesson Studio could not send this ('+err.message+'). It is saved to retry later, or send it now in Google Forms: everything is filled in, you just click Submit.';
+  $('report-fallback').hidden=false;$('report-fallback').focus();
+ }
  finally{btn.disabled=false;btn.textContent='Send report';showPending();}
 });
+$('report-fallback').addEventListener('click',async()=>{
+ await chrome.tabs.create({url:prefilledFormUrl(reportConfig,reportDraft.fields,$('report-type').value,$('report-note').value)});
+ if(queuedId)await removePending(queuedId);queuedId=null;
+ $('report-fallback').hidden=true;$('report-dialog').close();toast('Opened in Google Forms. Click Submit there to send it.',6000);showPending();
+});
 async function showPending(){
- const list=await pendingReports(),note=$('pending-note');note.hidden=!list.length;if(!list.length)return;
- const b=Object.assign(document.createElement('button'),{type:'button',className:'linkish',textContent:`${list.length} report${list.length===1?'':'s'} waiting. Send now`});
- b.addEventListener('click',async()=>{
-  reportConfig??=await (await fetch(chrome.runtime.getURL('shared/report-form.json'))).json();
-  let sent=0;for(const r of await pendingReports()){try{await sendReport(reportConfig,r.fields,r.type,r.note);await removePending(r.id);sent++;}catch(err){toast('Still not sent: '+err.message,5000);break;}}
+ const list=await pendingReports(),note=$('pending-note');note.hidden=!list.length;if(!list.length){note.replaceChildren();return;}
+ reportConfig??=await (await fetch(chrome.runtime.getURL('shared/report-form.json'))).json();
+ const retry=Object.assign(document.createElement('button'),{type:'button',className:'linkish',textContent:`${list.length} report${list.length===1?'':'s'} waiting. Send now`});
+ retry.addEventListener('click',async()=>{
+  let sent=0;for(const r of await pendingReports()){try{await sendAnyWay(reportConfig,r.fields,r.type,r.note);await removePending(r.id);sent++;}catch(err){toast('Still not sent: '+err.message+'. Use "Open in Google Forms" instead.',6000);break;}}
   if(sent)toast(`Sent ${sent} waiting report${sent===1?'':'s'}.`);showPending();
  });
- note.replaceChildren(b);
+ const viaForm=Object.assign(document.createElement('button'),{type:'button',className:'linkish',textContent:'Open in Google Forms'});
+ viaForm.addEventListener('click',async()=>{const [first]=await pendingReports();if(!first)return;await chrome.tabs.create({url:prefilledFormUrl(reportConfig,first.fields,first.type,first.note)});await removePending(first.id);toast('Opened in Google Forms. Click Submit there to send it.',6000);showPending();});
+ note.replaceChildren(retry,document.createTextNode(' · '),viaForm);
 }
-
 // ---------- full build only: Advanced tab ----------
 async function loadAdvanced(){
  try{
@@ -356,8 +397,19 @@ async function loadAdvanced(){
  }catch{/* team build: no Advanced tab */}
 }
 
+// ---------- site access (Firefox asks the user after install; Chromium grants it at install) ----------
+const ORIGINS=chrome.runtime.getManifest().host_permissions||[];
+async function checkAccess(){
+ let ok=true;try{ok=await chrome.permissions.contains({origins:ORIGINS});}catch{ok=true;}
+ $('access-banner').hidden=ok;return ok;
+}
+$('btn-allow-access').addEventListener('click',()=>{
+ // request() must be the first call in the click handler (user gesture); nothing is awaited before it.
+ chrome.permissions.request({origins:ORIGINS}).then(granted=>{checkAccess();toast(granted?'Access allowed. You can import now.':"Access not allowed. Lesson Studio can't read your pages without it.",5000);}).catch(err=>toast('Could not ask for access: '+err.message,5000));
+});
+
 // ---------- start ----------
 $('version').textContent='v'+VERSION;
-imports=await loadImports();rebuild();setupAI();showPending();loadAdvanced();
+checkAccess();imports=await loadImports();rebuild();setupAI();showPending();loadAdvanced();
 const pending=await chrome.storage.session.get('openStep').catch(()=>({}));
 selectStep(pending.openStep&&STEPS.includes(pending.openStep)?pending.openStep:(built?'check':'import'));
