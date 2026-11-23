@@ -6,6 +6,14 @@ Release steps: bump `manifest.json`, add a section here, merge the pull request,
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-11-22
+
+### Added
+- `build.ps1` also makes `build/lesson-studio-team-<version>.zip` to share with the team: the team build in a `lesson-studio` folder plus "How to install Lesson Studio.txt" (from `docs/INSTALL-team.txt`). The build reads the zip back and fails if a file, checksum, path or version is wrong, or if any Advanced file is inside.
+
+### Tested live
+- The team build (`build/team`) loaded on its own in Chrome: Import, Check, Prepare and Report work, with no Advanced tab (2026-11-22).
+
 ## [1.3.0] - 2026-11-22
 
 ### Changed
