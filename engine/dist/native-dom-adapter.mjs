@@ -1432,34 +1432,52 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
           }
           checkDeadline();
           searchIcons[0].closest('button').click();
-          found = await wait(() => {
-            if (
-              modal.textContent.includes(
-                'There are no levels matching the search you entered.'
+          // The picker opens with a default list of levels, so wait for this search's results: rows whose
+          // names all contain the query (Level Builder's search matches part of a name), or its
+          // "no levels" message. Seen live 2026-11-23: taking the first table returned the default list.
+          const needle = query.toLowerCase();
+          try {
+            found = await wait(() => {
+              if (
+                modal.textContent.includes(
+                  'There are no levels matching the search you entered.'
+                )
+              ) {
+                return [];
+              }
+              const table = [...modal.querySelectorAll('table')].find(
+                t =>
+                  [...t.querySelectorAll('thead th')]
+                    .map(n => n.textContent.trim())
+                    .join('|') === 'Actions|Name|Type|Owner|Last Updated'
+              );
+              const rows = (
+                table ? [...table.querySelectorAll('tbody tr')] : []
               )
-            ) {
-              return [];
+                .map(row => {
+                  const cells = row.querySelectorAll('td');
+                  return {
+                    name: cells[1]?.textContent.trim() || '',
+                    type: cells[2]?.textContent.trim() || '',
+                    owner: cells[3]?.textContent.trim() || '',
+                  };
+                })
+                .filter(r => r.name);
+              return rows.length &&
+                rows.every(r => r.name.toLowerCase().includes(needle))
+                ? rows
+                : null;
+            });
+          } catch (error) {
+            if (/deadline/i.test(error.message)) {
+              throw Error(
+                "Level Builder's level search didn't show results for \"" +
+                  query +
+                  '" in time. Try again, or type the full level name and use Check level names.'
+              );
             }
-            const table = [...modal.querySelectorAll('table')].find(
-              t =>
-                [...t.querySelectorAll('thead th')]
-                  .map(n => n.textContent.trim())
-                  .join('|') === 'Actions|Name|Type|Owner|Last Updated'
-            );
-            const rows = table ? [...table.querySelectorAll('tbody tr')] : [];
-            return rows.length
-              ? rows
-                  .map(row => {
-                    const cells = row.querySelectorAll('td');
-                    return {
-                      name: cells[1]?.textContent.trim() || '',
-                      type: cells[2]?.textContent.trim() || '',
-                      owner: cells[3]?.textContent.trim() || '',
-                    };
-                  })
-                  .filter(r => r.name)
-              : null;
-          });
+            throw error;
+          }
           morePages = [...modal.querySelectorAll('button')].some(
             b =>
               /^\d+$/.test(b.textContent.trim()) && b.textContent.trim() !== '1'
