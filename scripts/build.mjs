@@ -248,6 +248,22 @@ if (!problems.length) {
   }
 }
 
+// ---- privacy page must name this version (it's published with GitHub Pages and linked from the store) ----
+{
+  const privacyFile = path.join(root, 'docs', 'privacy', 'index.md');
+  const stated = fs.existsSync(privacyFile)
+    ? fs
+        .readFileSync(privacyFile, 'utf8')
+        .match(/Last updated [^(\n]*\(version (\d+\.\d+\.\d+)\)/)?.[1]
+    : null;
+  if (stated !== manifest.version) {
+    problems.push(
+      `Privacy page: docs/privacy/index.md says version ${stated || '(none)'}, but this is ${manifest.version}. ` +
+        'Update its "Last updated" line, and its text if what Lesson Studio reads, stores or sends changed.'
+    );
+  }
+}
+
 // ---- full zip, for Julian and Angi only (Drive "Full" folder; never the Web Store) ----
 let fullZipName = null;
 if (!problems.length) {
