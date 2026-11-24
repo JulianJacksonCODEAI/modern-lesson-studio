@@ -2,9 +2,13 @@
 
 All notable changes to Lesson Studio. Versions follow [Semantic Versioning](https://semver.org/): MAJOR for changes that break how the team works or what gets saved, MINOR for new features, PATCH for fixes. The version lives in `manifest.json`, and both builds report it in `build-info.json`.
 
-Release steps: bump `manifest.json`, add a section here, merge the pull request, then tag the merge commit `vX.Y.Z`.
+Release steps: bump `manifest.json`, update the privacy page (`docs/privacy/index.md`: its "Last updated … (version X.Y.Z)" line, plus its text if what Lesson Studio reads, stores or sends changed; the build fails if the version doesn't match), add a section here, merge the pull request, then tag the merge commit `vX.Y.Z`.
 
 ## [Unreleased]
+
+### Changed
+- The build also makes `build/lesson-studio-full-<version>.zip` (the full build under `full/`, checked like the team zip), instead of it being zipped by hand.
+- The build (and so CI) fails if the privacy page's "Last updated" version doesn't match `manifest.json`. The page now says 1.7.0 and mentions that level search reads level names from Level Builder.
 
 ## [1.7.0] - 2026-11-23
 

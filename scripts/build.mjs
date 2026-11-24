@@ -248,6 +248,55 @@ if (!problems.length) {
   }
 }
 
+// ---- privacy page must name this version (it's published with GitHub Pages and linked from the store) ----
+{
+  const privacyFile = path.join(root, 'docs', 'privacy', 'index.md');
+  const stated = fs.existsSync(privacyFile)
+    ? fs
+        .readFileSync(privacyFile, 'utf8')
+        .match(/Last updated [^(\n]*\(version (\d+\.\d+\.\d+)\)/)?.[1]
+    : null;
+  if (stated !== manifest.version) {
+    problems.push(
+      `Privacy page: docs/privacy/index.md says version ${stated || '(none)'}, but this is ${manifest.version}. ` +
+        'Update its "Last updated" line, and its text if what Lesson Studio reads, stores or sends changed.'
+    );
+  }
+}
+
+// ---- full zip, for Julian and Angi only (Drive "Full" folder; never the Web Store) ----
+let fullZipName = null;
+if (!problems.length) {
+  fullZipName = `lesson-studio-full-${manifest.version}.zip`;
+  const fullDir = path.join(out, 'full');
+  const entries = walk(fullDir)
+    .map(f => f.replace(/^build\/full\//, ''))
+    .sort()
+    .map(f => ({
+      name: 'full/' + f,
+      data: fs.readFileSync(path.join(fullDir, f)),
+    }));
+  fs.writeFileSync(path.join(out, fullZipName), writeZip(entries));
+  const back = readZip(fs.readFileSync(path.join(out, fullZipName)));
+  if (back.length !== entries.length) {
+    problems.push('Full zip: wrong number of files.');
+  }
+  if (back.some(e => e.name.includes('\\'))) {
+    problems.push('Full zip: backslash path.');
+  }
+  const fullManifest = back.find(e => e.name === 'full/manifest.json');
+  if (
+    !fullManifest ||
+    JSON.parse(fullManifest.data).version !== manifest.version
+  ) {
+    problems.push('Full zip: manifest missing or version differs.');
+  }
+  const fullInfo = back.find(e => e.name === 'full/build-info.json');
+  if (!fullInfo || JSON.parse(fullInfo.data).edition !== 'full') {
+    problems.push('Full zip: not the full edition.');
+  }
+}
+
 // ---- Firefox builds: same files, Firefox manifest (sidebar instead of side panel, background script, gecko id) ----
 const firefoxZips = [];
 if (!problems.length) {
@@ -299,6 +348,9 @@ console.log(`full: ${all.length + 2} files → build/full`);
 console.log(`team: ${teamFiles.length} files → build/team`);
 if (zipName) {
   console.log(`share: build/${zipName} (team build + install guide)`);
+}
+if (fullZipName) {
+  console.log(`full zip: build/${fullZipName} (Julian and Angi only)`);
 }
 if (firefoxZips.length) {
   console.log(
