@@ -5,6 +5,11 @@
 #   build\lesson-studio-team-firefox-<v>.zip   Firefox team build (sign on addons.mozilla.org before sharing)
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
+# Formatting and lint (code.org settings). Run `npm install` once first; `npm run format` fixes formatting.
+npx.cmd prettier --check "**/*.{js,mjs,css,html}" --log-level warn
+if ($LASTEXITCODE -ne 0) { Write-Error 'Formatting differs from Prettier. Run: npm run format'; exit 1 }
+npx.cmd eslint .
+if ($LASTEXITCODE -ne 0) { Write-Error 'ESLint found problems. Nothing was built.'; exit 1 }
 node --test "test/*.test.mjs" "engine/test/*.test.mjs"
 if ($LASTEXITCODE -ne 0) { Write-Error 'Tests failed. Nothing was built.'; exit 1 }
 node scripts/build.mjs

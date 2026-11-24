@@ -48,7 +48,9 @@ Load one in Chrome: `chrome://extensions` → Developer mode → **Load unpacked
 | `test/` | Report tests |
 | `scripts/` | `build.mjs` (makes both builds and checks them), `preview-server.mjs` (browser preview with a fake `chrome` API) |
 
-Run the tests on their own: `npm test` (309 tests).
+Run the tests on their own: `npm test` (332 tests).
+
+**Code style:** code.org's settings, checked in CI and by `build.ps1`. Run `npm install` once, then `npm run format` (Prettier, `.prettierrc.json`) and `npm run lint` (ESLint, `eslint.config.mjs`) before opening a pull request. To hide the two whole-repo formatting commits from `git blame`, run `git config blame.ignoreRevsFile .git-blame-ignore-revs` once.
 
 ## Known limits
 

@@ -4,7 +4,10 @@
   "type": "module",
   "scripts": {
     "test": "node --test \"test/*.test.mjs\" \"engine/test/*.test.mjs\"",
-    "build": "powershell -ExecutionPolicy Bypass -File build.ps1"
+    "build": "powershell -ExecutionPolicy Bypass -File build.ps1",
+    "lint": "eslint .",
+    "format": "prettier --write \"**/*.{js,mjs,css,html}\"",
+    "format:check": "prettier --check \"**/*.{js,mjs,css,html}\""
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",
