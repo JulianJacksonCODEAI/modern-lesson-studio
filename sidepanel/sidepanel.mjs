@@ -8,6 +8,7 @@ import {
   buildLesson,
 } from '../shared/sources.mjs';
 import {renderLesson, renderReview} from '../shared/lesson-view.mjs';
+import {leftoverContent} from '../shared/leftover.mjs';
 import {
   buildReport,
   sendReport,
@@ -1193,6 +1194,7 @@ function renderSession() {
   if (job && !receipt?.attempted) {
     renderReview($('review-out'), job.review, {
       protectedLesson: SANDBOX_LESSONS[destination?.id]?.protected,
+      leftover: leftoverContent(st.pkg?.lesson, job.review.baseline),
     });
   } else {
     $('review-out').replaceChildren();

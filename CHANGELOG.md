@@ -17,6 +17,7 @@ Link existing levels to the lesson. Also includes the changes below that were wa
 - Each slide's levels become one level group (progression) in its section, with an optional **Level group title** (Level Builder's Progression Title).
 - A level name given to two levels is flagged, and Prepare waits until each level is used once. Levels already used elsewhere in the unit are still caught by Prepare.
 - Search results drop levels already used in the card.
+- **Kept from the lesson** warning before saving: lists content the Level Builder lesson keeps that isn't in the import (extra sections and activities, extra callouts, level links), since Lesson Studio never deletes anything. Found in a live test where an earlier test's section stayed in sandbox lesson 11.
 - Engine: a read-only `search-levels` action in the editor bridge (lists level names that contain a query; nothing is added and the editor must be unchanged afterwards).
 
 ### Changed

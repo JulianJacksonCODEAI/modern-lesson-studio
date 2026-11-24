@@ -140,10 +140,11 @@ export function renderLesson(container, lesson, onReport) {
 }
 
 // Plain-language list of what the save will change, from the engine's save review.
+// leftover: from leftoverContent(), what the lesson keeps that isn't in the import.
 export function renderReview(
   container,
   review,
-  {protectedLesson = false} = {}
+  {protectedLesson = false, leftover = []} = {}
 ) {
   const counts = review.expectedCounts || {};
   const lines = [];
@@ -195,6 +196,24 @@ export function renderReview(
       }),
       list,
       summary,
+      leftover.length
+        ? el(
+            'div',
+            {className: 'warnbox leftover'},
+            el('h4', {
+              textContent: `Kept from the lesson: ${leftover.length} item${leftover.length === 1 ? '' : 's'} not in your import`,
+            }),
+            el('p', {
+              textContent:
+                "Lesson Studio doesn't delete anything, so this content from the Level Builder lesson stays after saving. If it's from an earlier version or another lesson, delete it in Level Builder.",
+            }),
+            el(
+              'ul',
+              {},
+              ...leftover.map(item => el('li', {textContent: item.text}))
+            )
+          )
+        : null,
       protectedLesson
         ? el('p', {
             className: 'warn',

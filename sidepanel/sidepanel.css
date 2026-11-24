@@ -516,6 +516,23 @@ fieldset.choice legend {
   border-color: var(--warn);
   background: var(--warn-bg);
 }
+/* Content the lesson keeps that isn't in the import, shown before saving. */
+.leftover {
+  border: 1px solid var(--warn);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin: 8px 0;
+}
+.leftover h4 {
+  margin: 0 0 4px;
+}
+.leftover p {
+  margin: 0 0 4px;
+}
+.leftover ul {
+  margin: 0;
+  padding-left: 1.1rem;
+}
 .access {
   padding-bottom: 0;
 }
