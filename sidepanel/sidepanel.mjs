@@ -8,6 +8,7 @@ import {
   buildLesson,
 } from '../shared/sources.mjs';
 import {renderLesson, renderReview} from '../shared/lesson-view.mjs';
+import {leftoverContent} from '../shared/leftover.mjs';
 import {
   buildReport,
   sendReport,
@@ -29,6 +30,12 @@ import {
   SANDBOX_LESSONS,
 } from '../engine/session.mjs';
 import {AIService} from '../ai/ai-service.mjs';
+import {
+  levelRequests,
+  initialLevelChoices,
+  duplicateLevelNames,
+  choiceKey as levelKey,
+} from '../shared/levels.mjs';
 import {
   moveLessonDataToSession,
   sessionRecordStore,
@@ -191,6 +198,7 @@ function rebuild() {
   } catch (e) {
     say('import-msg', 'The lesson could not be built: ' + e.message, 'error');
   }
+  resetLevels();
   renderCheck();
   refresh();
 }
@@ -676,6 +684,282 @@ function pendingChoices() {
   ).length;
 }
 
+// ---------- Levels: link existing levels named by number in the speaker notes ----------
+// titles: optional level group title per section (Level Builder's "Progression Title").
+// results: the last search, shown without the levels already used in the card.
+const levelPlan = {requests: [], choices: {}, titles: {}, results: null};
+function resetLevels() {
+  levelPlan.requests = built ? levelRequests(built.lesson) : [];
+  levelPlan.choices = initialLevelChoices(
+    levelPlan.requests,
+    imports.brief?.levelNames || {}
+  );
+  levelPlan.titles = {};
+  levelPlan.results = null;
+  $('level-results').replaceChildren();
+  say('levels-msg', '');
+  renderLevels();
+}
+const levelRows = () =>
+  levelPlan.requests.flatMap(r =>
+    r.numbers.map(number => ({
+      r,
+      number,
+      key: levelKey(r.sectionId, number),
+      c: levelPlan.choices[levelKey(r.sectionId, number)],
+    }))
+  );
+// Names typed or chosen but not yet checked against Level Builder.
+const uncheckedLevels = () =>
+  levelRows().filter(x => x.c.name && x.c.status === 'unchecked');
+const STATUS_TEXT = {
+  verified: '✓ Found in Level Builder',
+  'not-found': 'Not found',
+  skipped: 'Skipped: listed to add by hand',
+  unchecked: '',
+};
+function renderLevels() {
+  const card = $('levels-card');
+  card.hidden = !levelPlan.requests.length;
+  if (card.hidden) {
+    return;
+  }
+  const out = $('levels-out'),
+    parts = [],
+    duplicates = duplicateLevelNames(levelPlan.requests, levelPlan.choices);
+  for (const r of levelPlan.requests) {
+    const fs = document.createElement('fieldset');
+    fs.className = 'levels-group';
+    fs.append(
+      Object.assign(document.createElement('legend'), {
+        textContent: `Slide ${r.slide}${r.title ? ' · ' + r.title : ''}: Lesson ${r.lesson}, Level${r.numbers.length === 1 ? '' : 's'} ${r.numbers.join(', ')}`,
+      })
+    );
+    // This slide's levels become one level group (progression) in its section.
+    const titleId =
+        'level-title-' + String(r.sectionId).replace(/[^a-z0-9]/gi, '-'),
+      title = Object.assign(document.createElement('input'), {
+        id: titleId,
+        type: 'text',
+        value: levelPlan.titles[r.sectionId] || '',
+        disabled: busy,
+        autocomplete: 'off',
+        placeholder: 'Optional, for example Check for Understanding',
+      });
+    title.addEventListener('input', () => {
+      levelPlan.titles[r.sectionId] = title.value;
+    });
+    const titleRow = document.createElement('div');
+    titleRow.className = 'level-title';
+    titleRow.append(
+      Object.assign(document.createElement('label'), {
+        htmlFor: titleId,
+        textContent: 'Level group title',
+      }),
+      title
+    );
+    fs.append(titleRow);
+    if (r.tooMany) {
+      fs.append(
+        Object.assign(document.createElement('p'), {
+          className: 'warn',
+          textContent:
+            'Only the first 8 levels can be linked to one section. Add the rest in Level Builder.',
+        })
+      );
+    }
+    for (const number of r.numbers) {
+      const key = levelKey(r.sectionId, number),
+        c = levelPlan.choices[key],
+        id = 'level-' + key.replace(/[^a-z0-9]/gi, '-');
+      const row = document.createElement('div');
+      row.className = 'level-row';
+      const input = Object.assign(document.createElement('input'), {
+        id,
+        type: 'text',
+        value: c.name,
+        disabled: c.status === 'skipped' || busy,
+        spellcheck: false,
+        autocomplete: 'off',
+        placeholder: 'Exact level name',
+      });
+      // refresh() re-enables controls when the panel stops being busy; skipped levels stay read-only.
+      input.dataset.skipped = String(c.status === 'skipped');
+      // Typing or pasting updates the choice at once (so Check level names turns on);
+      // leaving the box redraws the card with the new status.
+      input.addEventListener('input', () => {
+        c.name = input.value.trim();
+        c.source = c.name ? 'typed' : '';
+        c.status = 'unchecked';
+        delete c.message;
+        refresh();
+      });
+      input.addEventListener('change', () => {
+        renderLevels();
+        renderLevelResults();
+        refresh();
+      });
+      const skip = Object.assign(document.createElement('button'), {
+        type: 'button',
+        className: 'linkish',
+        textContent: c.status === 'skipped' ? 'Undo skip' : 'Skip',
+        disabled: busy,
+      });
+      skip.setAttribute('aria-label', `${skip.textContent} level ${number}`);
+      skip.addEventListener('click', () => {
+        c.status = c.status === 'skipped' ? 'unchecked' : 'skipped';
+        renderLevels();
+        renderLevelResults();
+        refresh();
+      });
+      const duplicate = c.status !== 'skipped' && duplicates.has(c.name);
+      const status = Object.assign(document.createElement('p'), {
+        className:
+          'level-status ' +
+          (duplicate || c.status === 'not-found'
+            ? 'error'
+            : c.status === 'verified'
+              ? 'ok-text'
+              : 'muted'),
+        textContent: duplicate
+          ? 'This level is also used for another level here. Each level can be linked once.'
+          : (STATUS_TEXT[c.status] || '') +
+            (c.status === 'not-found' && c.message ? `: ${c.message}` : '') +
+            (c.status === 'unchecked' && c.source === 'notion'
+              ? 'From the Notion page, not checked yet'
+              : ''),
+      });
+      row.append(
+        Object.assign(document.createElement('label'), {
+          htmlFor: id,
+          textContent: `Level ${number}`,
+        }),
+        input,
+        skip,
+        status
+      );
+      fs.append(row);
+    }
+    parts.push(fs);
+  }
+  out.replaceChildren(...parts);
+}
+// A search result fills the first level that has no name yet.
+function useLevelName(name) {
+  const empty = levelRows().find(x => !x.c.name && x.c.status !== 'skipped');
+  if (!empty) {
+    say('levels-msg', 'Every level already has a name. Clear one to use this.');
+    return;
+  }
+  Object.assign(empty.c, {name, source: 'search', status: 'unchecked'});
+  say('levels-msg', `Level ${empty.number} set to ${name}.`, 'ok');
+  renderLevels();
+  renderLevelResults();
+  refresh();
+}
+// The last search's results, minus levels already given to a level in the card.
+function renderLevelResults() {
+  const out = $('level-results'),
+    found = levelPlan.results;
+  if (!found) {
+    out.replaceChildren();
+    return;
+  }
+  const inUse = new Set(
+    levelRows()
+      .filter(x => x.c.name && x.c.status !== 'skipped')
+      .map(x => x.c.name)
+  );
+  const levels = found.levels.filter(l => !inUse.has(l.name));
+  if (!levels.length) {
+    out.replaceChildren(
+      Object.assign(document.createElement('p'), {
+        className: 'muted',
+        textContent: found.levels.length
+          ? `Every level matching "${found.query}" is already used above.`
+          : `No levels match "${found.query}".`,
+      })
+    );
+    return;
+  }
+  const ul = document.createElement('ul');
+  ul.className = 'level-results';
+  for (const level of levels) {
+    const li = document.createElement('li'),
+      use = Object.assign(document.createElement('button'), {
+        type: 'button',
+        className: 'btn',
+        textContent: 'Use',
+        disabled: busy,
+      });
+    use.setAttribute('aria-label', `Use ${level.name}`);
+    use.addEventListener('click', () => useLevelName(level.name));
+    li.append(
+      Object.assign(document.createElement('span'), {
+        textContent: level.name,
+      }),
+      Object.assign(document.createElement('span'), {
+        className: 'muted',
+        textContent: level.type ? ` (${level.type})` : '',
+      }),
+      use
+    );
+    ul.append(li);
+  }
+  out.replaceChildren(
+    ul,
+    ...(found.morePages
+      ? [
+          Object.assign(document.createElement('p'), {
+            className: 'muted',
+            textContent:
+              'More levels match. Type more of the name to narrow the list.',
+          }),
+        ]
+      : [])
+  );
+}
+$('btn-search-levels').addEventListener('click', e =>
+  withBusy(e.currentTarget, 'Searching…', async () => {
+    const query = $('level-query').value.trim();
+    if (!query) {
+      say('levels-msg', 'Type part of a level name to search for.', 'error');
+      return;
+    }
+    try {
+      levelPlan.results = await session.searchLevels(query);
+      renderLevelResults();
+      say('levels-msg', '');
+    } catch (err) {
+      say('levels-msg', 'Search failed: ' + err.message, 'error');
+    }
+  })
+);
+$('btn-check-levels').addEventListener('click', e =>
+  withBusy(e.currentTarget, 'Checking level names…', async () => {
+    const rows = uncheckedLevels();
+    try {
+      const results = await session.checkLevels(rows.map(x => x.c.name));
+      for (const x of rows) {
+        const result = results[x.c.name];
+        x.c.status = result?.ok ? 'verified' : 'not-found';
+        x.c.message = result?.ok ? '' : result?.message || '';
+      }
+      const missing = rows.filter(x => x.c.status === 'not-found').length;
+      say(
+        'levels-msg',
+        missing
+          ? `${missing} name${missing === 1 ? ' was' : 's were'} not found. Fix or skip ${missing === 1 ? 'it' : 'them'}.`
+          : 'All level names were found in Level Builder.',
+        missing ? 'error' : 'ok'
+      );
+    } catch (err) {
+      say('levels-msg', 'Check failed: ' + err.message, 'error');
+    }
+    renderLevels();
+  })
+);
+
 async function runPrepare(button, {addObjectives}) {
   return withBusy(
     button,
@@ -694,7 +978,18 @@ async function runPrepare(button, {addObjectives}) {
               c.status === 'found' && sharedChoices.get(choiceKey(c)) === 'skip'
           )
           .map(({kind, index}) => ({kind, index}));
-        await session.prepare(pkg, {add, skip, addObjectives});
+        await session.prepare(pkg, {
+          add,
+          skip,
+          addObjectives,
+          levels: levelPlan.requests.length
+            ? {
+                requests: levelPlan.requests,
+                choices: levelPlan.choices,
+                titles: levelPlan.titles,
+              }
+            : null,
+        });
         say(
           'save-msg',
           'Ready. The editor was put back exactly as it was. Nothing is saved to the lesson yet.',
@@ -774,11 +1069,48 @@ const RESULT_TEXT = {
 function renderSkipped() {
   const st = session?.state,
     out = $('skipped-out');
-  if (!st?.job || st.receipt?.attempted) {
+  if (!st?.job) {
     out.replaceChildren();
     return;
   }
+  const saved = !!st.receipt?.attempted;
   const parts = [];
+  if (st.levelsToCopy?.length) {
+    parts.push(
+      Object.assign(document.createElement('h3'), {
+        textContent: 'Levels not linked: add these in Level Builder',
+      }),
+      Object.assign(document.createElement('p'), {
+        className: 'muted',
+        textContent:
+          "In the lesson editor, open the section's Add Levels and search for each name.",
+      })
+    );
+    const ul = document.createElement('ul');
+    ul.className = 'shared-list';
+    for (const l of st.levelsToCopy) {
+      const li = document.createElement('li');
+      li.append(
+        Object.assign(document.createElement('p'), {
+          className: 'shared-name',
+          textContent: `${l.where}: Level ${l.number}${l.name ? ' · ' + l.name : ''}`,
+        }),
+        Object.assign(document.createElement('p'), {
+          className: 'muted',
+          textContent: l.reason,
+        })
+      );
+      if (l.name) {
+        li.append(copyButton(l.name, 'Copy name'));
+      }
+      ul.append(li);
+    }
+    parts.push(ul);
+  }
+  if (saved) {
+    out.replaceChildren(...parts);
+    return;
+  }
   if (st.objectivesAdded?.length) {
     parts.push(
       Object.assign(document.createElement('p'), {
@@ -862,6 +1194,7 @@ function renderSession() {
   if (job && !receipt?.attempted) {
     renderReview($('review-out'), job.review, {
       protectedLesson: SANDBOX_LESSONS[destination?.id]?.protected,
+      leftover: leftoverContent(st.pkg?.lesson, job.review.baseline),
     });
   } else {
     $('review-out').replaceChildren();
@@ -933,16 +1266,43 @@ function refresh() {
   $('btn-check-shared').textContent = checked
     ? 'Check resources again'
     : 'Check resources';
+  // The Levels card is often rebuilt while a search or check is running, so its controls are
+  // enabled here, once the panel is free again (a skipped level's name box stays read-only).
+  for (const el of document.querySelectorAll(
+    '#levels-out input, #levels-out button, #level-results button'
+  )) {
+    el.disabled = busy || el.dataset.skipped === 'true';
+  }
+  const levelsToCheck = uncheckedLevels().length,
+    duplicateLevels = duplicateLevelNames(
+      levelPlan.requests,
+      levelPlan.choices
+    ).size;
+  $('btn-check-levels').disabled =
+    busy || !session || !owned || locked || !levelsToCheck;
+  $('btn-search-levels').disabled = busy || !session || !owned || locked;
   $('btn-prepare').disabled =
-    busy || !built || !session || !owned || !checked || waiting > 0 || locked;
+    busy ||
+    !built ||
+    !session ||
+    !owned ||
+    !checked ||
+    waiting > 0 ||
+    levelsToCheck > 0 ||
+    duplicateLevels > 0 ||
+    locked;
   const adding = [...sharedChoices.values()].filter(v => v === 'add').length;
   if (!busy) {
     $('btn-prepare').textContent =
       waiting > 0
         ? `Choose Skip or Add for ${waiting} item${waiting === 1 ? '' : 's'}`
-        : adding
-          ? `Add ${adding} to Level Builder and prepare changes`
-          : 'Prepare changes';
+        : duplicateLevels > 0
+          ? 'Use each level only once'
+          : levelsToCheck > 0
+            ? `Check ${levelsToCheck} level name${levelsToCheck === 1 ? '' : 's'} first`
+            : adding
+              ? `Add ${adding} to Level Builder and prepare changes`
+              : 'Prepare changes';
   }
   $('btn-save').disabled = busy || !$('approve').checked || !st?.job;
   $('dest-open').hidden = !!destination;

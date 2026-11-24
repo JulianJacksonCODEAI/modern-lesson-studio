@@ -446,9 +446,92 @@ fieldset.choice legend {
   margin-top: 0.3rem;
 }
 
+/* Levels card */
+.level-search {
+  margin: 8px 0;
+}
+.level-search label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.level-search input {
+  flex: 1;
+  min-width: 0;
+}
+.level-results {
+  list-style: none;
+  margin: 8px 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.level-results li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.level-results li > span:first-child {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.levels-group {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin: 8px 0;
+}
+.levels-group legend {
+  font-weight: 600;
+  padding: 0 4px;
+}
+.level-title {
+  display: grid;
+  gap: 2px;
+  margin: 4px 0 8px;
+}
+.level-title label {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.level-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 4px 8px;
+  align-items: center;
+  margin: 6px 0;
+}
+.level-row input {
+  min-width: 0;
+}
+.level-status {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 0.85rem;
+}
+
 .warnbox {
   border-color: var(--warn);
   background: var(--warn-bg);
+}
+/* Content the lesson keeps that isn't in the import, shown before saving. */
+.leftover {
+  border: 1px solid var(--warn);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin: 8px 0;
+}
+.leftover h4 {
+  margin: 0 0 4px;
+}
+.leftover p {
+  margin: 0 0 4px;
+}
+.leftover ul {
+  margin: 0;
+  padding-left: 1.1rem;
 }
 .access {
   padding-bottom: 0;

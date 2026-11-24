@@ -239,6 +239,47 @@
               <div id="shared-out"></div>
             </section>
 
+            <section
+              class="card"
+              aria-labelledby="levels-h"
+              id="levels-card"
+              hidden
+            >
+              <h2 id="levels-h">Levels</h2>
+              <p class="muted">
+                These slides send students to levels. Give each level its exact
+                Level Builder name: from the Notion page's Levels list, a
+                search, or typed in. Check the names, then prepare. Levels you
+                skip, or that can't be added, are listed to add by hand.
+              </p>
+              <div class="level-search">
+                <label for="level-query">Search Level Builder levels</label>
+                <div class="row">
+                  <input
+                    id="level-query"
+                    type="search"
+                    autocomplete="off"
+                    spellcheck="false"
+                    placeholder="Part of a level name, for example U1L16"
+                  />
+                  <button type="button" id="btn-search-levels" class="btn">
+                    Search
+                  </button>
+                </div>
+                <div id="level-results" aria-live="polite"></div>
+              </div>
+              <div id="levels-out"></div>
+              <button type="button" id="btn-check-levels" class="btn" disabled>
+                Check level names
+              </button>
+              <p
+                id="levels-msg"
+                class="msg"
+                role="status"
+                aria-live="polite"
+              ></p>
+            </section>
+
             <section class="card" aria-labelledby="review-h">
               <h2 id="review-h">What will change</h2>
               <p class="muted">

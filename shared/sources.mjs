@@ -9,6 +9,7 @@ import {
 } from '../engine/dist/source-imports.mjs';
 import {generate} from '../engine/dist/core.mjs';
 import {notionPageExport} from './notion-page-export.mjs';
+import {levelNamesFromMarkdown} from './levels.mjs';
 
 const STORE_KEY = 'teamImports';
 export const isSlidesUrl = url =>
@@ -80,6 +81,8 @@ export async function importNotion(tab) {
     item,
     url: result.url || tab.url,
     name: result.title || 'Notion page',
+    // The page's "Levels" list (Level number → exact Level Builder name), if it has one.
+    levelNames: levelNamesFromMarkdown(result.markdown),
   };
 }
 
@@ -118,6 +121,12 @@ export function buildLesson(imports) {
   // A first import always starts from zero slides, so the engine's "different slide identities" revision note doesn't apply.
   const relevant = w =>
     !/uses different slide identities|previous level mappings/i.test(w);
+  // The engine's wording for slides that name levels; the Save step's Levels card links them.
+  const reworded = w =>
+    w.replace(
+      /transition text needs confirmed level associations\./,
+      "it sends students to levels. Name them in the Save step's Levels card to link them."
+    );
   const untitled = (lesson.sections || [])
     .filter(s => !String(s.title || '').trim())
     .map(
@@ -133,6 +142,8 @@ export function buildLesson(imports) {
         ...(lesson.warnings || []),
         ...untitled,
       ]),
-    ].filter(relevant),
+    ]
+      .filter(relevant)
+      .map(reworded),
   };
 }
