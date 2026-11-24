@@ -132,5 +132,5 @@ Lesson Studio is an internal tool for Code.org curriculum staff. Using it needs 
 
 ### Known limits
 - Saves go to any lesson the user confirms is theirs (shown with its name, unit and ID). Lesson Studio can't tell an official lesson from a draft by its link, so the confirmation is the safeguard. The review team may ask about this.
-- Levels named in slide text ("Lesson 7, Levels 1–5") aren't linked to the lesson. The Check step lists them to add in Level Builder.
+- Levels named in slide text ("Lesson 7, Levels 1–5") are linked only into empty level groups, and only after each name is checked in Level Builder; the rest are listed to add by hand.
 - Before submitting: take the three screenshots, decide the visibility, and confirm the contact email.

@@ -56,7 +56,7 @@ Run the tests on their own: `npm test` (332 tests).
 
 - Live testing so far (2026-11-22): import, Check, Report and Prepare work in Chrome. The first live save (lesson 11, 5 changes) landed, but the readback flagged the new untitled section because Level Builder saves its empty fields as null. That check is fixed: the same saved lesson now passes with 0 mismatches. Later saves linking two existing resources and adding three objectives passed with 0 mismatches. Adding a brand-new shared resource hasn't been run live yet.
 - Objectives: Notion objectives Level Builder doesn't have are added (live-tested 2026-11-22). If adding ever fails, the Save tab can prepare without them and list them to add by hand.
-- Level links: slides with "Lesson N, Level M" text need confirmed level mappings. The team build doesn't map levels, so those levels aren't added; Check lists them under "Things to look at".
+- **Levels:** slides whose speaker notes say "Lesson N, Levels 2-4" get a Levels card in the Save step. Names come from the Notion page's Levels list (a "Levels" heading followed by lines like `- Level 2: CSP U1L16 AI Lab Reflect`), a Level Builder search, or typing; each is checked with the editor's Add Levels search before Prepare. Levels go only into empty level groups (adding to a group that already has levels is planned); anything not linked is listed with a Copy name button. Checking and searching need the lesson in Level Builder to have at least one section.
 - AI runs only through Chrome's built-in model (recent Chrome on suitable hardware); elsewhere the rules engine runs. A Code.org-hosted AI relay is planned, not built.
 
 ## Working on Lesson Studio

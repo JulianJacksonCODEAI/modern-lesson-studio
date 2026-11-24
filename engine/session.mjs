@@ -5,7 +5,8 @@
 //   → prepare (rehearse + restore) → approve → save once → readback.
 // Saves go through the prototype's runApprovedSave: receipt before dispatch, never resent, independent readback.
 // Shared-record creation goes through executeSharedReview: attempt stored before the only POST, never retried.
-import {clone} from './dist/transfer-core.mjs';
+import {clone, digest} from './dist/transfer-core.mjs';
+import {applyLevelChoices} from '../shared/levels.mjs';
 import {
   assertWritableLesson,
   SANDBOX_LESSONS,
@@ -334,8 +335,53 @@ export function createSession({
         return items;
       }),
 
+    // Read-only: level names that contain the query, from the editor's own Add Levels search.
+    searchLevels: query =>
+      locked(async () => {
+        requireOwnership();
+        await showEditor();
+        const io = await makeIO();
+        const capture = await io.bridge({action: 'read'});
+        return io.bridge({
+          action: 'search-levels',
+          query,
+          expectedCaptureDigest: await digest(capture),
+        });
+      }),
+
+    // Read-only: checks each exact level name with the editor's Add Levels search.
+    // Returns {name: {ok, message}}. Nothing is added to the lesson.
+    checkLevels: names =>
+      locked(async () => {
+        requireOwnership();
+        await showEditor();
+        const io = await makeIO(),
+          results = {};
+        for (const name of [...new Set(names)]) {
+          try {
+            const capture = await io.bridge({action: 'read'});
+            const lookup = await io.bridge({
+              action: 'lookup-levels',
+              names: [name],
+              expectedCaptureDigest: await digest(capture),
+            });
+            results[name] =
+              lookup?.kind === 'native-level-mappings' &&
+              lookup.mappings?.length === 1
+                ? {ok: true}
+                : {ok: false, message: 'Level Builder did not confirm it.'};
+          } catch (error) {
+            results[name] = {ok: false, message: error.message};
+          }
+        }
+        return results;
+      }),
+
     // Step B: remove skipped items, create the added ones (one attempt each), then rehearse and build the save review.
-    prepare: (pkg, {add = [], skip = [], addObjectives = true} = {}) =>
+    prepare: (
+      pkg,
+      {add = [], skip = [], addObjectives = true, levels = null} = {}
+    ) =>
       locked(async () => {
         requireOwnership();
         if (state.receipt?.attempted) {
@@ -358,8 +404,21 @@ export function createSession({
         );
         await showEditor();
         const {fresh} = await readTransferBaseline(io); // read-only; also stops if the editor has unsaved edits
+        // Checked level names go into empty level groups; the rest are listed to add by hand.
+        let withLevels = pkg;
+        state.levelsToCopy = [];
+        if (levels?.requests?.length) {
+          const applied = applyLevelChoices(
+            pkg,
+            fresh.lesson,
+            levels.requests,
+            levels.choices || {}
+          );
+          withLevels = applied.pkg;
+          state.levelsToCopy = applied.toCopy;
+        }
         const objectives = keepSavedObjectives(
-          withoutCandidates(pkg, skipped),
+          withoutCandidates(withLevels, skipped),
           (fresh.lesson.objectives || []).map(o => o.description),
           {addMissing: addObjectives}
         );
@@ -484,6 +543,7 @@ export function createSession({
         sharedCheck: state.sharedCheck,
         sharedReceipt: state.sharedReceipt,
         skipped: state.skipped,
+        levelsToCopy: state.levelsToCopy,
         objectivesNotCopied: state.objectivesNotCopied,
       });
     },

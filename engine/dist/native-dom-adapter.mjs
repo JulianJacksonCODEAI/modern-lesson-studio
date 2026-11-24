@@ -1196,6 +1196,7 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
     if (
       [
         'lookup-levels',
+        'search-levels',
         'append-progression',
         'clear-owned-progression',
       ].includes(request.action)
@@ -1401,6 +1402,81 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         }
         return labels[0].querySelector('input');
       };
+      // Read-only: lists level names matching part of a name, using the editor's own Add Levels search.
+      // Nothing is added; the picker is closed and the editor must be unchanged afterwards.
+      if (request.action === 'search-levels') {
+        const query = String(request.query || '').trim();
+        if (!query || query.length > 100) {
+          throw Error('Enter part of a level name (100 characters at most).');
+        }
+        let found = [],
+          morePages = false;
+        try {
+          const modal = await openPicker(),
+            input = modal.querySelector('input.uitest-add-level-name-input'),
+            filters = input.parentElement.parentElement,
+            selects = filters.querySelectorAll('select');
+          if (selects.length !== 3) {
+            throw Error('Unexpected native level filters.');
+          }
+          for (const select of selects) {
+            if (select.value !== '') {
+              setControl(select, '');
+            }
+          }
+          setControl(input, query);
+          await settle();
+          const searchIcons = filters.querySelectorAll('.fa-magnifying-glass');
+          if (searchIcons.length !== 1) {
+            throw Error('The native level search is ambiguous.');
+          }
+          checkDeadline();
+          searchIcons[0].closest('button').click();
+          found = await wait(() => {
+            if (
+              modal.textContent.includes(
+                'There are no levels matching the search you entered.'
+              )
+            ) {
+              return [];
+            }
+            const table = [...modal.querySelectorAll('table')].find(
+              t =>
+                [...t.querySelectorAll('thead th')]
+                  .map(n => n.textContent.trim())
+                  .join('|') === 'Actions|Name|Type|Owner|Last Updated'
+            );
+            const rows = table ? [...table.querySelectorAll('tbody tr')] : [];
+            return rows.length
+              ? rows
+                  .map(row => {
+                    const cells = row.querySelectorAll('td');
+                    return {
+                      name: cells[1]?.textContent.trim() || '',
+                      type: cells[2]?.textContent.trim() || '',
+                      owner: cells[3]?.textContent.trim() || '',
+                    };
+                  })
+                  .filter(r => r.name)
+              : null;
+          });
+          morePages = [...modal.querySelectorAll('button')].some(
+            b =>
+              /^\d+$/.test(b.textContent.trim()) && b.textContent.trim() !== '1'
+          );
+        } finally {
+          await closePicker();
+        }
+        if (stable(read()) !== stable(before)) {
+          throw Error('The level search changed the editor.');
+        }
+        return {
+          kind: 'native-level-search',
+          query,
+          levels: found.slice(0, 25),
+          morePages: morePages || found.length > 25,
+        };
+      }
       const names =
         request.action === 'lookup-levels'
           ? request.names
