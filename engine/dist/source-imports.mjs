@@ -402,7 +402,7 @@ export function notionMarkdown(markdown) {
                 : 'Other';
           resources.push({
             key: 'import-' + resources.length,
-            name: m[1].replace(/\\([\[\]])/g, '$1').trim(),
+            name: m[1].replace(/\\([[\]])/g, '$1').trim(),
             url: m[2],
             type,
             audience: type === 'Answer Key' ? 'Verified Teacher' : audience,
@@ -524,7 +524,7 @@ export function notionBlocks(data) {
             }
             content =
               '[' +
-              content.replace(/([\[\]])/g, '\\$1') +
+              content.replace(/([[\]])/g, '\\$1') +
               '](' +
               parsed.href.replace(/\(/g, '%28').replace(/\)/g, '%29') +
               ')';

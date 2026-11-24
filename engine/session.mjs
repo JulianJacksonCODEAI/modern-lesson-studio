@@ -7,7 +7,6 @@
 // Shared-record creation goes through executeSharedReview: attempt stored before the only POST, never retried.
 import {clone} from './dist/transfer-core.mjs';
 import {
-  selectDestination,
   assertWritableLesson,
   SANDBOX_LESSONS,
   validDestination,

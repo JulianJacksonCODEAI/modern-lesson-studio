@@ -421,7 +421,6 @@ Format strictly as JSON with this schema:
       .flatMap(s => s.callouts || []);
     const hasDiscussion = callouts.some(c => /discuss/i.test(c.type));
     const hasAssessment = callouts.some(c => /assessment/i.test(c.type));
-    const hasTips = callouts.some(c => /teaching tip|tip/i.test(c.type));
 
     if (!hasDiscussion) {
       issues.push({

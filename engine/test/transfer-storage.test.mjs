@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  decodeTransferRecord,
+  encodeTransferRecord,
   readTransferRecord,
   writeTransferRecord,
 } from '../dist/transfer-storage.mjs';
@@ -57,10 +59,6 @@ test('blocked reads and failed receipt writes explain recovery', () => {
   );
 });
 
-import {
-  encodeTransferRecord,
-  decodeTransferRecord,
-} from '../dist/transfer-storage.mjs';
 test('compact evidence round-trips and keeps repeated snapshots independently editable', () => {
   const snapshot = {
     body: 'long teaching content '.repeat(100),

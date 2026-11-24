@@ -138,7 +138,7 @@ export function addImage(draft, id, {url, alt, expandable = false}, selection) {
   if (!alt?.trim()) {
     throw Error('Describe the image for readers who cannot see it.');
   }
-  if (/[\[\]\n\r]/.test(alt)) {
+  if (/[[\]\n\r]/.test(alt)) {
     throw Error('Keep the image description on one line without brackets.');
   }
   const link = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(url)

@@ -19,13 +19,10 @@ import {
   addFlag,
   approveDraft,
   renderLesson,
-  resourceList,
   previewText,
 } from './review.mjs';
 import {
   generate,
-  reconcile,
-  reconcileObjectives,
   objectivesEqual,
   exportMarkdown,
   SANDBOX,
@@ -172,9 +169,7 @@ function updateSummary() {
   document.querySelectorAll('[data-review]').forEach(el => {
     el.checked = state.reviewed.includes(el.dataset.review);
   });
-  const p = state.draft,
-    done = requiredIds().filter(id => state.reviewed.includes(id)).length,
-    total = requiredIds().length;
+  const p = state.draft;
   document.title = titles[view][0] + ' · ' + p.title + ' · Lesson Studio';
   $('#title').textContent = p.title;
   $('#subtitle').textContent =

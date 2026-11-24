@@ -1,5 +1,4 @@
-import {clone, digest, validatePlan} from './transfer-core.mjs';
-import {applyOperation} from './transfer-core.mjs';
+import {applyOperation, clone, digest, validatePlan} from './transfer-core.mjs';
 
 // Native writes are restricted to the reviewed scalar subset. No save adapter exists.
 export async function stagePlan(

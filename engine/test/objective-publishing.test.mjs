@@ -8,8 +8,7 @@ import {
 } from '../dist/reusable-transfer.mjs';
 import {preparePublication} from '../dist/publishing.mjs';
 import {verifySavedReadback} from '../dist/save-review.mjs';
-import {canonical} from '../dist/transfer-core.mjs';
-import {digest} from '../dist/transfer-core.mjs';
+import {canonical, digest} from '../dist/transfer-core.mjs';
 import {nativeEditorBridge} from '../dist/native-dom-adapter.mjs';
 import vm from 'node:vm';
 const source = {

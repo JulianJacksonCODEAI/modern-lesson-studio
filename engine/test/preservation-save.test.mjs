@@ -7,7 +7,7 @@ import {
   approveTransfer,
   executeTransfer,
 } from '../dist/reusable-transfer.mjs';
-import {clone, canonical, digest} from '../dist/transfer-core.mjs';
+import {clone, canonical} from '../dist/transfer-core.mjs';
 import {buildSaveReview, saveRequestDigest} from '../dist/save-review.mjs';
 const source = JSON.parse(
   readFileSync(new URL('../dist/fixture.json', import.meta.url))

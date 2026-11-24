@@ -221,7 +221,7 @@ test('new insertions survive storage, unchanged sources, assembled preview and M
 });
 test('rich previews escape HTML, unknown resource references and hostile link attributes', () => {
   const html = renderMarkdown(
-    '<script>alert(1)</script>\n![x](javascript:bad)\n[x](https://example.com/\"bad)\n[r missing]'
+    '<script>alert(1)</script>\n![x](javascript:bad)\n[x](https://example.com/"bad)\n[r missing]'
   );
   assert.ok(!html.includes('<script>'));
   assert.ok(!html.includes('src="javascript:'));

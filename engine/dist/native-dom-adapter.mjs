@@ -2711,11 +2711,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
       return read();
     }
     let node,
-      value,
       sectionDuration = false;
     if (path.length === 1 && path[0] === 'title') {
       node = fieldNode('title');
-      value = current.live.fields.title;
     } else if (
       path.length === 2 &&
       path[0] === 'frontMatter' &&
@@ -2723,7 +2721,6 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
       path[1] !== 'title'
     ) {
       node = fieldNode(path[1]);
-      value = current.live.fields[path[1]];
     } else if (
       path[0] === 'activities' &&
       Number.isInteger(path[1]) &&
@@ -2742,12 +2739,6 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
             ? '.uitest-activity-name-input'
             : '.uitest-activity-duration-input'
         );
-        value =
-          path[2] === 'title'
-            ? (activity.name ?? activity.displayName ?? '')
-            : activity.duration === ''
-              ? null
-              : activity.duration;
       } else if (
         path.length === 5 &&
         path[2] === 'sections' &&
@@ -2768,19 +2759,13 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         }
         if (path[4] === 'title') {
           node = inputs[0];
-          value = section.name ?? section.displayName ?? '';
         }
         if (path[4] === 'duration') {
           node = inputs[1];
-          value =
-            section.duration === '' || section.duration == null
-              ? null
-              : section.duration;
           sectionDuration = true;
         }
         if (path[4] === 'body') {
           node = area;
-          value = section.description ?? section.text ?? '';
         }
         if (path[4] === 'remarks') {
           const checks = header.querySelectorAll('input[type="checkbox"]');
@@ -2788,7 +2773,6 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
             throw Error('Remarks control is ambiguous.');
           }
           node = checks[0];
-          value = Boolean(section.remarks);
         }
       }
     }

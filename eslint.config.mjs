@@ -6,7 +6,11 @@ import globals from 'globals';
 
 const codeOrgRules = {
   curly: ['error', 'all'],
-  eqeqeq: 'error',
+  // `x == null` (null or undefined) is allowed, as in the Airbnb guide that
+  // code.org's style guide names as its default.
+  eqeqeq: ['error', 'always', {null: 'ignore'}],
+  // A bare `catch {}` marks a failure that is deliberately ignored.
+  'no-empty': ['error', {allowEmptyCatch: true}],
   'no-array-constructor': 'error',
   'no-console': 'off',
   'no-duplicate-imports': 'error',
@@ -36,6 +40,7 @@ export default [
     // Run by Node: build scripts, the local preview and Notion servers, and tests.
     files: [
       'scripts/**',
+      'engine/scripts/**',
       'test/**',
       'engine/test/**',
       'engine/server.mjs',

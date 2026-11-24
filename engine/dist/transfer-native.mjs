@@ -1,6 +1,5 @@
-import {DESTINATION_ID, TEXT_FIELDS} from './transfer-core.mjs';
+import {TEXT_FIELDS} from './transfer-core.mjs';
 import {validDestination} from './destination.mjs';
-import {SANDBOX} from './core.mjs';
 
 // This function is serialized by the browser extension: keep it self-contained.
 // It only reads DOM already on the page. It makes no requests and clicks no controls.
