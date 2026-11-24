@@ -11,8 +11,9 @@ export function saveWorkspace(
   if (actual !== expected && actual !== value) {
     const id = newId(),
       forkKey = 'lesson-studio-workspace-' + id;
-    if (storage.getItem(forkKey) !== null)
+    if (storage.getItem(forkKey) !== null) {
       throw Error('The recovery workspace already exists. Export a backup.');
+    }
     storage.setItem(forkKey, value);
     return {key: forkKey, value, id, forked: true};
   }

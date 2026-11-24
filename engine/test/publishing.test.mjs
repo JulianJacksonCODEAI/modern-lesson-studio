@@ -72,7 +72,9 @@ test('publication binding rejects a changed package or saved baseline before any
   const io = {...demoAdapter(demo, () => {}), checkpoint: async () => {}};
   const bridge = io.bridge;
   io.bridge = async r => {
-    if (r.action !== 'read') staging++;
+    if (r.action !== 'read') {
+      staging++;
+    }
     return bridge(r);
   };
   await assert.rejects(

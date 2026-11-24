@@ -19,7 +19,7 @@ test('added activities and section ordering survive source refresh and export', 
     draft = generate(source),
     generated = structuredClone(draft);
   addActivity(draft, {id: 'local', title: 'Practice', duration: 5});
-  for (const id of ['first', 'second'])
+  for (const id of ['first', 'second']) {
     addSection(draft, {
       id,
       activityId: 'local',
@@ -27,6 +27,7 @@ test('added activities and section ordering survive source refresh and export', 
       body: id,
       duration: 0,
     });
+  }
   assert.equal(moveRecord(draft, 'sections', 'second', -1), true);
   assert.equal(moveRecord(draft, 'sections', 'second', -1), false);
   moveRecord(draft, 'activities', 'local', -1);

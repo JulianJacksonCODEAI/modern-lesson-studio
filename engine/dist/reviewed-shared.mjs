@@ -19,7 +19,9 @@ export const resourceRow = r => ({
 export const vocabularyRow = r => ({word: r.word, definition: r.definition});
 export function sharedAppendValid(op) {
   const kind = sharedKind(op);
-  if (!kind || !Array.isArray(op.before)) return false;
+  if (!kind || !Array.isArray(op.before)) {
+    return false;
+  }
   try {
     validateSharedRecord(kind, op.record);
     return kind === 'resources'
@@ -34,31 +36,34 @@ export function sharedAppendValid(op) {
 export async function recoverSharedRehearsal(bridge, previous) {
   const current = await bridge({action: 'read'}),
     initial = previous.initialCapture;
-  if (canonical(current) === canonical(initial))
+  if (canonical(current) === canonical(initial)) {
     return {
       status: 'restored',
       restored: true,
       saved: false,
       finalCapture: current,
     };
+  }
   const known = [
     previous.stagedCapture,
     ...(previous.reports || []).map(r => r.journal?.capture),
   ].filter(Boolean);
-  if (!known.some(c => canonical(c) === canonical(current)))
+  if (!known.some(c => canonical(c) === canonical(current))) {
     throw Error(
       'Outside edits or missing shared-association checkpoints prevent restoration.'
     );
+  }
   const restored = await bridge({
     action: 'reload-reviewed-editor',
     mode: 'restore-reviewed-rehearsal',
     initialCapture: clone(initial),
     expectedCaptureDigest: await digest(current),
   });
-  if (canonical(restored) !== canonical(initial))
+  if (canonical(restored) !== canonical(initial)) {
     throw Error(
       'Shared-association rehearsal did not restore its complete original capture.'
     );
+  }
   return {
     status: 'restored',
     restored: true,

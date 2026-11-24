@@ -90,11 +90,12 @@ test('unchanged-save test preserves all four original links and uses the actual 
   assert.equal(receipt.verification.baselineUnchanged, true);
   assert.equal(canonical(h.state.server), before);
   assert.equal(canonical(h.state.editor), editor);
-  for (let i = 0; i < 3; i++)
+  for (let i = 0; i < 3; i++) {
     assert.equal(
       (await executeTransfer(approved, h.io)).status,
       'saved-and-verified'
     );
+  }
   assert.equal(h.counts().writes, 1);
 });
 test('unchanged readback without native acknowledgement cannot falsely pass dispatch validation or resend', async () => {
@@ -143,8 +144,9 @@ test('a changed assessment flag after dispatch fails exact preservation verifica
     bridge = h.io.bridge;
   h.io.bridge = async r => {
     const result = await bridge(r);
-    if (r.action === 'save-approved-review')
+    if (r.action === 'save-approved-review') {
       h.state.server.activities[0].activitySections[0].scriptLevels[1].assessment = false;
+    }
     return result;
   };
   const receipt = await executeTransfer(job, h.io);

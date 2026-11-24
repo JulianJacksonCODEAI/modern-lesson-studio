@@ -159,8 +159,9 @@ test('interruption partway through new activity content restores all owned chang
       q.action === 'set-scalar' &&
       q.operation.path[1] === 1 &&
       q.operation.path.at(-1) === 'body'
-    )
+    ) {
       throw Error('Injected interruption');
+    }
     return bridge(q);
   };
   await assert.rejects(prepareTransfer(h.state.pkg, h.io), /interruption/);

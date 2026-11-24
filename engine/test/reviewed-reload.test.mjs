@@ -21,8 +21,8 @@ async function harness(mode) {
     },
     reload: async () => {
       reloads++;
-      if (mode !== 'timeout')
-        for (const listener of [...listeners])
+      if (mode !== 'timeout') {
+        for (const listener of [...listeners]) {
           listener(
             1,
             {status: 'complete'},
@@ -31,12 +31,16 @@ async function harness(mode) {
                 mode === 'navigation' ? 'https://example.org' : destination.url,
             }
           );
+        }
+      }
     },
   };
   const edit = async request => {
     calls.push(request.action);
     if (request.action === 'authorize-reviewed-reload') {
-      if (mode === 'outside') throw Error('Outside edits');
+      if (mode === 'outside') {
+        throw Error('Outside edits');
+      }
       return {
         kind: 'reviewed-reload-authorization',
         captureDigest: 'capture',

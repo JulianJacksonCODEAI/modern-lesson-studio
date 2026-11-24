@@ -16,7 +16,7 @@ export function sharedCandidates(lesson) {
   for (const [kind, values] of [
     ['resources', lesson.resources || []],
     ['vocabularies', lesson.frontMatter?.vocabulary || []],
-  ])
+  ]) {
     values.forEach((value, index) => {
       let intent = null,
         problem = null;
@@ -35,6 +35,7 @@ export function sharedCandidates(lesson) {
         problem,
       });
     });
+  }
   return out;
 }
 
@@ -42,7 +43,9 @@ export function sharedCandidates(lesson) {
 export function withoutCandidates(pkg, remove) {
   const next = clone(pkg);
   for (const part of [next.lesson, next.baseline]) {
-    if (!part) continue;
+    if (!part) {
+      continue;
+    }
     part.resources = (part.resources || []).filter(
       r =>
         !remove.some(
@@ -84,14 +87,19 @@ export function keepSavedObjectives(
   const missing = [];
   for (const o of proposed) {
     const key = normalizeObjective(o);
-    if (!key || seen.has(key)) continue;
+    if (!key || seen.has(key)) {
+      continue;
+    }
     seen.add(key);
     missing.push(String(o).trim());
   }
   const objectives = addMissing ? [...saved, ...missing] : saved;
   const next = clone(pkg);
-  for (const part of [next.lesson, next.baseline])
-    if (part) part.frontMatter.objectives = clone(objectives);
+  for (const part of [next.lesson, next.baseline]) {
+    if (part) {
+      part.frontMatter.objectives = clone(objectives);
+    }
+  }
   return {
     pkg: next,
     added: addMissing ? missing : [],

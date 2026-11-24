@@ -232,7 +232,9 @@ test('a crash after a DOM action but before journal acknowledgement recovers by 
     snapshot = makeRehearsal(pkg),
     plan = await buildTransferPlan(pkg, snapshot),
     driver = memoryDriver(snapshot, (_state, calls) => {
-      if (calls === 1) throw Error('Simulated interruption after mutation');
+      if (calls === 1) {
+        throw Error('Simulated interruption after mutation');
+      }
     });
   const first = await stagePlan(plan, driver);
   assert.equal(first.status, 'blocked');
@@ -343,8 +345,11 @@ test('native DOM reader rejects another host or lesson before inspecting content
   try {
     assert.throws(() => captureAssignedEditor(), /Other destinations/);
   } finally {
-    if (old === undefined) delete globalThis.location;
-    else globalThis.location = old;
+    if (old === undefined) {
+      delete globalThis.location;
+    } else {
+      globalThis.location = old;
+    }
   }
 });
 test('native normalization retains complete capture evidence and blocks unsupported live-state assumptions', () => {

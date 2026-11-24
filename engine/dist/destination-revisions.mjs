@@ -10,30 +10,35 @@ export async function savedReport(report) {
       'https://levelbuilder-studio.code.org/lessons/' +
         report.destination?.id +
         '/edit'
-  )
+  ) {
     throw Error('Choose a native practice-lesson report.');
+  }
   let saved;
   if (report.receipt) {
-    if (report.receipt.status !== 'saved-and-verified')
+    if (report.receipt.status !== 'saved-and-verified') {
       throw Error(
         'This save report is not verified. Use a fresh baseline report.'
       );
+    }
     const check = await verifySavedReadback(
       report.receipt.review,
       report.receipt.readback
     );
-    if (!check.passed)
+    if (!check.passed) {
       throw Error('The saved report failed independent verification.');
+    }
     saved = report.receipt.readback;
   } else if (
     report.checkpoint?.status === 'baseline-read' &&
     !report.preparationError
-  )
+  ) {
     saved = report.checkpoint.freshSaved;
-  if (!saved || saved.id !== report.destination.id)
+  }
+  if (!saved || saved.id !== report.destination.id) {
     throw Error(
       'The report has no complete saved lesson for this destination.'
     );
+  }
   // A partial report must never masquerade as an intentional deletion.
   const identity = value =>
     (typeof value === 'number' ||
@@ -54,10 +59,11 @@ export async function savedReport(report) {
     ['activities', 'objectives', 'resources', 'vocabularies'].some(
       k => !Array.isArray(saved[k])
     )
-  )
+  ) {
     throw Error(
       'The saved report is incomplete. Export a fresh complete baseline.'
     );
+  }
   if (
     saved.objectives.some(o => !o || typeof o.description !== 'string') ||
     saved.vocabularies.some(
@@ -70,8 +76,9 @@ export async function savedReport(report) {
           k => typeof r[k] !== 'string'
         )
     )
-  )
+  ) {
     throw Error('The saved report contains incomplete collection records.');
+  }
   for (const a of saved.activities) {
     if (
       !a ||
@@ -79,8 +86,9 @@ export async function savedReport(report) {
       !Object.hasOwn(a, 'duration') ||
       typeof a.name !== 'string' ||
       !Array.isArray(a.activitySections)
-    )
+    ) {
       throw Error('The saved report contains an incomplete activity.');
+    }
     for (const section of a.activitySections) {
       if (
         !section ||
@@ -94,8 +102,9 @@ export async function savedReport(report) {
         !text(section.description) ||
         !Array.isArray(section.scriptLevels) ||
         !(section.tips === null || Array.isArray(section.tips))
-      )
+      ) {
         throw Error('The saved report contains an incomplete section.');
+      }
       if (
         (section.tips || []).some(
           tip =>
@@ -104,8 +113,9 @@ export async function savedReport(report) {
             !Object.hasOwn(tip, 'markdown') ||
             !text(tip.markdown)
         )
-      )
+      ) {
         throw Error('The saved report contains an incomplete callout.');
+      }
       if (
         section.scriptLevels.some(
           link =>
@@ -117,10 +127,11 @@ export async function savedReport(report) {
               level => !identity(level.id) || typeof level.name !== 'string'
             )
         )
-      )
+      ) {
         throw Error(
           'The saved report contains an incomplete level association.'
         );
+      }
     }
   }
   const fields = {
@@ -144,18 +155,25 @@ export async function savedReport(report) {
       vocabularies: saved.vocabularies,
     },
   });
-  if (snapshot.blockers.length) throw Error(snapshot.blockers.join(' '));
+  if (snapshot.blockers.length) {
+    throw Error(snapshot.blockers.join(' '));
+  }
   const ids = [];
   for (const a of saved.activities) {
-    if (!a.id) throw Error('A saved activity identity is missing.');
+    if (!a.id) {
+      throw Error('A saved activity identity is missing.');
+    }
     ids.push('a:' + a.id);
     for (const s of a.activitySections) {
-      if (!s.id) throw Error('A saved section identity is missing.');
+      if (!s.id) {
+        throw Error('A saved section identity is missing.');
+      }
       ids.push('s:' + s.id);
     }
   }
-  if (new Set(ids).size !== ids.length)
+  if (new Set(ids).size !== ids.length) {
     throw Error('Saved activity or section identities are duplicated.');
+  }
   return {
     destination: clone(report.destination),
     saved: clone(saved),
@@ -176,20 +194,23 @@ function comparable(lesson) {
   return out;
 }
 export async function connectDestinationBaseline(state, report) {
-  if (state.conflicts.length)
+  if (state.conflicts.length) {
     throw Error(
       'Resolve revision conflicts before linking a destination baseline.'
     );
-  if (!state.baseline)
+  }
+  if (!state.baseline) {
     throw Error(
       'Approve the local lesson first to establish its comparison baseline.'
     );
+  }
   const incoming = await savedReport(report),
     local = normalizedDraft(state.baseline);
-  if (canonical(comparable(local)) !== canonical(comparable(incoming.lesson)))
+  if (canonical(comparable(local)) !== canonical(comparable(incoming.lesson))) {
     throw Error(
       'The saved lesson does not match the approved local baseline. No identities were guessed and no content was changed. Use a matching approved workspace and saved report.'
     );
+  }
   const activities = {},
     sections = {};
   incoming.saved.activities.forEach((a, ai) => {
@@ -226,12 +247,13 @@ function project(incoming, base) {
     draft.resources,
     base.lesson.resources
   );
-  for (const key of Object.keys(draft.frontMatter))
+  for (const key of Object.keys(draft.frontMatter)) {
     draft.frontMatter[key] = retain(
       original.frontMatter[key],
       draft.frontMatter[key],
       base.lesson.frontMatter[key]
     );
+  }
   draft.activities = [];
   draft.sections = [];
   incoming.saved.activities.forEach((a, ai) => {
@@ -277,7 +299,9 @@ function project(incoming, base) {
                 String(active(link)?.id) === String(currentNative?.id) &&
                 active(link)?.name === level.key
             );
-            if (!matched) changedLevelIdentity = true;
+            if (!matched) {
+              changedLevelIdentity = true;
+            }
             const oldLevel = previous.progression.levels.find(
               item => item.key === level.key
             );
@@ -285,10 +309,13 @@ function project(incoming, base) {
           }
         );
       }
-      if (prior)
-        for (const key of Object.keys(content))
-          if (key !== 'progression' || !changedLevelIdentity)
+      if (prior) {
+        for (const key of Object.keys(content)) {
+          if (key !== 'progression' || !changedLevelIdentity) {
             content[key] = retain(prior[key], content[key], previous[key]);
+          }
+        }
+      }
       draft.sections.push({
         ...clone(
           previous || {
@@ -311,14 +338,16 @@ function project(incoming, base) {
   return draft;
 }
 export async function mergeDestinationReport(state, report) {
-  if (!state.destinationRevision)
+  if (!state.destinationRevision) {
     throw Error(
       'Link a matching saved baseline before comparing destination revisions.'
     );
+  }
   const incoming = await savedReport(report),
     base = state.destinationRevision;
-  if (canonical(incoming.destination) !== canonical(base.destination))
+  if (canonical(incoming.destination) !== canonical(base.destination)) {
     throw Error('This report belongs to another destination.');
+  }
   const projected = project(incoming, base),
     working = {...clone(state), generated: clone(base.lesson)},
     result = mergeGeneratedRevision(working, projected);

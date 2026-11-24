@@ -27,7 +27,9 @@ export function installAdvanced({tablist, main, tabButtons, getContext}) {
     textContent: 'Advanced',
   });
   tab.setAttribute('aria-selected', 'false');
-  if (tablist.getAttribute('role')) tab.setAttribute('role', 'tab');
+  if (tablist.getAttribute('role')) {
+    tab.setAttribute('role', 'tab');
+  }
   tab.tabIndex = -1;
   tablist.append(tab);
   const panel = el('div', {id: 'panel-advanced', hidden: true});
@@ -228,7 +230,9 @@ export function installAdvanced({tablist, main, tabButtons, getContext}) {
   };
   tab.addEventListener('click', () => show(true));
   tab.addEventListener('focus', () => {
-    if (panel.hidden) show(true);
+    if (panel.hidden) {
+      show(true);
+    }
   });
   for (const b of steps) {
     b.addEventListener('click', () => show(false));

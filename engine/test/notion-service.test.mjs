@@ -90,17 +90,19 @@ test('signed-in import reads complete pagination and nested children without any
   const nested = 'abcdefab1234123412341234567890ab';
   const {service, value} = harness(async (url, options) => {
     calls.push([url, options.method]);
-    if (url.endsWith('/oauth/token'))
+    if (url.endsWith('/oauth/token')) {
       return response({access_token: 'private'});
+    }
     assert.equal(options.headers.Authorization, 'Bearer private');
-    if (url.includes('/pages/'))
+    if (url.includes('/pages/')) {
       return response({
         last_edited_time: 'same',
         properties: {
           Name: {type: 'title', title: [{plain_text: 'Real title'}]},
         },
       });
-    if (url.includes('/blocks/' + nested))
+    }
+    if (url.includes('/blocks/' + nested)) {
       return response({
         results: [
           {
@@ -110,11 +112,13 @@ test('signed-in import reads complete pagination and nested children without any
         ],
         has_more: false,
       });
-    if (url.includes('start_cursor='))
+    }
+    if (url.includes('start_cursor=')) {
       return response({
         results: [{id: nested, type: 'column', has_children: true}],
         has_more: false,
       });
+    }
     return response({
       results: [
         {
@@ -146,10 +150,12 @@ test('token refresh rotates credentials once and resumes a read', async () => {
         refresh_token: 'refresh' + tokens,
       });
     }
-    if (options.headers.Authorization === 'Bearer old')
+    if (options.headers.Authorization === 'Bearer old') {
       return new Response('', {status: 401});
-    if (url.includes('/pages/'))
+    }
+    if (url.includes('/pages/')) {
       return response({last_edited_time: 'same', properties: {}});
+    }
     return response({
       results: [
         {type: 'heading_2', heading_2: {rich_text: [{plain_text: 'Purpose'}]}},
@@ -250,10 +256,12 @@ test('disconnect during a pending token exchange cannot reconnect the session', 
 test('source changes during Notion import are rejected rather than returning a mixed revision', async () => {
   let pageReads = 0;
   const {service, value} = harness(async url => {
-    if (url.endsWith('/oauth/token'))
+    if (url.endsWith('/oauth/token')) {
       return response({access_token: 'private'});
-    if (url.includes('/pages/'))
+    }
+    if (url.includes('/pages/')) {
       return response({last_edited_time: String(++pageReads)});
+    }
     return response({results: [], has_more: false});
   });
   await signIn(service, value);

@@ -1,12 +1,14 @@
 export function createNativeTransport(execute, {timeoutMs = 15000} = {}) {
-  if (!Number.isInteger(timeoutMs) || timeoutMs < 1)
+  if (!Number.isInteger(timeoutMs) || timeoutMs < 1) {
     throw Error('Invalid native timeout.');
+  }
   let paused = false;
   return async request => {
-    if (paused && !['read', 'context', 'search'].includes(request.action))
+    if (paused && !['read', 'context', 'search'].includes(request.action)) {
       throw Error(
         'Native writes are paused after a timeout. Recompare the current editor before resuming.'
       );
+    }
     let timer;
     const encoded = JSON.stringify({
       ...request,
@@ -32,7 +34,9 @@ export function createNativeTransport(execute, {timeoutMs = 15000} = {}) {
         error.nativeCapture = result.diagnosticCapture;
         throw error;
       }
-      if (!result) throw Error('The editor did not return verified readback.');
+      if (!result) {
+        throw Error('The editor did not return verified readback.');
+      }
       return result;
     } finally {
       clearTimeout(timer);

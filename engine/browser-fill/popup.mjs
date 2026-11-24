@@ -22,10 +22,11 @@ import {
 const $ = id => document.getElementById(id);
 $('open-transfer').onclick = async () => {
   const [tab] = await chrome.tabs.query({active: true, currentWindow: true});
-  if (tab?.id)
+  if (tab?.id) {
     await chrome.tabs.create({
       url: chrome.runtime.getURL('browser-fill/workflow.html') + '#' + tab.id,
     });
+  }
 };
 let state = {decisions: {}, history: []},
   plan = null,
@@ -62,8 +63,9 @@ const createEditorTransport = () =>
       active: true,
       currentWindow: true,
     });
-    if (!active?.id || active.id !== state.tabId)
+    if (!active?.id || active.id !== state.tabId) {
       throw Error('Return to the captured editor tab before resuming.');
+    }
     const [result] = await chrome.scripting.executeScript({
       target: {tabId: state.tabId},
       injectImmediately: true,
@@ -94,7 +96,9 @@ async function refresh() {
   $('result').textContent = state.report
     ? JSON.stringify(state.report, null, 2)
     : '';
-  if (!state.snapshot || !state.pkg) return;
+  if (!state.snapshot || !state.pkg) {
+    return;
+  }
   try {
     plan = await buildTransferPlan(state.pkg, state.snapshot, state.decisions);
     const unsupported = unsupportedNativeTransferActions(plan),
@@ -111,7 +115,9 @@ async function refresh() {
     ];
     if (blockers.length) {
       const list = node('ul', '', $('plan'));
-      for (const message of blockers) node('li', message, list);
+      for (const message of blockers) {
+        node('li', message, list);
+      }
     }
     for (const op of plan.operations) {
       const card = node('article', '', $('plan'));
@@ -132,20 +138,23 @@ async function refresh() {
           : JSON.stringify(op.after, null, 2),
         card
       );
-      if (op.requiresDecision)
+      if (op.requiresDecision) {
         for (const [decision, label] of [
           ['keep', 'Keep current editor'],
           ['replace', 'Use approved draft'],
         ]) {
           const button = node('button', label, card);
           button.onclick = async () => {
-            if (running) return;
+            if (running) {
+              return;
+            }
             state.decisions[op.id] = decision;
             delete state.journal;
             await refresh();
             persist();
           };
         }
+      }
     }
     $('stage').disabled = running || blockers.length > 0 || pending.length > 0;
   } catch (error) {
@@ -153,18 +162,23 @@ async function refresh() {
   }
 }
 $('capture').onclick = async () => {
-  if (running) return;
+  if (running) {
+    return;
+  }
   transport = createEditorTransport();
   $('capture').disabled = true;
   $('stage').disabled = true;
   try {
     const [tab] = await chrome.tabs.query({active: true, currentWindow: true});
-    if (!tab?.id) throw Error('Open the assigned sandbox editor first.');
+    if (!tab?.id) {
+      throw Error('Open the assigned sandbox editor first.');
+    }
     state.tabId = tab.id;
     const capture = await bridge({action: 'read'}),
       snapshot = normalizeNativeCapture(capture);
-    if (state.report)
+    if (state.report) {
       state.history.push({capture: state.capture, report: state.report});
+    }
     state.capture = capture;
     state.snapshot = snapshot;
     state.decisions = {};
@@ -182,12 +196,15 @@ $('capture').onclick = async () => {
   }
 };
 $('load-package').onclick = async () => {
-  if (running) return;
+  if (running) {
+    return;
+  }
   try {
-    if (state.report?.completed > 0)
+    if (state.report?.completed > 0) {
       throw Error(
         'Read / recompare the current editor before loading a different package. Current staged fields will be preserved.'
       );
+    }
     const pkg = JSON.parse($('package-json').value);
     packageProblems(pkg);
     state.pkg = pkg;
@@ -204,7 +221,9 @@ $('load-package').onclick = async () => {
   }
 };
 $('stage').onclick = async () => {
-  if (running || !plan || !state.snapshot) return;
+  if (running || !plan || !state.snapshot) {
+    return;
+  }
   const limit = Number($('run-limit').value);
   if (!Number.isInteger(limit) || limit < 1 || limit > 50) {
     notice('Choose from 1 to 50 actions per native run.');
@@ -216,8 +235,9 @@ $('stage').onclick = async () => {
   $('stop').disabled = false;
   $('capture').disabled = true;
   $('load-package').disabled = true;
-  if (state.report)
+  if (state.report) {
     state.history.push({planId: plan.id, report: clone(state.report)});
+  }
   try {
     state.report = await stageNativeTransferPlan(plan, bridge, {
       journal: state.journal,
@@ -254,7 +274,9 @@ $('stage').onclick = async () => {
 };
 $('stop').onclick = () => controller?.abort();
 $('download').onclick = () => {
-  if (!state.capture) return;
+  if (!state.capture) {
+    return;
+  }
   const evidence = {
     schemaVersion: 1,
     kind: 'native-scalar-staging-evidence',
@@ -301,13 +323,17 @@ try {
 }
 
 $('verify').onclick = async () => {
-  if (running) return;
+  if (running) {
+    return;
+  }
   running = true;
   $('verify').disabled = true;
   notice('Checking the selected playground and opening the automatic check…');
   try {
     const [tab] = await chrome.tabs.query({active: true, currentWindow: true});
-    if (!tab?.id) throw Error('Open the playground editor first.');
+    if (!tab?.id) {
+      throw Error('Open the playground editor first.');
+    }
     const destination = verificationDestination(tab.url);
     const existing = Number(
       localStorage.getItem('native-verification-controller-tab')
@@ -325,10 +351,11 @@ $('verify').onclick = async () => {
           run = JSON.parse(
             localStorage.getItem('native-verification-run-' + token) || 'null'
           );
-        if (run?.tabId !== tab.id)
+        if (run?.tabId !== tab.id) {
           throw Error(
             'An earlier verification tab belongs to another lesson. Preserve its report and close that verification tab before starting here.'
           );
+        }
         await chrome.tabs.update(existing, {active: true});
         notice(
           'The existing check is open. Inspect its status; it was not restarted.'
@@ -342,7 +369,9 @@ $('verify').onclick = async () => {
       action: 'read',
       ...(destination ? {destination, practiceConfirmed: true} : {}),
     });
-    if (capture.blockers.length) throw Error(capture.blockers.join(' '));
+    if (capture.blockers.length) {
+      throw Error(capture.blockers.join(' '));
+    }
     const token = crypto.randomUUID();
     localStorage.setItem(
       'native-verification-run-' + token,
@@ -364,15 +393,18 @@ $('verify').onclick = async () => {
 };
 
 $('resolve-levels').onclick = async () => {
-  if (running || !state.snapshot || !state.pkg) return;
+  if (running || !state.snapshot || !state.pkg) {
+    return;
+  }
   running = true;
   $('resolve-levels').disabled = true;
   $('stage').disabled = true;
   try {
-    if (state.report?.completed > 0)
+    if (state.report?.completed > 0) {
       throw Error(
         'Read / recompare the current editor before verifying a new set of mappings.'
       );
+    }
     const names = [
         ...new Set(
           state.pkg.lesson.sections.flatMap(section =>
@@ -390,10 +422,11 @@ $('resolve-levels').onclick = async () => {
       if (
         lookup.kind !== 'native-level-mappings' ||
         canonical(lookup.capture) !== canonical(state.capture)
-      )
+      ) {
         throw Error(
           'Level lookup changed or failed to preserve the captured editor.'
         );
+      }
       mappings.push(...lookup.mappings);
       notice(
         'Verified ' +
@@ -403,11 +436,13 @@ $('resolve-levels').onclick = async () => {
           ' existing levels.'
       );
     }
-    for (const mapping of mappings)
+    for (const mapping of mappings) {
       if (
         !state.snapshot.catalog.levels.some(level => level.key === mapping.key)
-      )
+      ) {
         state.snapshot.catalog.levels.push(mapping);
+      }
+    }
     delete state.journal;
     persist();
     notice(
@@ -424,21 +459,26 @@ $('resolve-levels').onclick = async () => {
 $('open-workspace').onclick = () =>
   chrome.tabs.create({url: chrome.runtime.getURL('dist/index.html')});
 $('import-deck').onclick = async () => {
-  if (running) return;
+  if (running) {
+    return;
+  }
   running = true;
   $('import-deck').disabled = true;
   notice('Exporting the selected Google Slides deck and speaker notes…');
   try {
     const [tab] = await chrome.tabs.query({active: true, currentWindow: true});
-    if (!tab?.id) throw Error('Open the Google Slides deck first.');
+    if (!tab?.id) {
+      throw Error('Open the Google Slides deck first.');
+    }
     const [response] = await chrome.scripting.executeScript({
       target: {tabId: tab.id},
       func: sourcePageExport,
       args: [tab.url],
     });
     const result = response?.result;
-    if (result?.kind !== 'google-slides-export')
+    if (result?.kind !== 'google-slides-export') {
       throw Error('No presentation export was returned.');
+    }
     const bytes = Uint8Array.from(atob(result.base64), c => c.charCodeAt(0)),
       parsed = presentationParts(await unzipOffice(bytes), result.name);
     parsed.deckUrl = result.deckUrl;

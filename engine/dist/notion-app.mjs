@@ -3,10 +3,14 @@ let status,
   brief,
   busy = false;
 const workspace = new URL(location.href).searchParams.get('workspace');
-if (workspace) sessionStorage.setItem('notion-return-workspace', workspace);
+if (workspace) {
+  sessionStorage.setItem('notion-return-workspace', workspace);
+}
 const back = new URL('index.html', location.href),
   returnWorkspace = sessionStorage.getItem('notion-return-workspace');
-if (returnWorkspace) back.searchParams.set('workspace', returnWorkspace);
+if (returnWorkspace) {
+  back.searchParams.set('workspace', returnWorkspace);
+}
 $('back').href = back.href;
 function controls() {
   $('connect').disabled = busy || !status?.configured;
@@ -20,15 +24,17 @@ async function api(action, data) {
     body: JSON.stringify(data || {}),
   });
   const result = await response.json();
-  if (!response.ok)
+  if (!response.ok) {
     throw Error(result.error || 'The connection action failed.');
+  }
   return result;
 }
 async function refresh() {
   try {
     const response = await fetch('/api/notion/status');
-    if (!response.ok)
+    if (!response.ok) {
       throw Error('Open this page through the local Lesson Studio server.');
+    }
     status = await response.json();
     $('setup').hidden = status.configured;
     $('redirect').textContent = status.redirectUri;
@@ -37,16 +43,19 @@ async function refresh() {
       : status.configured
         ? 'Ready to sign in to Notion.'
         : 'Notion app registration is not configured.';
-    if (new URL(location.href).searchParams.has('connection'))
+    if (new URL(location.href).searchParams.has('connection')) {
       $('connection-status').textContent +=
         ' The last sign-in did not finish. Try again when ready.';
+    }
   } catch (error) {
     $('connection-status').textContent = error.message;
   }
   controls();
 }
 async function run(operation) {
-  if (busy) return;
+  if (busy) {
+    return;
+  }
   busy = true;
   controls();
   try {
@@ -88,7 +97,9 @@ $('import').onclick = () =>
   });
 $('use').onclick = () => {
   try {
-    if (!brief) return;
+    if (!brief) {
+      return;
+    }
     const id = crypto.randomUUID();
     localStorage.setItem(
       'lesson-studio-pending-source-' + id,
@@ -104,7 +115,9 @@ $('use').onclick = () => {
 await refresh();
 
 $('download-brief').onclick = () => {
-  if (!brief) return;
+  if (!brief) {
+    return;
+  }
   const url = URL.createObjectURL(
       new Blob(
         [

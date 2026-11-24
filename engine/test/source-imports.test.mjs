@@ -53,8 +53,9 @@ function zip(parts, {compressed = true} = {}) {
     let crc = 0xffffffff;
     for (const b of bytes) {
       crc ^= b;
-      for (let i = 0; i < 8; i++)
+      for (let i = 0; i < 8; i++) {
         crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
+      }
     }
     crc = (crc ^ 0xffffffff) >>> 0;
     const local = Buffer.alloc(30);
@@ -383,11 +384,12 @@ test('Slides rejects missing or duplicate identities and malformed note text bef
   for (const slides of [
     [{...slide, objectId: ''}],
     [slide, structuredClone(slide)],
-  ])
+  ]) {
     assert.throws(
       () => slidesJson({presentationId: 'deck', slides}),
       /identities/
     );
+  }
   const broken = structuredClone(slide);
   broken.slideProperties.notesPage.pageElements[0].shape.text.textElements[0].textRun.content =
     {unreadable: true};

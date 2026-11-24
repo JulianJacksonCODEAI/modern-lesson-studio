@@ -19,10 +19,11 @@ export function writeZip(entries, date = new Date()) {
     centrals = [];
   let offset = 0;
   for (const {name, data} of entries) {
-    if (name.includes('\\') || name.startsWith('/'))
+    if (name.includes('\\') || name.startsWith('/')) {
       throw Error(
         'Zip paths must be relative and use forward slashes: ' + name
       );
+    }
     const nameBuf = Buffer.from(name, 'utf8'),
       crc = zlib.crc32(data) >>> 0,
       packed = zlib.deflateRawSync(data, {level: 9});
@@ -71,13 +72,16 @@ export function writeZip(entries, date = new Date()) {
 // Reads every entry back (used by the build to verify the zip it just wrote).
 export function readZip(buf) {
   const endAt = buf.lastIndexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06]));
-  if (endAt < 0) throw Error('Not a zip file.');
+  if (endAt < 0) {
+    throw Error('Not a zip file.');
+  }
   const count = buf.readUInt16LE(endAt + 10);
   let at = buf.readUInt32LE(endAt + 16);
   const out = [];
   for (let i = 0; i < count; i++) {
-    if (buf.readUInt32LE(at) !== 0x02014b50)
+    if (buf.readUInt32LE(at) !== 0x02014b50) {
       throw Error('Broken zip directory.');
+    }
     const method = buf.readUInt16LE(at + 10),
       crc = buf.readUInt32LE(at + 16),
       size = buf.readUInt32LE(at + 20),
@@ -93,8 +97,9 @@ export function readZip(buf) {
         buf.readUInt16LE(local + 28);
     const body = buf.subarray(dataAt, dataAt + size),
       data = method === 8 ? zlib.inflateRawSync(body) : Buffer.from(body);
-    if (zlib.crc32(data) >>> 0 !== crc)
+    if (zlib.crc32(data) >>> 0 !== crc) {
       throw Error('Zip entry failed its checksum: ' + name);
+    }
     out.push({name, data});
     at += 46 + nameLen + extra + comment;
   }

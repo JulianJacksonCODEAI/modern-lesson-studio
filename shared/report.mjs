@@ -88,17 +88,25 @@ export function buildReport(context) {
 }
 
 export function suggestType({item, receipt}) {
-  if (receipt && receipt.status !== 'saved-and-verified') return 'didnt save';
-  if (receipt?.verification?.mismatches?.length) return 'didnt save';
-  if (item) return 'wrong content';
+  if (receipt && receipt.status !== 'saved-and-verified') {
+    return 'didnt save';
+  }
+  if (receipt?.verification?.mismatches?.length) {
+    return 'didnt save';
+  }
+  if (item) {
+    return 'wrong content';
+  }
   return 'other';
 }
 
 export function formBody(config, fields, problemType, note) {
-  if (!PROBLEM_TYPES.includes(problemType))
+  if (!PROBLEM_TYPES.includes(problemType)) {
     throw Error('Choose a type of problem.');
-  if (!String(note || '').trim())
+  }
+  if (!String(note || '').trim()) {
     throw Error('Write a short note about what is wrong.');
+  }
   const body = new URLSearchParams();
   for (const [name, entry] of Object.entries(config.fields)) {
     const value =
@@ -107,7 +115,9 @@ export function formBody(config, fields, problemType, note) {
         : name === 'note'
           ? clip(note, 4000)
           : fields[name];
-    if (value === undefined) throw Error('Report field missing: ' + name);
+    if (value === undefined) {
+      throw Error('Report field missing: ' + name);
+    }
     body.append(entry, value);
   }
   return body;
@@ -137,15 +147,18 @@ export async function submitReportFormInPage(
   let form = null;
   for (let i = 0; i < 40 && !form; i++) {
     form = document.querySelector('form[action*="formResponse"]');
-    if (!form) await wait(250);
+    if (!form) {
+      await wait(250);
+    }
   }
-  if (!form)
+  if (!form) {
     return {
       ok: false,
       error: document.querySelector('input[type="email"],#identifierId')
         ? 'sign-in'
         : 'The report form did not load.',
     };
+  }
   const items = [...document.querySelectorAll('[role="listitem"]')];
   const itemFor = id =>
     items.find(li =>
@@ -155,27 +168,31 @@ export async function submitReportFormInPage(
     );
   const hiddenFor = id => form.querySelector('input[name="entry.' + id + '"]');
   const pressRadio = radio => {
-    for (const t of ['mousedown', 'mouseup', 'click'])
+    for (const t of ['mousedown', 'mouseup', 'click']) {
       radio.dispatchEvent(
         new MouseEvent(t, {bubbles: true, cancelable: true, view: window})
       );
+    }
   };
   for (const [id, value] of Object.entries(values)) {
     const item = itemFor(id);
-    if (!item)
+    if (!item) {
       return {
         ok: false,
         error: 'The report form has changed (question ' + id + ' is missing).',
       };
+    }
     const radio = [...item.querySelectorAll('[role="radio"]')].find(
       r => r.getAttribute('data-value') === value
     );
     // A bare click() doesn't always register on Google's radios (seen 2026-11-23); a full press does.
     if (radio) {
-      if (hiddenFor(id)?.value !== value) pressRadio(radio);
+      if (hiddenFor(id)?.value !== value) {
+        pressRadio(radio);
+      }
     } else {
       const box = item.querySelector('input[type="text"],textarea');
-      if (!box)
+      if (!box) {
         return {
           ok: false,
           error:
@@ -183,6 +200,7 @@ export async function submitReportFormInPage(
             id +
             ' has no answer box).',
         };
+      }
       Object.getOwnPropertyDescriptor(
         Object.getPrototypeOf(box),
         'value'
@@ -192,7 +210,9 @@ export async function submitReportFormInPage(
       // The page copies the answer into the hidden entry.<id> field it submits, but in a background tab
       // Chrome can hold that copy back (seen 2026-11-23). Set it directly too, as a pre-filled link would.
       const hidden = hiddenFor(id);
-      if (hidden) hidden.value = value;
+      if (hidden) {
+        hidden.value = value;
+      }
     }
   }
   const missing = () =>
@@ -206,7 +226,9 @@ export async function submitReportFormInPage(
       const radio = [...itemFor(id).querySelectorAll('[role="radio"]')].find(
         r => r.getAttribute('data-value') === values[id]
       );
-      if (radio && i % 10 === 9) pressRadio(radio);
+      if (radio && i % 10 === 9) {
+        pressRadio(radio);
+      }
     }
   }
   const notTaken = missing();
@@ -237,18 +259,25 @@ export async function submitReportFormInPage(
     !!form.querySelector('input[name="emailAddress"]')?.value;
   if (emailBox && !ticked()) {
     emailBox.click();
-    for (let i = 0; i < 20 && !ticked(); i++) await wait(100);
+    for (let i = 0; i < 20 && !ticked(); i++) {
+      await wait(100);
+    }
     if (!ticked()) {
       pressRadio(emailBox);
-      for (let i = 0; i < 20 && !ticked(); i++) await wait(100);
+      for (let i = 0; i < 20 && !ticked(); i++) {
+        await wait(100);
+      }
     }
-    if (!ticked() && press)
+    if (!ticked() && press) {
       return {
         ok: false,
         error: 'Could not tick "Record my email" on the report form.',
       };
+    }
   }
-  if (!press) return {ok: true, filled: true, emailBox: ticked()};
+  if (!press) {
+    return {ok: true, filled: true, emailBox: ticked()};
+  }
   let submit = null;
   for (let i = 0; i < 40 && !submit; i++) {
     submit =
@@ -258,10 +287,13 @@ export async function submitReportFormInPage(
           (b.getAttribute('aria-label') || b.textContent || '').trim()
         )
       );
-    if (!submit) await wait(250);
+    if (!submit) {
+      await wait(250);
+    }
   }
-  if (!submit)
+  if (!submit) {
     return {ok: false, error: 'The report form has no Submit button.'};
+  }
   setTimeout(() => submit.click(), 0);
   return {ok: true, emailBox: !!emailBox};
 }
@@ -310,13 +342,16 @@ const waitForLoad = (
       tabs.onUpdated.removeListener(on);
       reject(Error('Stopped.'));
     });
-    if (!after)
+    if (!after) {
       tabs
         .get(tabId)
         .then(t => {
-          if (t.status === 'complete') on(tabId, {status: 'complete'}, t);
+          if (t.status === 'complete') {
+            on(tabId, {status: 'complete'}, t);
+          }
         })
         .catch(() => {});
+    }
   });
 const SIGN_IN =
   'Google asked you to sign in. Sign in to your code.org Google account in this browser, then try again.';
@@ -340,8 +375,9 @@ export async function sendReportViaFormTab(
     const loaded = await waitForLoad(tabs, tab.id, timeoutMs, {
       signal: stop.signal,
     });
-    if (/accounts\.google\.com|ServiceLogin/.test(String(loaded?.url || '')))
+    if (/accounts\.google\.com|ServiceLogin/.test(String(loaded?.url || ''))) {
       throw Error(SIGN_IN);
+    }
     const submitted = waitForLoad(tabs, tab.id, timeoutMs, {
       after: t => /\/formResponse/.test(String(t?.url || '')),
       message: 'Google did not confirm the report.',
@@ -354,18 +390,21 @@ export async function sendReportViaFormTab(
       args: [values],
     });
     const started = r?.result || {};
-    if (!started.ok)
+    if (!started.ok) {
       throw Error(
         started.error === 'sign-in'
           ? SIGN_IN
           : started.error || 'The report form could not be filled in.'
       );
+    }
     await submitted;
     const [o] = await scripting.executeScript({
       target: {tabId: tab.id},
       func: reportFormOutcome,
     });
-    if (!o?.result?.recorded) throw Error('Google did not accept the report.');
+    if (!o?.result?.recorded) {
+      throw Error('Google did not accept the report.');
+    }
     return {sent: true, via: 'form-tab', at: new Date().toISOString()};
   } finally {
     stop.abort();
@@ -386,8 +425,11 @@ export async function openFilledReportForm(
   const values = {};
   for (const [id, value] of Object.entries(
     formValuesLoose(config, fields, problemType, note)
-  ))
-    if (value) values[id] = value;
+  )) {
+    if (value) {
+      values[id] = value;
+    }
+  }
   const tab = await tabs.create({url: viewformUrl(config), active: true});
   try {
     await waitForLoad(tabs, tab.id, timeoutMs);
@@ -396,7 +438,9 @@ export async function openFilledReportForm(
       func: submitReportFormInPage,
       args: [values, {submit: false}],
     });
-    if (r?.result?.ok) return {filled: true};
+    if (r?.result?.ok) {
+      return {filled: true};
+    }
   } catch {}
   await tabs.update(tab.id, {
     url: prefilledFormUrl(config, fields, problemType, note),
@@ -436,7 +480,9 @@ export function prefilledFormUrl(config, fields, problemType, note) {
         : name === 'note'
           ? clip(note, 1500)
           : clip(fields[name], 1200);
-    if (value) params.append(entry, value);
+    if (value) {
+      params.append(entry, value);
+    }
   }
   return (
     config.submitUrl.replace(/\/formResponse$/, '/viewform') +
@@ -462,12 +508,14 @@ export async function sendReport(
     redirect: 'follow',
   });
   const finalUrl = String(response.url || '');
-  if (/accounts\.google\.com|ServiceLogin/.test(finalUrl))
+  if (/accounts\.google\.com|ServiceLogin/.test(finalUrl)) {
     throw Error(
       'Google asked you to sign in. Sign in to your code.org Google account in Chrome, then try again.'
     );
-  if (!response.ok)
+  }
+  if (!response.ok) {
     throw Error('The report form returned an error (' + response.status + ').');
+  }
   return {sent: true, at: new Date().toISOString()};
 }
 

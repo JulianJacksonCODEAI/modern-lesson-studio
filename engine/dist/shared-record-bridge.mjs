@@ -2,7 +2,9 @@
 // Serialized into the selected lesson tab. Does not mutate the editor or save a lesson.
 export async function sharedRecordBridge(request) {
   try {
-    if (typeof request === 'string') request = JSON.parse(request);
+    if (typeof request === 'string') {
+      request = JSON.parse(request);
+    }
     const destination = request.destination;
     if (
       request.practiceConfirmed !== true ||
@@ -13,8 +15,9 @@ export async function sharedRecordBridge(request) {
           destination.id +
           '/edit' ||
       location.href !== destination.url
-    )
+    ) {
       throw Error('Open the confirmed owned practice lesson.');
+    }
     const stable = v =>
       Array.isArray(v)
         ? '[' + v.map(stable).join(',') + ']'
@@ -38,23 +41,26 @@ export async function sharedRecordBridge(request) {
         .map(b => b.toString(16).padStart(2, '0'))
         .join('');
     const deadline = () => {
-      if (request.deadlineAt && Date.now() > request.deadlineAt)
+      if (request.deadlineAt && Date.now() > request.deadlineAt) {
         throw Error('Shared-record operation expired before dispatch.');
+      }
     };
     const scope = doc => {
       const script = doc.querySelector(
         'script[data-lesson][data-unitforlesson]'
       );
-      if (!script)
+      if (!script) {
         throw Error('The native lesson course scope is unavailable.');
+      }
       const saved = JSON.parse(script.getAttribute('data-lesson')),
         unit = JSON.parse(script.getAttribute('data-unitforlesson'));
       if (
         saved.id !== destination.id ||
         !Number.isSafeInteger(unit?.courseVersionId) ||
         unit.courseVersionId < 1
-      )
+      ) {
         throw Error('The lesson has no verified course version.');
+      }
       return {destination, courseVersionId: unit.courseVersionId, saved};
     };
     const current = scope(document),
@@ -69,28 +75,36 @@ export async function sharedRecordBridge(request) {
           redirect: 'error',
           cache: 'no-store',
         });
-        if (!response.ok) throw Error('Could not read the saved course scope.');
+        if (!response.ok) {
+          throw Error('Could not read the saved course scope.');
+        }
         const value = scope(
           new DOMParser().parseFromString(await response.text(), 'text/html')
         );
-        if (value.courseVersionId !== current.courseVersionId)
+        if (value.courseVersionId !== current.courseVersionId) {
           throw Error('The editor course scope is stale.');
+        }
         return value;
       };
-    if (request.action === 'context') return await fresh();
+    if (request.action === 'context') {
+      return await fresh();
+    }
     const kind = request.kind || request.item?.kind;
-    if (!['resources', 'vocabularies'].includes(kind))
+    if (!['resources', 'vocabularies'].includes(kind)) {
       throw Error('Unsupported shared-record collection.');
+    }
     if (request.action === 'search') {
-      if (request.courseVersionId !== current.courseVersionId)
+      if (request.courseVersionId !== current.courseVersionId) {
         throw Error('Shared-record course scope changed.');
+      }
       const query = request.query;
       if (
         typeof query !== 'string' ||
         query.trim().length < 3 ||
         query.length > 255
-      )
+      ) {
         throw Error('Use a searchable name or word.');
+      }
       deadline();
       const response = await (
         globalThis.content && typeof globalThis.content.fetch === 'function'
@@ -112,19 +126,23 @@ export async function sharedRecordBridge(request) {
           headers: {'X-Requested-With': 'XMLHttpRequest'},
         }
       );
-      if (!response.ok) throw Error('Shared-record search failed.');
+      if (!response.ok) {
+        throw Error('Shared-record search failed.');
+      }
       const rows = await response.json();
-      if (!Array.isArray(rows) || rows.length >= 40)
+      if (!Array.isArray(rows) || rows.length >= 40) {
         throw Error(
           'Shared-record search is incomplete. Use a more specific name.'
         );
+      }
       return rows;
     }
     if (
       request.action !== 'create' ||
       request.mode !== 'explicit-approved-shared-create'
-    )
+    ) {
       throw Error('Shared-record edits and deletion are unavailable.');
+    }
     const review = request.review,
       copy = structuredClone(review);
     delete copy.id;
@@ -141,13 +159,15 @@ export async function sharedRecordBridge(request) {
         item =>
           stable(item) === stable(request.item) && item.action === 'create'
       )
-    )
+    ) {
       throw Error('This shared-record request does not match its approval.');
+    }
     const context = await fresh();
-    if ((await fingerprint(context.saved)) !== review.baselineDigest)
+    if ((await fingerprint(context.saved)) !== review.baselineDigest) {
       throw Error(
         'Saved lesson content changed before shared-record creation.'
       );
+    }
     const value = request.item.intent,
       keys =
         kind === 'resources'
@@ -166,15 +186,17 @@ export async function sharedRecordBridge(request) {
     if (
       Object.keys(value).length !== keys.length ||
       keys.some(k => !Object.hasOwn(value, k))
-    )
+    ) {
       throw Error('Unexpected shared-record fields.');
+    }
     const label = kind === 'resources' ? value.name : value.word;
     if (
       typeof label !== 'string' ||
       label.trim().length < 3 ||
       label.length > 255
-    )
+    ) {
       throw Error('Invalid shared-record name.');
+    }
     if (kind === 'resources') {
       let url;
       try {
@@ -197,17 +219,21 @@ export async function sharedRecordBridge(request) {
         value.curriculumCategory !== '' ||
         value.includeInPdf !== false ||
         value.assessment !== false
-      )
+      ) {
         throw Error('Resource fields differ from supported creation settings.');
+      }
     } else if (
       typeof value.definition !== 'string' ||
       !value.definition.trim() ||
       value.definition.length > 60000 ||
       typeof value.commonSenseMedia !== 'boolean'
-    )
+    ) {
       throw Error('Invalid vocabulary fields.');
+    }
     const token = document.querySelector('meta[name="csrf-token"]')?.content;
-    if (!token) throw Error('The native sign-in token is unavailable.');
+    if (!token) {
+      throw Error('The native sign-in token is unavailable.');
+    }
     const body =
       kind === 'resources'
         ? new URLSearchParams(
@@ -238,11 +264,14 @@ export async function sharedRecordBridge(request) {
       },
       body,
     });
-    if (!response.ok) return {outcome: 'rejected', httpStatus: response.status};
+    if (!response.ok) {
+      return {outcome: 'rejected', httpStatus: response.status};
+    }
     return {outcome: 'response-received', record: await response.json()};
   } catch (error) {
-    if (request?.transportErrors)
+    if (request?.transportErrors) {
       return {nativeBridgeError: String(error.message)};
+    }
     throw error;
   }
 }

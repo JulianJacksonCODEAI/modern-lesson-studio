@@ -36,7 +36,9 @@ function toast(message, duration = 3000) {
 function pushHistory() {
   if (state.draft) {
     state.undoStack.push(JSON.stringify(state.draft));
-    if (state.undoStack.length > 50) state.undoStack.shift();
+    if (state.undoStack.length > 50) {
+      state.undoStack.shift();
+    }
     state.redoStack = [];
     updateHistoryButtons();
   }
@@ -92,7 +94,9 @@ async function init() {
 }
 
 function renderAll() {
-  if (!state.draft) return;
+  if (!state.draft) {
+    return;
+  }
   renderNavbar();
   renderOutline();
   renderOverviews();
@@ -135,7 +139,9 @@ function renderOutline() {
     link.onclick = e => {
       e.preventDefault();
       const href = link.getAttribute('href');
-      if (!href || !href.startsWith('#')) return;
+      if (!href || !href.startsWith('#')) {
+        return;
+      }
       const targetId = href.slice(1);
       const targetEl = document.getElementById(targetId);
       if (targetEl) {
@@ -291,9 +297,13 @@ function renderActivities() {
       const calloutsHtml = (sec.callouts || [])
         .map(c => {
           let calloutClass = 'callout-tip';
-          if (/warn/i.test(c.type)) calloutClass = 'callout-warn';
-          else if (/discuss/i.test(c.type)) calloutClass = 'callout-discuss';
-          else if (/content/i.test(c.type)) calloutClass = 'callout-content';
+          if (/warn/i.test(c.type)) {
+            calloutClass = 'callout-warn';
+          } else if (/discuss/i.test(c.type)) {
+            calloutClass = 'callout-discuss';
+          } else if (/content/i.test(c.type)) {
+            calloutClass = 'callout-content';
+          }
           return `
           <div class="callout-box ${calloutClass}">
             <div class="callout-title">${escapeHtml(c.type)}</div>
@@ -359,7 +369,9 @@ function setupEventListeners() {
 
   // Undo / Redo
   $('btn-studio-undo').onclick = () => {
-    if (state.undoStack.length === 0) return;
+    if (state.undoStack.length === 0) {
+      return;
+    }
     state.redoStack.push(JSON.stringify(state.draft));
     state.draft = JSON.parse(state.undoStack.pop());
     saveDraft();
@@ -369,7 +381,9 @@ function setupEventListeners() {
   };
 
   $('btn-studio-redo').onclick = () => {
-    if (state.redoStack.length === 0) return;
+    if (state.redoStack.length === 0) {
+      return;
+    }
     state.undoStack.push(JSON.stringify(state.draft));
     state.draft = JSON.parse(state.redoStack.pop());
     saveDraft();
@@ -434,7 +448,9 @@ function setupEventListeners() {
   // Add Resource
   $('btn-add-resource').onclick = () => {
     const name = prompt('Resource name:');
-    if (!name?.trim()) return;
+    if (!name?.trim()) {
+      return;
+    }
     const url = prompt('Resource HTTPS URL:') || 'https://';
     pushHistory();
     state.draft.resources ??= [];
@@ -452,7 +468,9 @@ function setupEventListeners() {
   // Add Word
   $('btn-add-vocab').onclick = () => {
     const word = prompt('Vocabulary term:');
-    if (!word?.trim()) return;
+    if (!word?.trim()) {
+      return;
+    }
     const def = prompt('Definition:') || '';
     pushHistory();
     const fm = state.draft.frontMatter || state.draft;
@@ -479,7 +497,9 @@ function setupEventListeners() {
       const fm = state.draft.frontMatter || state.draft;
       fm.vocabulary ??= [];
       terms.forEach(t => {
-        if (!fm.vocabulary.some(v => v.word === t.word)) fm.vocabulary.push(t);
+        if (!fm.vocabulary.some(v => v.word === t.word)) {
+          fm.vocabulary.push(t);
+        }
       });
       saveDraft();
       renderVocabulary();
@@ -499,7 +519,9 @@ function setupEventListeners() {
   // AI Inspector Chat
   $('btn-inspector-send-ai').onclick = async () => {
     const text = $('inspector-ai-input').value.trim();
-    if (!text) return;
+    if (!text) {
+      return;
+    }
 
     const btn = $('btn-inspector-send-ai');
     btn.disabled = true;
@@ -588,11 +610,14 @@ function setupEventListeners() {
       });
 
       const result = response?.result;
-      if (result?.kind !== 'notion-web-clip')
+      if (result?.kind !== 'notion-web-clip') {
         throw new Error('Notion clipping failed.');
+      }
 
       const parsedBrief = notionMarkdown(result.markdown);
-      if (result.title) parsedBrief.title = result.title;
+      if (result.title) {
+        parsedBrief.title = result.title;
+      }
 
       pushHistory();
       const combined = combineSourceImports(state.draft, [parsedBrief]);
@@ -632,8 +657,9 @@ function setupEventListeners() {
       });
 
       const result = response?.result;
-      if (result?.kind !== 'google-slides-export')
+      if (result?.kind !== 'google-slides-export') {
         throw new Error('Slides export failed.');
+      }
 
       const bytes = Uint8Array.from(atob(result.base64), c => c.charCodeAt(0));
       const parsed = presentationParts(await unzipOffice(bytes), result.name);
@@ -667,7 +693,9 @@ function setupEventListeners() {
   (async () => {
     const token = await NotionConnector.getToken();
     const hintEl = document.getElementById('studio-notion-url-hint');
-    if (!token && hintEl) hintEl.hidden = false;
+    if (!token && hintEl) {
+      hintEl.hidden = false;
+    }
   })();
 
   document.getElementById('btn-studio-import-notion-url').onclick =
@@ -684,10 +712,11 @@ function setupEventListeners() {
       btn.disabled = true;
       try {
         const token = await NotionConnector.getToken();
-        if (!token)
+        if (!token) {
           throw new Error(
             'No Notion Integration Token saved. Add one in Settings (secret_...).'
           );
+        }
         const brief = await NotionConnector.fetchFromApi(urlVal);
         pushHistory();
         const combined = combineSourceImports(state.draft, [brief]);

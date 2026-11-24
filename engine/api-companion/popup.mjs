@@ -12,7 +12,9 @@ function refresh() {
   report = null;
   $('download').disabled = true;
   $('result').replaceChildren();
-  if (!snapshot || !pkg) return;
+  if (!snapshot || !pkg) {
+    return;
+  }
   try {
     report = comparePackage(pkg, snapshot);
     node('h2', 'Proposed text changes', $('result'));
@@ -31,7 +33,9 @@ function refresh() {
     );
     node('h2', 'Before saving can be supported', $('result'));
     const list = node('ul', '', $('result'));
-    for (const b of report.blockers) node('li', b, list);
+    for (const b of report.blockers) {
+      node('li', b, list);
+    }
     $('status').textContent =
       'Comparison ready. Nothing was saved to Level Builder.';
     $('download').disabled = false;
@@ -45,12 +49,16 @@ $('connect').onclick = async () => {
   $('connect').disabled = true;
   try {
     const [tab] = await chrome.tabs.query({active: true, currentWindow: true});
-    if (!tab?.id) throw Error('No active browser tab.');
+    if (!tab?.id) {
+      throw Error('No active browser tab.');
+    }
     const [result] = await chrome.scripting.executeScript({
       target: {tabId: tab.id},
       func: readAssignedLesson,
     });
-    if (!result?.result) throw Error('The assigned lesson could not be read.');
+    if (!result?.result) {
+      throw Error('The assigned lesson could not be read.');
+    }
     snapshot = result.result;
     $('status').textContent =
       `Loaded saved lesson: ${snapshot.name}. Choose your review package.`;
@@ -66,9 +74,12 @@ $('package').onchange = async e => {
   refresh();
   try {
     const file = e.target.files[0];
-    if (!file) return;
-    if (file.size > 2000000)
+    if (!file) {
+      return;
+    }
+    if (file.size > 2000000) {
       throw Error('Choose a review package smaller than 2 MB.');
+    }
     pkg = JSON.parse(await file.text());
     $('status').textContent = snapshot
       ? 'Package loaded.'
@@ -79,7 +90,9 @@ $('package').onchange = async e => {
   }
 };
 $('download').onclick = () => {
-  if (!report) return;
+  if (!report) {
+    return;
+  }
   const url = URL.createObjectURL(
     new Blob([JSON.stringify(report, null, 2)], {type: 'application/json'})
   );

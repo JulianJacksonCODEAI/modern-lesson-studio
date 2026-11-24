@@ -20,8 +20,9 @@ test('zip round-trips files with forward-slash paths, compressed and stored', ()
     back.map(e => e.name),
     entries.map(e => e.name)
   );
-  for (const [i, e] of back.entries())
+  for (const [i, e] of back.entries()) {
     assert.ok(e.data.equals(entries[i].data), e.name);
+  }
 });
 
 test('zip refuses backslash or absolute paths', () => {

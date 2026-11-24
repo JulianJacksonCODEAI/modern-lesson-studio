@@ -85,12 +85,14 @@ const native = {
       })),
   })),
 };
-if (new URL(location.href).searchParams.has('missing-levels'))
-  for (const a of native.activities)
+if (new URL(location.href).searchParams.has('missing-levels')) {
+  for (const a of native.activities) {
     for (const section of a.activitySections) {
       section.scriptLevels = [];
       section.progressionName = '';
     }
+  }
+}
 document
   .querySelector('script[data-lesson]')
   .setAttribute('data-lesson', JSON.stringify(native));
@@ -130,16 +132,19 @@ const sync = () => {
 sync();
 document.addEventListener('click', event => {
   const button = event.target.closest('[data-panel]');
-  if (button)
+  if (button) {
     $('#' + button.dataset.panel).hidden = !$('#' + button.dataset.panel)
       .hidden;
-  if (event.target.id === 'fixture-save')
+  }
+  if (event.target.id === 'fixture-save') {
     $('#save-attempts').textContent = String(++savedCalls);
+  }
 });
 function update(event) {
   const n = event.target;
-  if (n.dataset.nativeRoot) current[n.dataset.nativeRoot] = n.value;
-  else if (n.dataset.ak) {
+  if (n.dataset.nativeRoot) {
+    current[n.dataset.nativeRoot] = n.value;
+  } else if (n.dataset.ak) {
     current.activities[Number(n.dataset.ai)][n.dataset.ak] =
       n.dataset.ak === 'duration'
         ? n.value === ''
@@ -154,7 +159,9 @@ function update(event) {
       key = n.dataset.sk;
     s[key] =
       key === 'duration' ? n.value : key === 'remarks' ? n.checked : n.value;
-  } else return;
+  } else {
+    return;
+  }
   sync();
 }
 document.addEventListener('input', update);
@@ -162,8 +169,9 @@ document.addEventListener('change', update);
 const bridge = request =>
   nativeEditorBridge(JSON.stringify({...request, fixture: true}));
 async function run(limit) {
-  for (const id of ['fixture-start', 'fixture-resume', 'fixture-rerun'])
+  for (const id of ['fixture-start', 'fixture-resume', 'fixture-rerun']) {
     $('#' + id).disabled = true;
+  }
   try {
     const report = await stagePlan(plan, driver, {
       journal,
@@ -171,9 +179,12 @@ async function run(limit) {
     });
     journal = report.journal;
     const capture = await bridge({action: 'read'});
-    if (canonical(capture.protection) !== canonical(initialProtection))
+    if (canonical(capture.protection) !== canonical(initialProtection)) {
       throw Error('Unmanaged native evidence changed.');
-    if (savedCalls !== 0) throw Error('A Save control was invoked.');
+    }
+    if (savedCalls !== 0) {
+      throw Error('A Save control was invoked.');
+    }
     $('#fixture-results').textContent = JSON.stringify(
       {
         status: report.status,
@@ -242,8 +253,9 @@ $('#fixture-auto').onclick = async () => {
     'fixture-start',
     'fixture-resume',
     'fixture-rerun',
-  ])
+  ]) {
     $('#' + id).disabled = true;
+  }
   const result = await runNativeVerification(bridge, {
     onProgress: message => {
       $('#fixture-results').textContent = message;
@@ -296,16 +308,21 @@ function decorateSection(area, ai, si) {
     button.textContent = text;
     button.dataset.ai = ai;
     button.dataset.si = si;
-    if (text === 'Activity Section') button.className = 'add-activity-section';
-    else button.dataset.callout = 'true';
+    if (text === 'Activity Section') {
+      button.className = 'add-activity-section';
+    } else {
+      button.dataset.callout = 'true';
+    }
     root.append(button);
   }
 }
 for (const [ai, card] of [
   ...document.querySelectorAll('.uitest-activity-card'),
-].entries())
-  for (const [si, area] of [...card.querySelectorAll('textarea')].entries())
+].entries()) {
+  for (const [si, area] of [...card.querySelectorAll('textarea')].entries()) {
     decorateSection(area, ai, si);
+  }
+}
 function fixtureStructuralEvent(event) {
   const button = event.target;
   if (
@@ -627,7 +644,7 @@ function nativeLevelModal(ai, si, root) {
 }
 for (const [ai, card] of [
   ...document.querySelectorAll('.uitest-activity-card'),
-].entries())
+].entries()) {
   for (const [si, area] of [...card.querySelectorAll('textarea')].entries()) {
     const root = area.parentElement,
       button = document.createElement('button');
@@ -638,6 +655,7 @@ for (const [ai, card] of [
     root.append(button);
     progressionControl(ai, si, root);
   }
+}
 const levelCheck = document.createElement('button');
 levelCheck.id = 'fixture-levels';
 levelCheck.textContent = 'Run accepted level transfer and restore';
@@ -751,7 +769,9 @@ function refreshTipIcons(ai, si) {
   const root = document
     .querySelectorAll('.uitest-activity-card')
     [ai].querySelectorAll('textarea')[si].parentElement;
-  for (const old of root.querySelectorAll('span[data-tip]')) old.remove();
+  for (const old of root.querySelectorAll('span[data-tip]')) {
+    old.remove();
+  }
   for (const [ci, tip] of current.activities[ai].activitySections[
     si
   ].tips.entries()) {

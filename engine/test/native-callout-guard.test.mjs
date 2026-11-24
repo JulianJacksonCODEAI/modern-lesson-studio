@@ -36,7 +36,9 @@ test('multi-callout edits rehearse the reviewed record and restore all neighbori
     ...adapter,
     checkpoint: async () => {},
     bridge: async request => {
-      if (!['read', 'lookup-levels'].includes(request.action)) mutations++;
+      if (!['read', 'lookup-levels'].includes(request.action)) {
+        mutations++;
+      }
       return adapter.bridge(request);
     },
   };

@@ -54,7 +54,9 @@ function harness() {
     search: async kind => (hide ? [] : clone(catalog[kind])),
     load: async k => clone(attempts.get(k)),
     persist: async (k, v) => {
-      if (failPersist) throw Error('Storage unavailable');
+      if (failPersist) {
+        throw Error('Storage unavailable');
+      }
       attempts.set(k, clone(v));
     },
     create: async (review, item) => {
@@ -67,7 +69,9 @@ function harness() {
         ...(item.kind === 'resources' ? {isRollup: false} : {}),
       };
       catalog[item.kind].push(record);
-      if (lose) throw Error('Reply lost');
+      if (lose) {
+        throw Error('Reply lost');
+      }
       return {outcome: 'response-received', record: clone(record)};
     },
   };
@@ -156,8 +160,12 @@ test('storage failure, stale baseline and tampered approval stop before creation
   for (const failure of ['storage', 'baseline', 'approval']) {
     const h = harness(),
       review = await prepareSharedReview(h.state.pkg, h.shared);
-    if (failure === 'storage') h.failPersist = true;
-    if (failure === 'baseline') h.state.server.overview = 'Outside edit';
+    if (failure === 'storage') {
+      h.failPersist = true;
+    }
+    if (failure === 'baseline') {
+      h.state.server.overview = 'Outside edit';
+    }
     await assert.rejects(
       executeSharedReview(
         review,

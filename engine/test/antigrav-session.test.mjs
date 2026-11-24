@@ -40,8 +40,9 @@ test('any lesson editor tab is a destination; other pages are not', () => {
     'https://levelbuilder-studio.code.org/lessons/123/edit?x=1',
     'https://docs.google.com/presentation/d/x/edit',
     undefined,
-  ])
+  ]) {
     assert.equal(destinationFromTab({url}), null, String(url));
+  }
 });
 
 test('pasted lesson links and IDs become the canonical editor URL', () => {
@@ -49,17 +50,19 @@ test('pasted lesson links and IDs become the canonical editor URL', () => {
     'https://levelbuilder-studio.code.org/lessons/42/edit',
     'levelbuilder-studio.code.org/lessons/42',
     '  42 ',
-  ])
+  ]) {
     assert.equal(
       editorUrlFromInput(input),
       'https://levelbuilder-studio.code.org/lessons/42/edit'
     );
+  }
   for (const input of [
     'https://levelbuilder-studio.code.org/s/x/lessons/3/edit',
     'abc',
     '',
-  ])
+  ]) {
     assert.equal(editorUrlFromInput(input), null);
+  }
 });
 
 test('saving needs the user to confirm the lesson is theirs; lesson 10 is flagged', () => {
@@ -249,6 +252,7 @@ test('unit and course lesson links are opened as editor pages so their real ID c
     'https://levelbuilder-studio.code.org/lessons/42/edit',
     'abc',
     '',
-  ])
+  ]) {
     assert.equal(lessonPageFromInput(bad), null, bad);
+  }
 });

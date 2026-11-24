@@ -26,11 +26,15 @@ function screen(store = new Map()) {
       this.children = [];
     },
     click() {
-      if (this.download) downloads.push(this.download);
+      if (this.download) {
+        downloads.push(this.download);
+      }
     },
   });
   const get = id => {
-    if (!elements.has(id)) elements.set(id, node());
+    if (!elements.has(id)) {
+      elements.set(id, node());
+    }
     return elements.get(id);
   };
   const context = vm.createContext({

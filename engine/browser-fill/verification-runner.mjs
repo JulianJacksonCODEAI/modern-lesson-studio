@@ -59,9 +59,13 @@ function saveReport() {
 }
 download.onclick = saveReport;
 function watchUpdates() {
-  if (typeof revision !== 'string') return;
+  if (typeof revision !== 'string') {
+    return;
+  }
   const poll = setInterval(async () => {
-    if (!continueUpdates) return;
+    if (!continueUpdates) {
+      return;
+    }
     if (
       localStorage.getItem('native-verification-owner') !==
       new URL(location.href).hash.slice(1)
@@ -96,18 +100,20 @@ async function executeVerification() {
     const token = new URL(location.href).hash.slice(1),
       key = 'native-verification-run-' + token;
     const serialized = localStorage.getItem(key);
-    if (!serialized)
+    if (!serialized) {
       throw Error(
         'Open this check from the companion on your playground editor.'
       );
+    }
     const run = JSON.parse(serialized);
     const selected = verificationDestination(
       (await chrome.tabs.get(run.tabId)).url
     );
-    if (canonical(selected) !== canonical(run.destination || null))
+    if (canonical(selected) !== canonical(run.destination || null)) {
       throw Error(
         'The selected verification destination changed. No checks were started.'
       );
+    }
     latestKey = 'native-verification-latest-' + (selected?.id || 8898985);
     previous = readTransferRecord(localStorage, latestKey);
     const owner = localStorage.getItem('native-verification-owner');
@@ -118,18 +124,20 @@ async function executeVerification() {
     }
     localStorage.setItem('native-verification-owner', token);
     const ownTab = await chrome.tabs.getCurrent();
-    if (ownTab?.id)
+    if (ownTab?.id) {
       localStorage.setItem(
         'native-verification-controller-tab',
         String(ownTab.id)
       );
+    }
     if (
       !Number.isInteger(run.tabId) ||
       Date.now() - run.createdAt > (run.started ? 8 * 60 * 60 * 1000 : 60000)
-    )
+    ) {
       throw Error(
         'The verification launch expired. Open a fresh check from the companion.'
       );
+    }
     run.started = true;
     localStorage.setItem(key, JSON.stringify(run));
     revision = (
@@ -174,8 +182,9 @@ async function executeVerification() {
         chrome.runtime.getURL('browser-fill/local-save-job.json'),
         {cache: 'no-store'}
       );
-      if (!response.ok)
+      if (!response.ok) {
         throw Error('The approved local save job is unavailable.');
+      }
       const job = await response.json();
       document.getElementById('save-review').textContent =
         (job.review.sectionAdditions || [])
@@ -235,7 +244,7 @@ async function executeVerification() {
           const usages = [];
           for (const level of reviewedLevelGroups(review).flatMap(
             c => c.addLevels
-          ))
+          )) {
             usages.push(
               await readUsage({
                 action: 'read',
@@ -243,6 +252,7 @@ async function executeVerification() {
                 name: level.name,
               })
             );
+          }
           return findUnitLevelConflicts(review, usages);
         },
         recover: async () => {
@@ -250,10 +260,11 @@ async function executeVerification() {
             localStorage,
             'native-approved-save-staging'
           );
-          if (!point?.plan || !point.initialCapture)
+          if (!point?.plan || !point.initialCapture) {
             throw Error(
               'No owned unsaved staging checkpoint is available. Outside edits were preserved.'
             );
+          }
           await recoverNativeLevelCheck(bridge, point);
         },
         stage: () =>
@@ -289,12 +300,13 @@ async function executeVerification() {
             'native-approved-save-checkpoint',
             point
           );
-          if (point.stage)
+          if (point.stage) {
             writeTransferRecord(
               localStorage,
               'native-approved-save-staging',
               point.stage
             );
+          }
         },
         onProgress: message => {
           status.textContent = message;
@@ -341,10 +353,11 @@ async function executeVerification() {
         canonical(current.lesson) !== canonical(original.lesson) ||
         canonical(current.nativeProtection) !==
           canonical(original.nativeProtection)
-      )
+      ) {
         throw Error(
           'The editor changed after the completed rehearsal. Recompare before preparing a save review.'
         );
+      }
       evidence = clone(previous);
       evidence.reusedRehearsal = true;
       evidence.sourceRehearsalRevision = previous.revision;
@@ -379,9 +392,15 @@ async function executeVerification() {
       evidence.targetState = targetState;
       evidence.revision = revision;
       evidence.generatedAt = new Date().toISOString();
-      if (recovery) evidence.recovery = recovery;
-      if (structuralRecovery) evidence.structuralRecovery = structuralRecovery;
-      if (levelRecovery) evidence.levelRecovery = levelRecovery;
+      if (recovery) {
+        evidence.recovery = recovery;
+      }
+      if (structuralRecovery) {
+        evidence.structuralRecovery = structuralRecovery;
+      }
+      if (levelRecovery) {
+        evidence.levelRecovery = levelRecovery;
+      }
       if (evidence.status === 'passed-and-restored') {
         evidence.structure = await runNativeStructureVerification(bridge, {
           onProgress: message => {
@@ -410,8 +429,9 @@ async function executeVerification() {
           chrome.runtime.getURL('browser-fill/accepted-rehearsal.json'),
           {cache: 'no-store'}
         );
-        if (!response.ok)
+        if (!response.ok) {
           throw Error('The locally approved rehearsal package is unavailable.');
+        }
         const pkg = await response.json();
         evidence.levels = await runAcceptedNativeRehearsal(bridge, pkg, {
           onProgress: message => {
@@ -432,12 +452,13 @@ async function executeVerification() {
           evidence.restorationError = evidence.levels.restorationError;
         }
       }
-      if (revision.startsWith('verification-release-'))
+      if (revision.startsWith('verification-release-')) {
         evidence.acceptedPackageCheck = {
           status: 'not-configured',
           reason:
             'The release default runs field and temporary-structure checks only. Private accepted-package rehearsal requires separate local configuration.',
         };
+      }
     }
     evidence.runnerVersion = 'selected-playground-check-15';
     evidence.companionVersion = chrome.runtime.getManifest().version;
@@ -544,7 +565,7 @@ async function executeVerification() {
               ? 'Original values restored.'
               : 'Restoration was not confirmed.'));
     const reviewBox = document.getElementById('save-review');
-    if (reviewBox)
+    if (reviewBox) {
       reviewBox.textContent =
         evidence.saveReview?.status === 'ready-for-review'
           ? (evidence.saveReview.sectionAdditions || [])
@@ -576,6 +597,7 @@ async function executeVerification() {
               .join('\n') +
             '\nUnlisted lesson content and settings are retained. A live save remains disabled pending explicit approval and a fresh restaging check.'
           : evidence.saveReview?.error || 'Not prepared.';
+    }
     download.hidden = false;
     saveReport();
     if (!evidence.restored) {
@@ -605,10 +627,11 @@ async function executeVerification() {
       revision,
       generatedAt: new Date().toISOString(),
     };
-    if (bridge)
+    if (bridge) {
       try {
         evidence.cleanupCapture = await bridge({action: 'read'});
       } catch {}
+    }
     try {
       writeTransferRecord(localStorage, latestKey, evidence);
     } catch {}

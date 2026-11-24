@@ -109,7 +109,7 @@ export function renderLesson(container, lesson, onReport) {
         className: 'section',
         meta,
       });
-      for (const c of s.callouts || [])
+      for (const c of s.callouts || []) {
         node.append(
           item(
             `${c.type} (in “${s.title || 'Untitled section'}”)`,
@@ -118,7 +118,8 @@ export function renderLesson(container, lesson, onReport) {
             {heading: 'h5', className: 'callout'}
           )
         );
-      if (s.progression)
+      }
+      if (s.progression) {
         node.append(
           item(
             `Levels: ${s.progression.title || 'Untitled level group'}`,
@@ -130,6 +131,7 @@ export function renderLesson(container, lesson, onReport) {
             {heading: 'h5', className: 'levels'}
           )
         );
+      }
       block.append(node);
     }
     guide.append(block);
@@ -145,25 +147,33 @@ export function renderReview(
 ) {
   const counts = review.expectedCounts || {};
   const lines = [];
-  for (const c of review.fieldChanges || [])
+  for (const c of review.fieldChanges || []) {
     lines.push(`Update ${c.label || c.path?.join(' / ') || 'a lesson field'}`);
-  for (const c of review.activityAdditions || [])
+  }
+  for (const c of review.activityAdditions || []) {
     lines.push(`Add activity “${c.activity?.name}”`);
-  for (const c of review.sectionAdditions || [])
+  }
+  for (const c of review.sectionAdditions || []) {
     lines.push(`Add section “${c.section?.name || 'Untitled'}” (${c.label})`);
-  for (const c of review.calloutAdditions || [])
+  }
+  for (const c of review.calloutAdditions || []) {
     lines.push(`Add ${c.tip?.type || 'callout'} (${c.label})`);
-  for (const c of review.changes || [])
-    if (c.addLevels?.length)
+  }
+  for (const c of review.changes || []) {
+    if (c.addLevels?.length) {
       lines.push(
         `Link ${c.addLevels.length} existing level${c.addLevels.length === 1 ? '' : 's'} to “${c.section || c.activity}”`
       );
-  for (const c of review.objectiveAdditions || [])
+    }
+  }
+  for (const c of review.objectiveAdditions || []) {
     lines.push(`Add objective: ${c.objective?.description}`);
-  for (const c of review.sharedAdditions || [])
+  }
+  for (const c of review.sharedAdditions || []) {
     lines.push(
       `Link ${c.kind === 'resources' ? 'resource' : 'vocabulary word'} “${c.record?.name || c.record?.word}”`
     );
+  }
   const summary = el('p', {
     className: 'review-summary',
     textContent: `After saving, the lesson will have ${counts.activities ?? '?'} activities, ${counts.sections ?? '?'} sections, ${counts.callouts ?? '?'} callouts and ${counts.levels ?? '?'} level links. Everything not listed stays as it is.`,

@@ -9,12 +9,16 @@ test('slow file imports preserve edits made while reading or verifying', async (
     const file = {
       size: 2,
       text: async () => {
-        if (phase === 'reading') await pending;
+        if (phase === 'reading') {
+          await pending;
+        }
         return '{}';
       },
     };
     const operation = async original => {
-      if (phase === 'verifying') await pending;
+      if (phase === 'verifying') {
+        await pending;
+      }
       return {...original, draft: 'Imported'};
     };
     const job = prepareWorkspaceImport(() => state, file, operation);

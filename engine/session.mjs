@@ -63,15 +63,21 @@ export function lessonPageFromInput(text) {
   } catch {
     return null;
   }
-  if (u.protocol !== 'https:' || u.hostname !== 'levelbuilder-studio.code.org')
+  if (
+    u.protocol !== 'https:' ||
+    u.hostname !== 'levelbuilder-studio.code.org'
+  ) {
     return null;
+  }
   const p = u.pathname.replace(/\/+$/, '');
   const unit = /^\/s\/[\w-]+\/lessons\/[1-9]\d*(?:\/edit)?$/.test(p),
     course =
       /^\/courses\/[\w-]+\/units\/[1-9]\d*\/lessons\/[1-9]\d*(?:\/edit)?$/.test(
         p
       );
-  if (!unit && !course) return null;
+  if (!unit && !course) {
+    return null;
+  }
   return (
     'https://levelbuilder-studio.code.org' +
     (p.endsWith('/edit') ? p : p + '/edit')
@@ -107,8 +113,9 @@ export async function lessonDescriptionInPage() {
   const script = document.querySelector(
     'script[data-lesson][data-unitforlesson]'
   );
-  if (!script)
+  if (!script) {
     return {error: 'This page is not a Level Builder lesson editor.'};
+  }
   const lesson = JSON.parse(script.getAttribute('data-lesson')),
     unit = JSON.parse(script.getAttribute('data-unitforlesson'));
   const pick = (o, keys) =>
@@ -130,8 +137,9 @@ export function createSession({
   onProgress = () => {},
   onState = () => {},
 }) {
-  if (!validDestination(destination))
+  if (!validDestination(destination)) {
     throw Error('Open the lesson editor page in Level Builder.');
+  }
   const key = 'antigrav-transfer-' + destination.id + '-' + tabId;
   let state = readTransferRecord(storage, key) || {
     tabId,
@@ -144,10 +152,11 @@ export function createSession({
   let io;
   const tabCheck = async () => {
     const tab = await chrome.tabs.get(tabId);
-    if (tab.url !== destination.url || tab.discarded)
+    if (tab.url !== destination.url || tab.discarded) {
       throw Error(
         'The Level Builder tab moved or was closed. Reopen the lesson and start again.'
       );
+    }
   };
   // The editor's controls (React Select, objective rows) only respond when its tab is showing, as in the prototype's prepareReview.
   const showEditor = async () => {
@@ -155,7 +164,9 @@ export function createSession({
     await chrome.tabs.update(tabId, {active: true});
   };
   async function makeIO() {
-    if (io) return io;
+    if (io) {
+      return io;
+    }
     const [
       {createNativeTransport},
       {nativeEditorBridge},
@@ -204,12 +215,13 @@ export function createSession({
         const usages = [];
         for (const level of reviewedLevelGroups(review).flatMap(
           c => c.addLevels
-        ))
+        )) {
           usages.push(
             await usage(
               bound({action: 'read', levelId: level.levelId, name: level.name})
             )
           );
+        }
         return findUnitLevelConflicts(review, usages);
       },
       onProgress,
@@ -269,10 +281,11 @@ export function createSession({
       'lesson-studio-native-verification',
       {ifAvailable: true},
       async lock => {
-        if (!lock)
+        if (!lock) {
           throw Error(
             'Another run is using this lesson. Wait for it to finish.'
           );
+        }
         return action();
       }
     );
@@ -311,7 +324,9 @@ export function createSession({
           (await makeIO()).shared
         );
         const items = candidates.map(c => {
-          if (c.problem) return {...c, status: 'cannot-add'};
+          if (c.problem) {
+            return {...c, status: 'cannot-add'};
+          }
           const item = review.items.find(i => sameIntent(c, i));
           return {...c, status: item?.action === 'reuse' ? 'found' : 'missing'};
         });
@@ -324,10 +339,11 @@ export function createSession({
     prepare: (pkg, {add = [], skip = [], addObjectives = true} = {}) =>
       locked(async () => {
         requireOwnership();
-        if (state.receipt?.attempted)
+        if (state.receipt?.attempted) {
           throw Error(
             'This lesson already has a save attempt in this run. Use Check again.'
           );
+        }
         const io = await makeIO();
         const candidates = sharedCandidates(pkg.lesson);
         const check = state.sharedCheck?.items || [];
@@ -361,18 +377,20 @@ export function createSession({
                 add.some(a => a.kind === c.kind && a.index === c.index)
             )
         );
-        if (unexpected.length)
+        if (unexpected.length) {
           throw Error(
             'Level Builder changed while you were choosing. Check the resources again.'
           );
+        }
         const approval = {reviewId: review.id, approved: true};
         const receipt = await executeSharedReview(review, approval, io.shared);
         state.sharedReceipt = receipt;
         persist();
-        if (receipt.status !== 'shared-records-verified')
+        if (receipt.status !== 'shared-records-verified') {
           throw Error(
             'Adding a resource to Level Builder was not confirmed, so the lesson was not prepared. It will not be sent again. Report this problem.'
           );
+        }
         const bound = await bindSharedRecords(reduced, receipt);
         delete state.job;
         state.pkg = bound;
@@ -398,7 +416,9 @@ export function createSession({
     // One save after explicit approval, then automatic readback-only recheck (never resends).
     approveAndSave: () =>
       locked(async () => {
-        if (!state.job) throw Error('Prepare the review first.');
+        if (!state.job) {
+          throw Error('Prepare the review first.');
+        }
         requireOwnership();
         await showEditor();
         const io = await makeIO();
@@ -410,10 +430,11 @@ export function createSession({
           const retained = await io.loadReceipt(
             await saveRequestDigest(state.job.review)
           );
-          if (!retained?.attempted)
+          if (!retained?.attempted) {
             throw Error(
               'The save receipt is missing. No second save will be attempted.'
             );
+          }
           state.receipt = await executeTransfer(state.job, io);
           state.automaticRecheck = true;
           state.needsRecovery = false;
@@ -428,7 +449,9 @@ export function createSession({
         const receipt = await io.loadReceipt(
           await saveRequestDigest(state.job.review)
         );
-        if (!receipt?.attempted) throw Error('No save attempt to check.');
+        if (!receipt?.attempted) {
+          throw Error('No save attempt to check.');
+        }
         state.receipt = await executeTransfer(state.job, io);
         persist();
         return state.receipt;
@@ -436,8 +459,9 @@ export function createSession({
     // Only for a run that staged changes and failed before saving.
     restore: () =>
       locked(async () => {
-        if (state.receipt?.attempted)
+        if (state.receipt?.attempted) {
           throw Error('A save was attempted; only Check again is available.');
+        }
         await recoverNativeLevelCheck(
           (await makeIO()).bridge,
           state.checkpoint.stage

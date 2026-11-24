@@ -18,21 +18,24 @@ export const SANDBOX_LESSONS = Object.freeze({
   8898985: {label: 'Sandbox lesson 11', protected: false},
 });
 export function assertWritableLesson(d, ownershipConfirmed) {
-  if (!validDestination(d))
+  if (!validDestination(d)) {
     throw Error(
       'Open the lesson in Level Builder using its editor page: https://levelbuilder-studio.code.org/lessons/LESSON_ID/edit'
     );
-  if (ownershipConfirmed !== true)
+  }
+  if (ownershipConfirmed !== true) {
     throw Error(
       'Confirm that this is your lesson, not an official course lesson, before saving to it.'
     );
+  }
   return SANDBOX_LESSONS[d.id] || {label: 'Lesson ' + d.id, protected: false};
 }
 export function selectDestination(url, practiceConfirmed) {
-  if (practiceConfirmed !== true)
+  if (practiceConfirmed !== true) {
     throw Error(
       'Confirm that this is your editable practice lesson, not an official source.'
     );
+  }
   const match = String(url)
     .trim()
     .match(
@@ -41,10 +44,11 @@ export function selectDestination(url, practiceConfirmed) {
   const destination = match
     ? {id: Number(match[1]), url: String(url).trim()}
     : null;
-  if (!validDestination(destination))
+  if (!validDestination(destination)) {
     throw Error(
       'Use the canonical editor URL: https://levelbuilder-studio.code.org/lessons/LESSON_ID/edit'
     );
+  }
   assertWritableLesson(destination, practiceConfirmed);
   return destination;
 }

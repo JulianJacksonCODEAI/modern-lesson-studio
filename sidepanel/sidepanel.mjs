@@ -76,7 +76,9 @@ async function activeTab() {
   return tab;
 }
 async function withBusy(button, label, action) {
-  if (busy) return;
+  if (busy) {
+    return;
+  }
   busy = true;
   const old = button.textContent;
   button.disabled = true;
@@ -94,7 +96,9 @@ async function withBusy(button, label, action) {
 }
 function notes(container, list, title) {
   container.hidden = !list.length;
-  if (!list.length) return;
+  if (!list.length) {
+    return;
+  }
   const ul = document.createElement('ul');
   for (const w of list) {
     const li = document.createElement('li');
@@ -117,36 +121,51 @@ function selectStep(step, {focus = false} = {}) {
     tab.setAttribute('aria-selected', String(on));
     tab.toggleAttribute('focusgroupstart', on);
     panel.hidden = !on;
-    if (on) panel.tabIndex = 0;
-    else panel.removeAttribute('tabindex');
+    if (on) {
+      panel.tabIndex = 0;
+    } else {
+      panel.removeAttribute('tabindex');
+    }
   }
-  if (focus) $('tab-' + step).focus();
+  if (focus) {
+    $('tab-' + step).focus();
+  }
   // Look for the lesson editor only once the Save step stays open, so arrowing past the tab doesn't start a search.
   clearTimeout(selectStep.timer);
-  if (step === 'save')
+  if (step === 'save') {
     selectStep.timer = setTimeout(() => {
-      if (currentStep === 'save') findDestination();
+      if (currentStep === 'save') {
+        findDestination();
+      }
     }, 300);
+  }
 }
 for (const s of STEPS) {
   $('tab-' + s).addEventListener('click', () => selectStep(s));
   $('tab-' + s).addEventListener('focus', () => {
-    if (currentStep !== s || $('panel-' + s).hidden) selectStep(s);
+    if (currentStep !== s || $('panel-' + s).hidden) {
+      selectStep(s);
+    }
   }); // selection follows focus
 }
 if (!Object.hasOwn(HTMLElement.prototype, 'focusGroup')) {
-  for (const b of tabButtons)
+  for (const b of tabButtons) {
     b.tabIndex = b.getAttribute('aria-selected') === 'true' ? 0 : -1;
+  }
   $('tablist').addEventListener('keydown', e => {
     const i = tabButtons.indexOf(document.activeElement);
-    if (i < 0) return;
+    if (i < 0) {
+      return;
+    }
     const next = {
       ArrowRight: i + 1,
       ArrowLeft: i - 1,
       Home: 0,
       End: tabButtons.length - 1,
     }[e.key];
-    if (next === undefined) return;
+    if (next === undefined) {
+      return;
+    }
     e.preventDefault();
     const step = STEPS[(next + STEPS.length) % STEPS.length];
     selectStep(step, {focus: true});
@@ -154,12 +173,13 @@ if (!Object.hasOwn(HTMLElement.prototype, 'focusGroup')) {
       b.tabIndex = b.getAttribute('aria-selected') === 'true' ? 0 : -1;
     });
   });
-  for (const s of STEPS)
+  for (const s of STEPS) {
     $('tab-' + s).addEventListener('click', () =>
       tabButtons.forEach(b => {
         b.tabIndex = b.getAttribute('aria-selected') === 'true' ? 0 : -1;
       })
     );
+  }
 }
 
 // ---------- 1 · Import ----------
@@ -354,7 +374,9 @@ async function findDestination() {
 }
 function renderDestination() {
   $('dest-found').hidden = !destination;
-  if (!destination) return;
+  if (!destination) {
+    return;
+  }
   const sandbox = SANDBOX_LESSONS[destination.id];
   const rows = [
     [
@@ -393,7 +415,9 @@ $('btn-change-lesson').addEventListener('click', () => {
 // Resolves when the tab finishes loading (or already has).
 async function tabLoaded(tabId, ms = 30000) {
   const now = await chrome.tabs.get(tabId);
-  if (now.status === 'complete') return now;
+  if (now.status === 'complete') {
+    return now;
+  }
   return new Promise((resolve, reject) => {
     const on = (id, info, tab) => {
       if (id === tabId && info.status === 'complete') {
@@ -439,10 +463,11 @@ $('dest-open').addEventListener('submit', async e => {
       func: lessonDescriptionInPage,
     });
     const id = r?.result?.id;
-    if (!Number.isSafeInteger(id) || id < 1)
+    if (!Number.isSafeInteger(id) || id < 1) {
       throw Error(
         r?.result?.error || 'That page is not a Level Builder lesson editor.'
       );
+    }
     await chrome.tabs.update(tab.id, {
       url: `https://levelbuilder-studio.code.org/lessons/${id}/edit`,
     });
@@ -461,10 +486,14 @@ document.querySelectorAll('[data-open-lesson]').forEach(b =>
   })
 );
 chrome.tabs.onUpdated.addListener((id, info) => {
-  if (currentStep === 'save' && info.status === 'complete') findDestination();
+  if (currentStep === 'save' && info.status === 'complete') {
+    findDestination();
+  }
 });
 chrome.tabs.onActivated.addListener(() => {
-  if (currentStep === 'save') findDestination();
+  if (currentStep === 'save') {
+    findDestination();
+  }
 });
 
 // Resources and vocabulary: Skip or Add for anything Level Builder doesn't have.
@@ -529,7 +558,7 @@ function renderShared() {
       });
       li.append(link);
     }
-    if (c.status === 'found')
+    if (c.status === 'found') {
       li.append(
         Object.assign(document.createElement('p'), {
           className: 'ok-text',
@@ -545,14 +574,16 @@ function renderShared() {
           'link'
         )
       );
-    else if (c.status === 'cannot-add') {
+    } else if (c.status === 'cannot-add') {
       li.append(
         Object.assign(document.createElement('p'), {
           className: 'warn-text',
           textContent: `Can't be added automatically (${c.problem}). It will be skipped.`,
         })
       );
-      if (c.url) li.append(copyButton(c.url));
+      if (c.url) {
+        li.append(copyButton(c.url));
+      }
     } else {
       const fs = document.createElement('fieldset');
       fs.className = 'choice';
@@ -609,8 +640,9 @@ function radioChoice(c, legend, options, fallback) {
   fs.append(
     Object.assign(document.createElement('legend'), {textContent: legend})
   );
-  if (fallback && !sharedChoices.has(choiceKey(c)))
+  if (fallback && !sharedChoices.has(choiceKey(c))) {
     sharedChoices.set(choiceKey(c), fallback);
+  }
   for (const [value, text] of options) {
     const id = `choice-${c.kind}-${c.index}-${value}`;
     const input = Object.assign(document.createElement('input'), {
@@ -747,13 +779,14 @@ function renderSkipped() {
     return;
   }
   const parts = [];
-  if (st.objectivesAdded?.length)
+  if (st.objectivesAdded?.length) {
     parts.push(
       Object.assign(document.createElement('p'), {
         className: 'ok-text',
         textContent: `Objectives to add (not in Level Builder yet): ${st.objectivesAdded.length}. They're listed with the changes below.`,
       })
     );
+  }
   if (st.added?.length) {
     parts.push(
       Object.assign(document.createElement('p'), {
@@ -826,11 +859,13 @@ function renderSession() {
   const st = session?.state,
     job = st?.job,
     receipt = st?.receipt;
-  if (job && !receipt?.attempted)
+  if (job && !receipt?.attempted) {
     renderReview($('review-out'), job.review, {
       protectedLesson: SANDBOX_LESSONS[destination?.id]?.protected,
     });
-  else $('review-out').replaceChildren();
+  } else {
+    $('review-out').replaceChildren();
+  }
   renderSkipped();
   $('approve-box').hidden = !job || !!receipt?.attempted || !!st?.needsRecovery;
   $('result-card').hidden = !receipt && !st?.needsRecovery;
@@ -859,7 +894,7 @@ function renderSession() {
       parts.push(ul);
     }
     $('result-out').replaceChildren(...parts);
-  } else if (st?.needsRecovery)
+  } else if (st?.needsRecovery) {
     $('result-out').replaceChildren(
       Object.assign(document.createElement('p'), {
         className: 'result error',
@@ -867,6 +902,7 @@ function renderSession() {
           'A check stopped partway. Restore the editor before trying again.',
       })
     );
+  }
   $('btn-check-again').hidden = !(
     receipt?.attempted && receipt.status !== 'saved-and-verified'
   );
@@ -900,13 +936,14 @@ function refresh() {
   $('btn-prepare').disabled =
     busy || !built || !session || !owned || !checked || waiting > 0 || locked;
   const adding = [...sharedChoices.values()].filter(v => v === 'add').length;
-  if (!busy)
+  if (!busy) {
     $('btn-prepare').textContent =
       waiting > 0
         ? `Choose Skip or Add for ${waiting} item${waiting === 1 ? '' : 's'}`
         : adding
           ? `Add ${adding} to Level Builder and prepare changes`
           : 'Prepare changes';
+  }
   $('btn-save').disabled = busy || !$('approve').checked || !st?.job;
   $('dest-open').hidden = !!destination;
 }
@@ -1028,7 +1065,9 @@ $('report-fallback').addEventListener('click', async () => {
     $('report-type').value,
     $('report-note').value
   );
-  if (queuedId) await removePending(queuedId);
+  if (queuedId) {
+    await removePending(queuedId);
+  }
   queuedId = null;
   $('report-fallback').hidden = true;
   $('report-dialog').close();
@@ -1068,7 +1107,9 @@ async function showPending() {
         break;
       }
     }
-    if (sent) toast(`Sent ${sent} waiting report${sent === 1 ? '' : 's'}.`);
+    if (sent) {
+      toast(`Sent ${sent} waiting report${sent === 1 ? '' : 's'}.`);
+    }
     showPending();
   });
   const viaForm = Object.assign(document.createElement('button'), {
@@ -1078,7 +1119,9 @@ async function showPending() {
   });
   viaForm.addEventListener('click', async () => {
     const [first] = await pendingReports();
-    if (!first) return;
+    if (!first) {
+      return;
+    }
     await openFilledReportForm(
       reportConfig,
       first.fields,
@@ -1097,7 +1140,9 @@ async function loadAdvanced() {
     const info = await (
       await fetch(chrome.runtime.getURL('build-info.json'))
     ).json();
-    if (info.edition !== 'full') return;
+    if (info.edition !== 'full') {
+      return;
+    }
     const {installAdvanced} = await import('../advanced/advanced-tab.mjs');
     installAdvanced({
       tablist: $('tablist'),

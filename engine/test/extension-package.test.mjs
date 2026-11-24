@@ -33,36 +33,48 @@ test('extension and demo entry points ship their local dependency graph with an 
   const seen = new Set(),
     queue = [manifest.action.default_popup, 'dist/workflow.html'];
   const enqueue = (owner, ref, base = path.dirname(owner)) => {
-    if (!ref || /^(?:[a-z]+:|#|\/)/i.test(ref)) return;
+    if (!ref || /^(?:[a-z]+:|#|\/)/i.test(ref)) {
+      return;
+    }
     const resolved = path.resolve(root, base, ref.split(/[?#]/)[0]),
       relative = path.relative(root, resolved).replaceAll('\\', '/');
     assert.ok(
       !relative.startsWith('../'),
       owner + ' escapes package root: ' + ref
     );
-    if (!privateFiles.has(relative)) queue.push(relative);
+    if (!privateFiles.has(relative)) {
+      queue.push(relative);
+    }
   };
   while (queue.length) {
     const file = queue.shift();
-    if (seen.has(file)) continue;
+    if (seen.has(file)) {
+      continue;
+    }
     seen.add(file);
     assert.ok(
       statSync(path.join(root, file), {throwIfNoEntry: false})?.isFile(),
       'Missing packaged dependency: ' + file
     );
     const text = readFileSync(path.join(root, file), 'utf8');
-    if (file.endsWith('.html'))
-      for (const match of text.matchAll(/(?:src|href)\s*=\s*["']([^"']+)["']/g))
+    if (file.endsWith('.html')) {
+      for (const match of text.matchAll(
+        /(?:src|href)\s*=\s*["']([^"']+)["']/g
+      )) {
         enqueue(file, match[1]);
+      }
+    }
     if (file.endsWith('.mjs')) {
       for (const match of text.matchAll(
         /(?:\bfrom\s*|\bimport\s*\(\s*)["'](\.{1,2}\/[^"']+)["']/g
-      ))
+      )) {
         enqueue(file, match[1]);
+      }
       for (const match of text.matchAll(
         /chrome\.runtime\.getURL\(\s*["']([^"']+)["']/g
-      ))
+      )) {
         enqueue(file, match[1], '.');
+      }
     }
   }
   assert.ok(seen.has('browser-fill/workflow.html'));

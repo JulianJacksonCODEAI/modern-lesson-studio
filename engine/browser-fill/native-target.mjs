@@ -5,8 +5,9 @@ export function verificationDestination(value) {
     url.pathname === '/lessons/8898984/edit' &&
     !url.search &&
     !url.hash
-  )
+  ) {
     return {id: 8898984, url: url.href};
+  }
   return null;
 }
 export async function prepareNativeTarget(tabs, tabId) {
@@ -21,14 +22,16 @@ export async function prepareNativeTarget(tabs, tabId) {
     url.origin !== 'https://levelbuilder-studio.code.org' ||
     (!verificationDestination(tab.url) &&
       !paths.includes(url.pathname.replace(/\/$/, '')))
-  )
+  ) {
     throw Error(
       'The authorized editor tab is no longer the assigned playground. No checks were started.'
     );
-  if (tab.discarded)
+  }
+  if (tab.discarded) {
     throw Error(
       'The browser discarded the editor. Reopen it and recompare before starting another check; unsaved state cannot be assumed.'
     );
+  }
   const before = {
     title: tab.title,
     url: tab.url,

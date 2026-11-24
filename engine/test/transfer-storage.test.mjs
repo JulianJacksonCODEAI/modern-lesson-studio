@@ -119,7 +119,9 @@ test('quota recovery compacts legacy evidence losslessly without deleting report
           (n, [key, value]) => n + (key === k ? 0 : value.length),
           0
         ) + v.length;
-      if (total > quota) throw Error('quota');
+      if (total > quota) {
+        throw Error('quota');
+      }
       data.set(k, v);
     },
   };

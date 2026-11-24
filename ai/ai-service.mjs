@@ -23,8 +23,9 @@ export class AIService {
           : 'auto',
       };
     }
-    if (typeof localStorage !== 'undefined')
+    if (typeof localStorage !== 'undefined') {
       localStorage.removeItem('lesson_studio_gemini_key');
+    }
     return {preferredAiModel: 'auto'};
   }
 
@@ -203,7 +204,9 @@ Format strictly as JSON with this schema:
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      if (!line) continue;
+      if (!line) {
+        continue;
+      }
 
       // Detect Objectives
       if (/^(objectives?|learning goals?|swbat):/i.test(line)) {
@@ -259,14 +262,20 @@ Format strictly as JSON with this schema:
       if (calloutMatch && currentSection) {
         const typeRaw = calloutMatch[1];
         let standardType = 'Teaching Tip';
-        if (/content/i.test(typeRaw)) standardType = 'Content Corner';
-        else if (/discuss/i.test(typeRaw)) standardType = 'Discussion Goal';
-        else if (/assessment/i.test(typeRaw))
+        if (/content/i.test(typeRaw)) {
+          standardType = 'Content Corner';
+        } else if (/discuss/i.test(typeRaw)) {
+          standardType = 'Discussion Goal';
+        } else if (/assessment/i.test(typeRaw)) {
           standardType = 'Assessment Opportunity';
-        else if (/ethics/i.test(typeRaw)) standardType = 'Ethics Opportunity';
+        } else if (/ethics/i.test(typeRaw)) {
+          standardType = 'Ethics Opportunity';
+        }
 
         const body = calloutMatch[2] || lines[i + 1] || '';
-        if (!calloutMatch[2] && lines[i + 1]) i++;
+        if (!calloutMatch[2] && lines[i + 1]) {
+          i++;
+        }
 
         currentSection.callouts.push({
           type: standardType,
@@ -278,7 +287,9 @@ Format strictly as JSON with this schema:
       // Fill in modes
       if (currentMode === 'objectives') {
         const cleaned = line.replace(/^[-*•\d.]+\s*/, '').trim();
-        if (cleaned) objectives.push(cleaned);
+        if (cleaned) {
+          objectives.push(cleaned);
+        }
       } else if (currentMode === 'prep') {
         preparation += (preparation ? '\n' : '') + line;
       } else if (currentMode === 'vocab') {
@@ -473,7 +484,9 @@ Provide 2 concise pedagogical recommendations for the curriculum developer.`;
           systemInstruction: 'You are a master computer science educator.',
           prompt,
         });
-        if (res.text) aiInsight = res.text.trim();
+        if (res.text) {
+          aiInsight = res.text.trim();
+        }
       } catch {
         // Ignored, heuristic report remains
       }
@@ -514,7 +527,9 @@ Provide 2 concise pedagogical recommendations for the curriculum developer.`;
     if (res.text) {
       try {
         const jsonMatch = res.text.match(/\[[\s\S]*\]/);
-        if (jsonMatch) return JSON.parse(jsonMatch[0]);
+        if (jsonMatch) {
+          return JSON.parse(jsonMatch[0]);
+        }
       } catch {}
     }
 
@@ -545,7 +560,9 @@ Provide 2 concise pedagogical recommendations for the curriculum developer.`;
    * AI Plain English Staging Explainer
    */
   static explainPlan(plan) {
-    if (!plan || !plan.operations) return 'No transfer operations found.';
+    if (!plan || !plan.operations) {
+      return 'No transfer operations found.';
+    }
     const ops = plan.operations;
     const additions = ops.filter(o => o.kind === 'append' || o.before === null);
     const updates = ops.filter(o => o.kind !== 'append' && o.before !== null);

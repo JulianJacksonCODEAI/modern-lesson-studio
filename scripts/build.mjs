@@ -48,8 +48,11 @@ function walk(dir) {
   const files = [];
   for (const e of fs.readdirSync(dir, {withFileTypes: true})) {
     const p = path.join(dir, e.name);
-    if (e.isDirectory()) files.push(...walk(p));
-    else files.push(rel(p));
+    if (e.isDirectory()) {
+      files.push(...walk(p));
+    } else {
+      files.push(rel(p));
+    }
   }
   return files;
 }
@@ -67,13 +70,16 @@ function refsOf(file) {
         /(?:import|export)\s[^'"]*?from\s*['"](\.{1,2}\/[^'"]+)['"]/g,
         /import\(\s*['"](\.{1,2}\/[^'"]+)['"]\s*\)/g,
       ];
-  for (const re of patterns)
+  for (const re of patterns) {
     for (const m of text.matchAll(re)) {
-      if (/^(https?:|data:|#)/.test(m[1])) continue;
+      if (/^(https?:|data:|#)/.test(m[1])) {
+        continue;
+      }
       found.push(
         path.posix.normalize(path.posix.join(dir, m[1].split(/[?#]/)[0]))
       );
     }
+  }
   return found;
 }
 function copy(files, target) {
@@ -106,15 +112,24 @@ const problems = [],
 const queue = [...TEAM_ENTRIES];
 while (queue.length) {
   const f = queue.shift();
-  if (team.has(f) && !TEAM_ASSETS.includes(f)) continue;
-  if (ADVANCED.test(f)) continue; // the side panel loads advanced/ only in the full build
+  if (team.has(f) && !TEAM_ASSETS.includes(f)) {
+    continue;
+  }
+  if (ADVANCED.test(f)) {
+    continue;
+  } // the side panel loads advanced/ only in the full build
   if (!fs.existsSync(path.join(root, f))) {
     problems.push('Missing file referenced: ' + f);
     continue;
   }
   team.add(f);
-  if (/\.(m?js|html)$/.test(f))
-    for (const r of refsOf(f)) if (!team.has(r)) queue.push(r);
+  if (/\.(m?js|html)$/.test(f)) {
+    for (const r of refsOf(f)) {
+      if (!team.has(r)) {
+        queue.push(r);
+      }
+    }
+  }
 }
 copy([...team], path.join(out, 'team'));
 const teamManifest = structuredClone(manifest);
@@ -133,13 +148,19 @@ const teamFiles = walk(path.join(out, 'team')).map(f =>
   f.replace(/^build\/team\//, '')
 );
 for (const f of teamFiles) {
-  if (ADVANCED.test(f)) problems.push('Advanced file in team build: ' + f);
-  if (/\.(m?js|html)$/.test(f))
+  if (ADVANCED.test(f)) {
+    problems.push('Advanced file in team build: ' + f);
+  }
+  if (/\.(m?js|html)$/.test(f)) {
     for (const r of refsOf(f)) {
-      if (ADVANCED.test(r)) continue; // guarded dynamic import, edition check prevents loading
-      if (!fs.existsSync(path.join(out, 'team', r)))
+      if (ADVANCED.test(r)) {
+        continue;
+      } // guarded dynamic import, edition check prevents loading
+      if (!fs.existsSync(path.join(out, 'team', r))) {
         problems.push(`Team build: ${f} references missing ${r}`);
+      }
     }
+  }
 }
 for (const f of teamFiles.filter(f => /\.(m?js|html)$/.test(f))) {
   const text = fs.readFileSync(path.join(out, 'team', f), 'utf8');
@@ -148,29 +169,36 @@ for (const f of teamFiles.filter(f => /\.(m?js|html)$/.test(f))) {
     'setToken(',
     'engine/browser-fill/workflow.html',
     'installAdvanced',
-  ])
+  ]) {
     if (
       text.includes(marker) &&
       !(f === 'sidepanel/sidepanel.mjs' && marker === 'installAdvanced')
-    )
+    ) {
       problems.push(`Team build: ${f} contains advanced code (${marker})`);
+    }
+  }
 }
 // Full build: every relative import must resolve too.
 const fullFiles = walk(path.join(out, 'full')).map(f =>
   f.replace(/^build\/full\//, '')
 );
-for (const f of fullFiles.filter(f => /\.(m?js|html)$/.test(f)))
+for (const f of fullFiles.filter(f => /\.(m?js|html)$/.test(f))) {
   for (const r of refsOf(path.posix.join('build', 'full', f)).map(r =>
     r.replace(/^build\/full\//, '')
-  ))
-    if (!fs.existsSync(path.join(out, 'full', r)))
+  )) {
+    if (!fs.existsSync(path.join(out, 'full', r))) {
       problems.push(`Full build: ${f} references missing ${r}`);
-for (const f of [...manifest.host_permissions])
+    }
+  }
+}
+for (const f of [...manifest.host_permissions]) {
   if (
     TEAM_DROPPED_HOSTS.includes(f) &&
     teamManifest.host_permissions.includes(f)
-  )
+  ) {
     problems.push('Team manifest kept ' + f);
+  }
+}
 
 // ---- team zip to share (only if the team build passed its checks) ----
 let zipName = null;
@@ -192,30 +220,37 @@ if (!problems.length) {
   const zip = writeZip(entries);
   fs.writeFileSync(path.join(out, zipName), zip);
   const back = readZip(fs.readFileSync(path.join(out, zipName)));
-  if (back.length !== entries.length)
+  if (back.length !== entries.length) {
     problems.push('Team zip: wrong number of files.');
-  if (!back.some(e => e.name === 'lesson-studio/manifest.json'))
+  }
+  if (!back.some(e => e.name === 'lesson-studio/manifest.json')) {
     problems.push('Team zip: lesson-studio/manifest.json is missing.');
+  }
   if (
     JSON.parse(back.find(e => e.name === 'lesson-studio/manifest.json').data)
       .version !== manifest.version
-  )
+  ) {
     problems.push('Team zip: manifest version differs.');
+  }
   for (const e of back) {
-    if (e.name.includes('\\'))
+    if (e.name.includes('\\')) {
       problems.push('Team zip: backslash path ' + e.name);
-    if (/^lesson-studio\/advanced\//.test(e.name))
+    }
+    if (/^lesson-studio\/advanced\//.test(e.name)) {
       problems.push('Team zip: advanced file ' + e.name);
+    }
   }
   const info = JSON.parse(
     back.find(e => e.name === 'lesson-studio/build-info.json').data
   );
-  if (info.edition !== 'team') problems.push('Team zip: not the team edition.');
+  if (info.edition !== 'team') {
+    problems.push('Team zip: not the team edition.');
+  }
 }
 
 // ---- Firefox builds: same files, Firefox manifest (sidebar instead of side panel, background script, gecko id) ----
 const firefoxZips = [];
-if (!problems.length)
+if (!problems.length) {
   for (const [edition, from, mf] of [
     ['team', 'team', teamManifest],
     ['full', 'full', {...manifest, name: manifest.name + ' (full)'}],
@@ -249,22 +284,27 @@ if (!problems.length)
         )
       );
       const back = readZip(fs.readFileSync(path.join(out, name)));
-      if (!back.some(e => e.name === 'manifest.json'))
+      if (!back.some(e => e.name === 'manifest.json')) {
         problems.push('Firefox zip: manifest.json is not at the root.');
-      if (back.some(e => /^advanced\//.test(e.name)))
+      }
+      if (back.some(e => /^advanced\//.test(e.name))) {
         problems.push('Firefox zip: contains advanced files.');
+      }
       firefoxZips.push(name);
     }
   }
+}
 
 console.log(`full: ${all.length + 2} files → build/full`);
 console.log(`team: ${teamFiles.length} files → build/team`);
-if (zipName)
+if (zipName) {
   console.log(`share: build/${zipName} (team build + install guide)`);
-if (firefoxZips.length)
+}
+if (firefoxZips.length) {
   console.log(
     `firefox: build/team-firefox, build/full-firefox, build/${firefoxZips[0]} (unsigned; sign before sharing)`
   );
+}
 if (problems.length) {
   console.error('\nBUILD CHECK FAILED:\n- ' + problems.join('\n- '));
   process.exit(1);

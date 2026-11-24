@@ -9,10 +9,13 @@ export function encodeTransferRecord(value) {
     if (
       v === null ||
       (typeof v !== 'object' && (typeof v !== 'string' || v.length < 80))
-    )
+    ) {
       return {v};
+    }
     const signature = JSON.stringify(v);
-    if (seen.has(signature)) return {r: seen.get(signature)};
+    if (seen.has(signature)) {
+      return {r: seen.get(signature)};
+    }
     const node = Array.isArray(v)
       ? {a: v.map(encode)}
       : typeof v === 'string'
@@ -27,10 +30,13 @@ export function encodeTransferRecord(value) {
   return PREFIX + JSON.stringify({nodes, root});
 }
 export function decodeTransferRecord(raw) {
-  if (!raw.startsWith(PREFIX)) return JSON.parse(raw);
+  if (!raw.startsWith(PREFIX)) {
+    return JSON.parse(raw);
+  }
   const {nodes, root} = JSON.parse(raw.slice(PREFIX.length));
-  if (!Array.isArray(nodes) || nodes.length > 200000)
+  if (!Array.isArray(nodes) || nodes.length > 200000) {
     throw Error('Invalid evidence encoding.');
+  }
   let expanded = 0;
   function decode(token, limit = nodes.length, depth = 0) {
     if (
@@ -38,25 +44,35 @@ export function decodeTransferRecord(raw) {
       depth > 100 ||
       !token ||
       typeof token !== 'object'
-    )
+    ) {
       throw Error('Invalid evidence structure.');
+    }
     if (Object.hasOwn(token, 'v')) {
-      if (token.v !== null && typeof token.v === 'object')
+      if (token.v !== null && typeof token.v === 'object') {
         throw Error('Invalid primitive.');
+      }
       return token.v;
     }
-    if (!Number.isInteger(token.r) || token.r < 0 || token.r >= limit)
+    if (!Number.isInteger(token.r) || token.r < 0 || token.r >= limit) {
       throw Error('Invalid evidence reference.');
+    }
     const n = nodes[token.r];
-    if (typeof n.s === 'string') return n.s;
-    if (Array.isArray(n.a)) return n.a.map(x => decode(x, token.r, depth + 1));
-    if (Array.isArray(n.o))
+    if (typeof n.s === 'string') {
+      return n.s;
+    }
+    if (Array.isArray(n.a)) {
+      return n.a.map(x => decode(x, token.r, depth + 1));
+    }
+    if (Array.isArray(n.o)) {
       return Object.fromEntries(
         n.o.map(([k, x]) => {
-          if (typeof k !== 'string') throw Error('Invalid key.');
+          if (typeof k !== 'string') {
+            throw Error('Invalid key.');
+          }
           return [k, decode(x, token.r, depth + 1)];
         })
       );
+    }
     throw Error('Invalid evidence node.');
   }
   return decode(root);
@@ -70,11 +86,14 @@ export function readTransferRecord(storage, key) {
       'Browser storage is unavailable. Transfer is paused. Restore storage access and reload this same run; do not clear browser data.'
     );
   }
-  if (raw === null) return null;
+  if (raw === null) {
+    return null;
+  }
   try {
     const value = decodeTransferRecord(raw);
-    if (!value || typeof value !== 'object' || Array.isArray(value))
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
       throw Error();
+    }
     return value;
   } catch {
     throw Error(
@@ -85,8 +104,9 @@ export function readTransferRecord(storage, key) {
 export function compactLegacyEvidence(storage) {
   let reclaimed = 0;
   const keys = [];
-  if (!Number.isInteger(storage.length) || typeof storage.key !== 'function')
+  if (!Number.isInteger(storage.length) || typeof storage.key !== 'function') {
     return 0;
+  }
   for (let i = 0; i < storage.length; i++) {
     const key = storage.key(i);
     if (
@@ -94,25 +114,33 @@ export function compactLegacyEvidence(storage) {
       /^native-verification-latest(?:-\d+)?$/.test(key) ||
       key?.startsWith('native-approved-save-') ||
       key?.startsWith('reviewed-transfer-session-')
-    )
+    ) {
       keys.push(key);
+    }
   }
   for (const key of keys) {
     const raw = storage.getItem(key);
-    if (!raw || raw.startsWith(PREFIX)) continue;
+    if (!raw || raw.startsWith(PREFIX)) {
+      continue;
+    }
     let encoded;
     try {
       const value = JSON.parse(raw);
-      if (!value || typeof value !== 'object') continue;
+      if (!value || typeof value !== 'object') {
+        continue;
+      }
       encoded = encodeTransferRecord(value);
       if (
         JSON.stringify(decodeTransferRecord(encoded)) !== JSON.stringify(value)
-      )
+      ) {
         continue;
+      }
     } catch {
       continue;
     }
-    if (encoded.length >= raw.length) continue;
+    if (encoded.length >= raw.length) {
+      continue;
+    }
     // Replace atomically only after an exact round trip; never delete a report or receipt.
     storage.setItem(key, encoded);
     reclaimed += raw.length - encoded.length;
@@ -127,7 +155,9 @@ export function writeTransferRecord(storage, key, value) {
     try {
       storage.setItem(key, encoded);
     } catch (error) {
-      if (!compactLegacyEvidence(storage)) throw error;
+      if (!compactLegacyEvidence(storage)) {
+        throw error;
+      }
       storage.setItem(key, encoded);
     }
   } catch {

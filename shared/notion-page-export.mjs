@@ -18,18 +18,24 @@ export async function notionPageExport() {
     document.querySelector('.notion-page-content') ||
     document.querySelector('main') ||
     document.body;
-  if (!root) throw new Error('Could not find Notion page content.');
+  if (!root) {
+    throw new Error('Could not find Notion page content.');
+  }
 
   const lines = [`# ${title}\n`];
 
   function extractBlock(el) {
-    if (!el || el.nodeType !== 1) return;
+    if (!el || el.nodeType !== 1) {
+      return;
+    }
 
     // Check headings
     const tagName = el.tagName.toLowerCase();
     const classList = el.className || '';
     const text = el.innerText?.trim() || '';
-    if (!text) return;
+    if (!text) {
+      return;
+    }
 
     if (tagName === 'h1' || classList.includes('notion-header-block')) {
       lines.push(`\n## ${text}\n`);

@@ -28,7 +28,7 @@ export function createPreviewServer({
       res.writeHead(403);
       return res.end('Use the local Lesson Studio address.');
     }
-    if (!routers.has(origin))
+    if (!routers.has(origin)) {
       routers.set(
         origin,
         notionRoutes(
@@ -36,6 +36,7 @@ export function createPreviewServer({
           {origin}
         )
       );
+    }
     const routes = routers.get(origin);
     try {
       if (req.headers.host !== new URL(origin).host) {
@@ -48,7 +49,9 @@ export function createPreviewServer({
         res.writeHead(302, {Location: url.href});
         return res.end();
       }
-      if (await routes(req, res, url)) return;
+      if (await routes(req, res, url)) {
+        return;
+      }
       if (req.method !== 'GET') {
         res.writeHead(405);
         return res.end('Use the application controls');
@@ -74,7 +77,9 @@ export function createPreviewServer({
       });
       res.end(data);
     } catch {
-      if (!res.headersSent) res.writeHead(404);
+      if (!res.headersSent) {
+        res.writeHead(404);
+      }
       res.end('Not found');
     }
   });

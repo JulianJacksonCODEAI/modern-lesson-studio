@@ -92,9 +92,11 @@ export function createDemo(
   for (const a of unmanaged) {
     delete a.name;
     delete a.duration;
-    for (const s of a.activitySections)
-      for (const k of ['name', 'description', 'duration', 'remarks'])
+    for (const s of a.activitySections) {
+      for (const k of ['name', 'description', 'duration', 'remarks']) {
         delete s[k];
+      }
+    }
   }
   const capture = {
     schemaVersion: 1,
@@ -129,7 +131,7 @@ export function createDemo(
     lesson.sections[0].body =
       'Ask students to compare the examples.\n\nDiscuss: **What evidence supports your prediction?**';
   }
-  if (structure)
+  if (structure) {
     lesson.sections.push({
       id: 'demo-new-reflection',
       activityId: lesson.activities[0].id,
@@ -143,6 +145,7 @@ export function createDemo(
       })),
       progression: null,
     });
+  }
   if (structure && complete) {
     const donor = lesson.sections.find(s => s.progression),
       added = lesson.sections.at(-1);
@@ -198,14 +201,19 @@ export function demoAdapter(state, persist) {
     }),
     checkUsage: async () => ({passed: true, conflicts: []}),
     bridge: async request => {
-      if (request.action === 'read') return clone(state.editor);
-      if ((await digest(state.editor)) !== request.expectedCaptureDigest)
+      if (request.action === 'read') {
+        return clone(state.editor);
+      }
+      if ((await digest(state.editor)) !== request.expectedCaptureDigest) {
         throw Error('Demo editor changed outside this run.');
+      }
       if (request.action === 'lookup-shared-record') {
         const record = (state.sharedRecords?.[request.kind] || []).find(
           r => canonical(r) === canonical(request.record)
         );
-        if (!record) throw Error('Shared record changed.');
+        if (!record) {
+          throw Error('Shared record changed.');
+        }
         return {
           kind: 'native-shared-mapping',
           record: clone(record),
@@ -213,27 +221,33 @@ export function demoAdapter(state, persist) {
         };
       }
       if (request.action === 'reload-reviewed-editor') {
-        if (canonical(state.server) !== canonical(request.initialCapture.saved))
+        if (
+          canonical(state.server) !== canonical(request.initialCapture.saved)
+        ) {
           throw Error('Saved baseline changed.');
+        }
         state.editor = clone(request.initialCapture);
         persist();
         return clone(state.editor);
       }
-      if (request.action === 'lookup-levels')
+      if (request.action === 'lookup-levels') {
         return {
           kind: 'native-level-mappings',
           capture: clone(state.editor),
           mappings: state.mappings.filter(m => request.names.includes(m.key)),
         };
+      }
       if (request.action === 'save-approved-cleanup') {
-        if (request.approval?.approved !== true)
+        if (request.approval?.approved !== true) {
           throw Error('Cleanup approval required.');
+        }
         const body = JSON.parse(request.review.request.body);
         if (
           canonical(JSON.parse(body.originalLessonData)) !==
           canonical(state.server)
-        )
+        ) {
           throw Error('Demo saved baseline changed.');
+        }
         state.server.activities = JSON.parse(body.activities);
         state.cleanupSendCount = (state.cleanupSendCount || 0) + 1;
         persist();
@@ -249,8 +263,9 @@ export function demoAdapter(state, persist) {
         if (
           canonical(JSON.parse(body.originalLessonData)) !==
           canonical(state.server)
-        )
+        ) {
           throw Error('Demo saved baseline changed.');
+        }
         if (state.saveUnchanged) {
           state.sendCount++;
           persist();
@@ -286,24 +301,39 @@ export function demoAdapter(state, persist) {
           'purpose',
           'preparation',
           'assessmentOpportunities',
-        ])
+        ]) {
           state.server[key] = body[key];
+        }
         let id = 10000,
           sectionId = 20000,
           activityId = 30000;
-        for (const a of state.server.activities)
-          if (a.id == null) a.id = ++activityId;
-        for (const a of state.server.activities)
-          for (const s of a.activitySections)
-            if (s.id == null) s.id = ++sectionId;
-        for (const a of state.server.activities)
-          for (const s of a.activitySections)
-            for (const sl of s.scriptLevels) if (sl.id == null) sl.id = ++id;
-        for (const [index, objective] of state.server.objectives.entries())
+        for (const a of state.server.activities) {
+          if (a.id == null) {
+            a.id = ++activityId;
+          }
+        }
+        for (const a of state.server.activities) {
+          for (const s of a.activitySections) {
+            if (s.id == null) {
+              s.id = ++sectionId;
+            }
+          }
+        }
+        for (const a of state.server.activities) {
+          for (const s of a.activitySections) {
+            for (const sl of s.scriptLevels) {
+              if (sl.id == null) {
+                sl.id = ++id;
+              }
+            }
+          }
+        }
+        for (const [index, objective] of state.server.objectives.entries()) {
           if (objective.id == null) {
             objective.id = 40000 + index;
             objective.key = crypto.randomUUID();
           }
+        }
         state.sendCount++;
         persist();
         return {
@@ -351,8 +381,9 @@ export function demoAdapter(state, persist) {
           canonical(state.editor.live.objectives[op.index]) !==
             canonical(op.expected) ||
           op.expected.id != null
-        )
+        ) {
           throw Error('Unowned objective.');
+        }
         state.editor.live.objectives.pop();
         state.editor.protection.objectives.pop();
         persist();
@@ -362,7 +393,9 @@ export function demoAdapter(state, persist) {
         const value = nativeFieldValue(op);
         putField(state.editor.live, liveFieldPath(op), value);
         const p = protectedFieldPath(savedFieldPath(op));
-        if (p) putField(state.editor.protection, p, value);
+        if (p) {
+          putField(state.editor.protection, p, value);
+        }
         persist();
         return clone(state.editor);
       }
@@ -402,8 +435,9 @@ export function demoAdapter(state, persist) {
           ai !== state.editor.live.activities.length - 1 ||
           state.editor.live.activities[ai].key !== op.createdKey ||
           state.editor.live.activities[ai].id != null
-        )
+        ) {
           throw Error('Unowned activity.');
+        }
         state.editor.live.activities.pop();
         state.editor.protection.unmanagedActivities.pop();
         persist();
@@ -414,8 +448,9 @@ export function demoAdapter(state, persist) {
         if (
           tips.length !== op.path[5] + 1 ||
           canonical(tips.at(-1)) !== canonical(op.expectedTip)
-        )
+        ) {
           throw Error('Unowned callout.');
+        }
         tips.pop();
         state.editor.protection.unmanagedActivities[ai].activitySections[
           si
@@ -451,8 +486,9 @@ export function demoAdapter(state, persist) {
           si !== sections.length - 1 ||
           sections[si].key !== op.createdKey ||
           sections[si].id != null
-        )
+        ) {
           throw Error('Unowned demo section.');
+        }
         sections.pop();
         state.editor.protection.unmanagedActivities[ai].activitySections.pop();
         persist();
@@ -484,8 +520,9 @@ export function demoAdapter(state, persist) {
       ]) {
         const section = activities[ai].activitySections[si];
         if (request.action === 'append-progression') {
-          if (section.scriptLevels.length)
+          if (section.scriptLevels.length) {
             throw Error('Demo progression is already occupied.');
+          }
           section.progressionName = op.after.title;
           section.scriptLevels = op.after.levels.map((l, i) => ({
             levels: [
@@ -501,7 +538,9 @@ export function demoAdapter(state, persist) {
         } else if (request.action === 'clear-owned-progression') {
           section.scriptLevels = [];
           section.progressionName = op.restoreProgressionName;
-        } else throw Error('Unsupported demo action.');
+        } else {
+          throw Error('Unsupported demo action.');
+        }
       }
       persist();
       return clone(state.editor);

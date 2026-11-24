@@ -27,12 +27,16 @@ function screen(storage, run, overrides = {}) {
       this.children = [];
     },
     click() {
-      if (this.download) downloads.push(this.download);
+      if (this.download) {
+        downloads.push(this.download);
+      }
     },
     parentElement: {lastChild: {textContent: ''}},
   });
   const get = id => {
-    if (!elements.has(id)) elements.set(id, node());
+    if (!elements.has(id)) {
+      elements.set(id, node());
+    }
     return elements.get(id);
   };
   const values = {
@@ -64,20 +68,25 @@ function screen(storage, run, overrides = {}) {
       Object.getOwnPropertyDescriptor(globalThis, k),
     ])
   );
-  for (const [k, v] of Object.entries(values))
+  for (const [k, v] of Object.entries(values)) {
     Object.defineProperty(globalThis, k, {
       configurable: true,
       writable: true,
       value: v,
     });
+  }
   return {
     get,
     downloads,
     timers,
     restore() {
-      for (const [k, v] of previous)
-        if (v) Object.defineProperty(globalThis, k, v);
-        else delete globalThis[k];
+      for (const [k, v] of previous) {
+        if (v) {
+          Object.defineProperty(globalThis, k, v);
+        } else {
+          delete globalThis[k];
+        }
+      }
     },
   };
 }
@@ -156,11 +165,14 @@ test('storage failure is reported, preserves an export and pauses every write co
       'save-cleanup',
       'prepare-cleanup',
       'new-demo',
-    ])
+    ]) {
       assert.equal(ui.get(id).disabled, true, id);
+    }
     assert.equal(ui.get('download').disabled, false);
     assert.ok(ui.downloads.length);
-    for (const tick of ui.timers) tick();
+    for (const tick of ui.timers) {
+      tick();
+    }
     assert.equal(ui.get('save').disabled, true);
     const before = ui.downloads.length;
     ui.get('download').onclick();
@@ -184,7 +196,9 @@ test('failed durable attempt storage retains the in-memory attempt and never dis
     await ui.get('load-demo').onclick();
     await ui.get('prepare').onclick();
     store.setItem = (key, value) => {
-      if (key.includes('-receipt-')) throw Error('quota');
+      if (key.includes('-receipt-')) {
+        throw Error('quota');
+      }
       write(key, value);
     };
     ui.get('approve').checked = true;
@@ -216,8 +230,9 @@ test('storage failure after dispatch can reload and verify the durable attempt w
     await ui.get('load-demo').onclick();
     await ui.get('prepare').onclick();
     store.setItem = (key, value) => {
-      if (key.includes('-receipt-') && ++receiptWrites === 2)
+      if (key.includes('-receipt-') && ++receiptWrites === 2) {
         throw Error('quota after dispatch');
+      }
       write(key, value);
     };
     ui.get('approve').checked = true;
@@ -417,7 +432,9 @@ test('HTTP 200 failure screen retains exact evidence across reload and never res
   }
   ui = await load(store, run);
   try {
-    for (let i = 0; i < 3; i++) await ui.get('check').onclick();
+    for (let i = 0; i < 3; i++) {
+      await ui.get('check').onclick();
+    }
     const state = readTransferRecord(store, key);
     assert.equal(state.demo.sendCount, 1);
     assert.equal(state.receipt.status, 'save-not-confirmed');
@@ -459,11 +476,16 @@ function sharedScreenHarness(store, run, {uncertain = false} = {}) {
   };
   demo.destination = destination;
   demo.pkg.sandbox = destination.url;
-  for (const capture of [demo.editor, demo.server])
-    if (capture?.destination)
+  for (const capture of [demo.editor, demo.server]) {
+    if (capture?.destination) {
       capture.destination = structuredClone(destination);
-  for (const saved of [demo.server, demo.editor?.saved])
-    if (saved && 'id' in saved) saved.id = destination.id;
+    }
+  }
+  for (const saved of [demo.server, demo.editor?.saved]) {
+    if (saved && 'id' in saved) {
+      saved.id = destination.id;
+    }
+  }
   const catalog = {resources: [], vocabularies: []},
     calls = [];
   let posts = 0;
@@ -493,20 +515,21 @@ function sharedScreenHarness(store, run, {uncertain = false} = {}) {
           calls.push({bridge: func.name, action: request.action});
           let result;
           if (func.name === 'sharedRecordBridge') {
-            if (request.action === 'context')
+            if (request.action === 'context') {
               result = {
                 destination,
                 courseVersionId: 77,
                 saved: structuredClone(demo.server),
               };
-            else if (request.action === 'search')
+            } else if (request.action === 'search') {
               result = structuredClone(catalog[request.kind]);
-            else if (request.action === 'create') {
+            } else if (request.action === 'create') {
               assert.equal(request.approval.reviewId, request.review.id);
               assert.equal(request.approval.approved, true);
               posts++;
-              if (uncertain) result = {outcome: 'unknown'};
-              else {
+              if (uncertain) {
+                result = {outcome: 'unknown'};
+              } else {
                 const record = {
                   id: 800 + posts,
                   key: request.item.kind + '-' + posts,
@@ -519,13 +542,15 @@ function sharedScreenHarness(store, run, {uncertain = false} = {}) {
                 catalog[request.item.kind].push(record);
                 result = {outcome: 'response-received', record};
               }
-            } else throw Error('Unexpected shared action ' + request.action);
-          } else if (func.name === 'readAssignedLesson')
+            } else {
+              throw Error('Unexpected shared action ' + request.action);
+            }
+          } else if (func.name === 'readAssignedLesson') {
             result = {
               lesson: structuredClone(demo.server),
               originalLessonJson: JSON.stringify(demo.server),
             };
-          else {
+          } else {
             assert.equal(request.action, 'read');
             result = structuredClone(demo.editor);
           }
@@ -563,7 +588,9 @@ test('shared screen requires exact approval, retains creation across reload and 
     ui.get('approve-shared').checked = true;
     ui.get('approve-shared').onchange();
     assert.equal(ui.get('create-shared').disabled, false);
-    for (const tick of ui.timers) tick();
+    for (const tick of ui.timers) {
+      tick();
+    }
     assert.equal(ui.get('shared-review').children[2], detail);
     assert.equal(detail.open, true);
     await ui.get('create-shared').onclick();
@@ -613,7 +640,9 @@ test('uncertain shared creation survives reload and read-only checks never creat
   }
   ui = await h.load();
   try {
-    for (let i = 0; i < 2; i++) await ui.get('check-shared').onclick();
+    for (let i = 0; i < 2; i++) {
+      await ui.get('check-shared').onclick();
+    }
     assert.equal(h.posts, 1);
     assert.equal(ui.get('continue-shared').disabled, true);
     await ui.get('prepare-shared').onclick();
@@ -654,7 +683,9 @@ test('replacing a package clears shared review and approval, retaining durable c
     assert.equal(state.sharedApproval, undefined);
     assert.equal(state.sharedReceipt, undefined);
     assert.equal(ui.get('approve-shared').checked, false);
-    for (const key of retained) assert.ok(store.data.has(key));
+    for (const key of retained) {
+      assert.ok(store.data.has(key));
+    }
     await ui.get('create-shared').onclick();
     assert.equal(h.posts, 2);
   } finally {
@@ -670,11 +701,14 @@ test('shared controller refuses stale baselines and failed durable storage befor
     try {
       await ui.get('prepare-shared').onclick();
       ui.get('approve-shared').checked = true;
-      if (mode === 'baseline') h.demo.server.overview = 'Outside saved change';
-      else {
+      if (mode === 'baseline') {
+        h.demo.server.overview = 'Outside saved change';
+      } else {
         const write = store.setItem;
         store.setItem = (key, value) => {
-          if (key.startsWith('native-shared-record-')) throw Error('quota');
+          if (key.startsWith('native-shared-record-')) {
+            throw Error('quota');
+          }
           write(key, value);
         };
       }

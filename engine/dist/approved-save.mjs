@@ -42,8 +42,9 @@ export async function runApprovedSave(
   if (
     approval?.approved !== true ||
     approval.approvedRequestDigest !== requestDigest
-  )
+  ) {
     throw Error('This request does not have matching approval.');
+  }
   const attemptId = approval.attemptId;
   if (attemptId) {
     const prior = job.previousAttempt;
@@ -54,10 +55,11 @@ export async function runApprovedSave(
       prior.dispatch?.outcome !== 'rejected' ||
       !prior.attempted ||
       canonical(prior.readback) !== canonical(approved.baseline)
-    )
+    ) {
       throw Error(
         'A new attempt requires explicit user authorization and a confirmed rejected, unchanged prior attempt.'
       );
+    }
   }
   const receiptKey = requestDigest + (attemptId ? ':' + attemptId : '');
   let receipt = await loadReceipt(receiptKey);
@@ -98,15 +100,17 @@ export async function runApprovedSave(
     transport: approved.transport ?? 'direct-api',
     preservationTest: approved.preservationTest === true,
   });
-  if ((await saveRequestDigest(review)) !== requestDigest)
+  if ((await saveRequestDigest(review)) !== requestDigest) {
     throw Error('The refreshed request differs from the approved save.');
+  }
   const usage = await checkUsage(review);
-  if (usage.passed !== true)
+  if (usage.passed !== true) {
     throw Error(
       'These levels are already used in the destination unit: ' +
         usage.conflicts.map(c => c.name).join(', ') +
         '. Create separately reviewed copies or use another unit; no save was sent.'
     );
+  }
   let current = await readEditor();
   if (!sameEditor(current, rehearsal.initialCapture) && recover) {
     onProgress(
@@ -115,8 +119,9 @@ export async function runApprovedSave(
     await recover();
     current = await readEditor();
   }
-  if (!sameEditor(current, rehearsal.initialCapture))
+  if (!sameEditor(current, rehearsal.initialCapture)) {
     throw Error('The editor changed since rehearsal. No save was sent.');
+  }
   await checkpoint({
     status: 'before-staging',
     review,
@@ -124,8 +129,9 @@ export async function runApprovedSave(
   });
   onProgress('Staging the approved changes in the selected lesson.');
   const staged = await stage();
-  if (staged.status !== 'staged-unsaved' || !staged.checksPassed)
+  if (staged.status !== 'staged-unsaved' || !staged.checksPassed) {
     throw Error(staged.error || 'Approved changes could not be staged.');
+  }
   await checkpoint({status: 'staged-unsaved', review, stage: staged});
   await validateStagedSaveReview(review, staged.stagedCapture);
   const latest = await readSaved();
@@ -134,10 +140,11 @@ export async function runApprovedSave(
   if (
     JSON.parse(review.request.body).originalLessonData !==
     latest.originalLessonJson
-  )
+  ) {
     throw Error(
       'The server snapshot serialization changed before dispatch. No save was sent.'
     );
+  }
   const ready = await readEditor();
   await validateStagedSaveReview(review, ready);
   receipt = {

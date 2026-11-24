@@ -149,20 +149,24 @@ function bridgeFor(initial) {
       return writes;
     },
     call: async request => {
-      if (request.action === 'read') return clone(current);
+      if (request.action === 'read') {
+        return clone(current);
+      }
       assert.equal(request.action, 'set-scalar');
       assert.equal(request.mode, 'unsaved-scalar-staging');
       assert.equal(request.expectedCaptureDigest, await digest(current));
       writes++;
       const p = request.operation.path,
         value = request.operation.after;
-      if (p[0] === 'title') current.live.fields.title = value;
-      else if (p[0] === 'frontMatter') current.live.fields[p[1]] = value;
-      else {
+      if (p[0] === 'title') {
+        current.live.fields.title = value;
+      } else if (p[0] === 'frontMatter') {
+        current.live.fields[p[1]] = value;
+      } else {
         const a = current.live.activities[p[1]];
-        if (p.length === 3)
+        if (p.length === 3) {
           a[p[2] === 'title' ? 'name' : p[2]] = value === null ? '' : value;
-        else
+        } else {
           a.activitySections[p[3]][
             {
               title: 'name',
@@ -171,6 +175,7 @@ function bridgeFor(initial) {
               remarks: 'remarks',
             }[p[4]]
           ] = value === null ? '' : p[4] === 'duration' ? String(value) : value;
+        }
       }
       return clone(current);
     },
@@ -193,9 +198,11 @@ function levelBridge({missing = false} = {}) {
       return writes;
     },
     call: async request => {
-      if (request.action === 'read') return clone(current);
+      if (request.action === 'read') {
+        return clone(current);
+      }
       assert.equal(request.expectedCaptureDigest, await digest(current));
-      if (request.action === 'lookup-levels')
+      if (request.action === 'lookup-levels') {
         return {
           kind: 'native-level-mappings',
           capture: clone(current),
@@ -207,6 +214,7 @@ function levelBridge({missing = false} = {}) {
                 verification: 'exact-native-picker-row',
               })),
         };
+      }
       const section = current.live.activities[0].activitySections[0],
         protectedSection =
           current.protection.unmanagedActivities[0].activitySections[0];
@@ -279,8 +287,9 @@ test('accepted native rehearsal refuses cleanup when an outside edit changes the
       levelPackage(bridge.initial),
       {
         onProgress: message => {
-          if (message.startsWith('Restoring'))
+          if (message.startsWith('Restoring')) {
             bridge.current.live.fields.title = 'Outside edit';
+          }
         },
       }
     );
@@ -304,8 +313,9 @@ function collectionBridge(initial, {loseCalloutAck = false} = {}) {
       return writes + base.writes;
     },
     call: async request => {
-      if (!['append-section', 'append-callout'].includes(request.action))
+      if (!['append-section', 'append-callout'].includes(request.action)) {
         return base.call(request);
+      }
       assert.equal(request.expectedCaptureDigest, await digest(base.current));
       writes++;
       const p = request.operation.path,
@@ -465,8 +475,9 @@ test('structural automation adds five callouts and removes only its own new sect
       !['append-section', 'append-callout', 'remove-created-section'].includes(
         request.action
       )
-    )
+    ) {
       return bridge.call(request);
+    }
     assert.equal(request.expectedCaptureDigest, await digest(bridge.current));
     const c = bridge.current,
       activity = c.live.activities[0],
@@ -555,13 +566,14 @@ test('recovery recognizes an applied string-valued timing checkpoint and restore
     {path: ['activities', 0, 'duration'], after: 6},
     {path: ['activities', 0, 'sections', 0, 'duration'], after: 1},
   ]);
-  for (const op of plan.operations)
+  for (const op of plan.operations) {
     await bridge.call({
       action: 'set-scalar',
       mode: 'unsaved-scalar-staging',
       operation: op,
       expectedCaptureDigest: await digest(bridge.current),
     });
+  }
   assert.equal(
     bridge.current.live.activities[0].activitySections[0].duration,
     '1'
@@ -607,7 +619,9 @@ test('structural recovery removes only a recognized empty generated section and 
   });
   let removed = 0;
   const bridge = async request => {
-    if (request.action === 'read') return clone(current);
+    if (request.action === 'read') {
+      return clone(current);
+    }
     assert.equal(request.action, 'remove-created-section');
     assert.equal(request.expectedCaptureDigest, await digest(current));
     removed++;
@@ -654,8 +668,9 @@ test('structural recovery recognizes a partially filled generated test section',
   });
   assert.equal(partial.completed, 4);
   const call = async request => {
-    if (request.action !== 'remove-created-section')
+    if (request.action !== 'remove-created-section') {
       return bridge.call(request);
+    }
     assert.equal(request.expectedCaptureDigest, await digest(bridge.current));
     bridge.current.live.activities[0].activitySections.pop();
     bridge.current.protection.unmanagedActivities[0].activitySections.pop();
@@ -872,8 +887,11 @@ test('native bridge refuses other hosts, official lessons and forged fixture des
       );
     }
   } finally {
-    if (old === undefined) delete globalThis.location;
-    else globalThis.location = old;
+    if (old === undefined) {
+      delete globalThis.location;
+    } else {
+      globalThis.location = old;
+    }
   }
 });
 
@@ -896,7 +914,10 @@ test('injected bridge transports rejected-promise errors without treating them a
     );
     assert.match(encoded.nativeBridgeError, /not the assigned sandbox/);
   } finally {
-    if (old === undefined) delete globalThis.location;
-    else globalThis.location = old;
+    if (old === undefined) {
+      delete globalThis.location;
+    } else {
+      globalThis.location = old;
+    }
   }
 });

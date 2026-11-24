@@ -64,7 +64,7 @@ function render() {
       !state.verification;
   $('objective-review').hidden = !canMap;
   $('objective-mappings').replaceChildren();
-  if (canMap)
+  if (canMap) {
     for (const saved of choices.saved) {
       const label = document.createElement('label');
       label.textContent =
@@ -90,11 +90,12 @@ function render() {
         state.objectiveTargets = (state.objectiveTargets || []).filter(
           t => t.destinationId !== saved.id
         );
-        if (select.value !== '')
+        if (select.value !== '') {
           state.objectiveTargets.push({
             destinationId: saved.id,
             sourceIndex: Number(select.value),
           });
+        }
         state.mappingDirty = true;
         persist();
         $('download-package').disabled = true;
@@ -105,6 +106,7 @@ function render() {
       label.append(select);
       $('objective-mappings').append(label);
     }
+  }
   $('confirm-objectives').disabled = busy || !canMap;
   const ready =
     preflight?.status === 'ready-for-companion-review' && !state.mappingDirty;
@@ -113,7 +115,9 @@ function render() {
   $('download-package').disabled = !ready || busy || !!state.verification;
   $('receipt').disabled = !ready || busy;
   $('destination').hidden = !preflight;
-  if (preflight) $('destination').href = preflight.destination.url;
+  if (preflight) {
+    $('destination').href = preflight.destination.url;
+  }
   $('next').hidden = !state.verification;
   $('handoff-help').textContent = state.verification
     ? 'This publication is complete. Do not send the package again. Start a separate review for later changes.'
@@ -122,22 +126,29 @@ function render() {
       : preflight?.status === 'already-matches'
         ? 'No publishing action is required.'
         : 'Resolve the listed blockers in the workspace, then approve and check again.';
-  if (state.verification)
+  if (state.verification) {
     $('receipt-status').textContent =
       `Saved and independently verified: ${state.verification.counts.levels} levels, ${state.verification.counts.sections} sections. No second save was sent.`;
+  }
 }
 async function readFile(file) {
-  if (!file) return null;
-  if (file.size > 32_000_000)
+  if (!file) {
+    return null;
+  }
+  if (file.size > 32_000_000) {
     throw Error('Choose a report smaller than 32 MB.');
+  }
   return JSON.parse(await file.text());
 }
 async function run(action) {
-  if (busy) return;
+  if (busy) {
+    return;
+  }
   busy = true;
   $('download-package').disabled = true;
-  for (const name of ['package', 'baseline', 'receipt'])
+  for (const name of ['package', 'baseline', 'receipt']) {
     $(name).disabled = true;
+  }
   try {
     await action();
     persist();
@@ -154,9 +165,13 @@ async function run(action) {
 $('package').onchange = event =>
   run(async () => {
     const pkg = await readFile(event.target.files[0]);
-    if (!pkg) return;
+    if (!pkg) {
+      return;
+    }
     const problems = packageProblems(pkg);
-    if (problems.length) throw Error(problems.join(' '));
+    if (problems.length) {
+      throw Error(problems.join(' '));
+    }
     state.pkg = pkg;
     clearResult();
     $('status').textContent =
@@ -164,9 +179,13 @@ $('package').onchange = event =>
   });
 $('baseline').onchange = event =>
   run(async () => {
-    if (!state.pkg) throw Error('Choose an approved package first.');
+    if (!state.pkg) {
+      throw Error('Choose an approved package first.');
+    }
     const report = await readFile(event.target.files[0]);
-    if (!report) return;
+    if (!report) {
+      return;
+    }
     const result = await preparePublication(state.pkg, report);
     const baseline = await savedReport(report);
     state.report = {
@@ -183,8 +202,9 @@ $('baseline').onchange = event =>
   });
 $('confirm-objectives').onclick = () =>
   run(async () => {
-    if (!state.report || !state.pkg || state.verification)
+    if (!state.report || !state.pkg || state.verification) {
       throw Error('Read the saved destination first.');
+    }
     const result = await preparePublication(state.pkg, state.report, {
       objectiveTargets: state.objectiveTargets || [],
     });
@@ -201,8 +221,9 @@ $('download-package').onclick = () => {
     state.mappingDirty ||
     state.verification ||
     state.preflight?.status !== 'ready-for-companion-review'
-  )
+  ) {
     return;
+  }
   const link = document.createElement('a'),
     blob = URL.createObjectURL(
       new Blob([JSON.stringify(state.preflight.handoff, null, 2)], {
@@ -216,9 +237,13 @@ $('download-package').onclick = () => {
 };
 $('receipt').onchange = event =>
   run(async () => {
-    if (state.mappingDirty) throw Error('Confirm objective mappings first.');
+    if (state.mappingDirty) {
+      throw Error('Confirm objective mappings first.');
+    }
     const report = await readFile(event.target.files[0]);
-    if (!report) return;
+    if (!report) {
+      return;
+    }
     state.verification = await verifyPublicationReceipt(
       state.preflight.handoff,
       report
@@ -232,7 +257,9 @@ try {
   if (!state.pkg && pending) {
     const parsed = JSON.parse(pending);
     const problems = packageProblems(parsed);
-    if (problems.length) throw Error(problems.join(' '));
+    if (problems.length) {
+      throw Error(problems.join(' '));
+    }
     state.pkg = parsed;
     persist();
     sessionStorage.removeItem('lesson-publication-input');

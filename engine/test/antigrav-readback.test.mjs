@@ -38,12 +38,13 @@ test('real content differences are still mismatches', () => {
     {remarks: true},
     {tips: [{type: 'teachingTip', markdown: 'x'}]},
     {duration: 5},
-  ])
+  ]) {
     assert.notEqual(
       canonical(savedSectionBlanks({...saved, ...change})),
       canonical(savedSectionBlanks(reviewed)),
       JSON.stringify(change)
     );
+  }
 });
 
 test('a failed new-section check names the fields that differ', () => {

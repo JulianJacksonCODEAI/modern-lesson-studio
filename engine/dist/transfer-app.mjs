@@ -56,7 +56,9 @@ function renderReport() {
     : '';
 }
 async function rebuild() {
-  if (!state.pkg || !state.initialSnapshot) return;
+  if (!state.pkg || !state.initialSnapshot) {
+    return;
+  }
   plan = await buildTransferPlan(
     state.pkg,
     state.initialSnapshot,
@@ -89,7 +91,7 @@ async function rebuild() {
 function mount() {
   const root = $('#rehearsal-editor');
   root.hidden = state.initialSnapshot?.mode !== 'local-rehearsal';
-  if (!root.hidden)
+  if (!root.hidden) {
     driver = mountRehearsal(
       root,
       state.workingSnapshot || state.initialSnapshot,
@@ -98,15 +100,20 @@ function mount() {
         persist();
       }
     );
-  else driver = null;
+  } else {
+    driver = null;
+  }
 }
 $('#load-package').onclick = async () => {
-  if (running) return;
+  if (running) {
+    return;
+  }
   try {
-    if (state.report?.completed > 0)
+    if (state.report?.completed > 0) {
       throw Error(
         'A staged rehearsal is already retained. Download its report and explicitly start a new comparison before replacing the package.'
       );
+    }
     const pkg = JSON.parse($('#transfer-package').value);
     packageProblems(pkg);
     state = {pkg, decisions: {}};
@@ -123,11 +130,15 @@ $('#load-package').onclick = async () => {
   }
 };
 $('#new-comparison').onclick = () => {
-  if (running) return;
+  if (running) {
+    return;
+  }
   $('#new-comparison-dialog').showModal();
 };
 $('#confirm-new-comparison').onclick = () => {
-  if (running) return;
+  if (running) {
+    return;
+  }
   state = {decisions: {}};
   plan = null;
   driver = null;
@@ -136,10 +147,11 @@ $('#confirm-new-comparison').onclick = () => {
 };
 $('#blank-rehearsal').onclick = async () => {
   try {
-    if (running || state.report?.completed > 0)
+    if (running || state.report?.completed > 0) {
       throw Error(
         'A staged rehearsal is already retained. Resume it or explicitly start a new comparison.'
       );
+    }
     state.initialSnapshot = makeRehearsal(state.pkg);
     state.workingSnapshot = clone(state.initialSnapshot);
     state.decisions = {};
@@ -157,11 +169,14 @@ $('#blank-rehearsal').onclick = async () => {
 };
 $('#load-capture').onclick = async () => {
   try {
-    if (!state.pkg) throw Error('Load the approved review package first.');
-    if (running || state.report?.completed > 0)
+    if (!state.pkg) {
+      throw Error('Load the approved review package first.');
+    }
+    if (running || state.report?.completed > 0) {
       throw Error(
         'Download the retained rehearsal report and start a new comparison before replacing destination evidence.'
       );
+    }
     state.initialSnapshot = normalizeNativeCapture(
       JSON.parse($('#transfer-capture').value)
     );
@@ -181,7 +196,9 @@ $('#load-capture').onclick = async () => {
 };
 document.addEventListener('click', async event => {
   const button = event.target.closest('[data-decision]');
-  if (!button || running) return;
+  if (!button || running) {
+    return;
+  }
   state.decisions[button.dataset.operation] = button.dataset.decision;
   delete state.report;
   delete state.journal;
@@ -189,10 +206,13 @@ document.addEventListener('click', async event => {
   persist();
 });
 $('#stage-transfer').onclick = async () => {
-  if (running || !plan || !driver) return;
+  if (running || !plan || !driver) {
+    return;
+  }
   state.history ??= [];
-  if (state.report)
+  if (state.report) {
     state.history.push({planId: plan.id, report: clone(state.report)});
+  }
   running = true;
   controller = new AbortController();
   $('#stop-transfer').disabled = false;
@@ -202,8 +222,9 @@ $('#stage-transfer').onclick = async () => {
     'new-comparison',
     'blank-rehearsal',
     'load-capture',
-  ])
+  ]) {
     $('#' + id).disabled = true;
+  }
   try {
     const report = await stagePlan(plan, driver, {
       journal: state.journal,
@@ -253,22 +274,26 @@ $('#stage-transfer').onclick = async () => {
       'new-comparison',
       'blank-rehearsal',
       'load-capture',
-    ])
+    ]) {
       $('#' + id).disabled = false;
+    }
     await rebuild();
   }
 };
 $('#recompare-transfer').onclick = async () => {
-  if (running || !driver) return;
+  if (running || !driver) {
+    return;
+  }
   try {
     const current = await driver.read();
     state.history ??= [];
-    if (state.report)
+    if (state.report) {
       state.history.push({
         planId: plan.id,
         report: state.report,
         initialSnapshot: state.initialSnapshot,
       });
+    }
     state.initialSnapshot = current;
     state.workingSnapshot = clone(current);
     state.decisions = {};
@@ -285,7 +310,9 @@ $('#recompare-transfer').onclick = async () => {
 };
 $('#stop-transfer').onclick = () => controller?.abort();
 $('#download-transfer').onclick = () => {
-  if (!plan) return;
+  if (!plan) {
+    return;
+  }
   const data = {
     schemaVersion: 1,
     plan,

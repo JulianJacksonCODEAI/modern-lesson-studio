@@ -11,8 +11,9 @@ export async function sourcePageExport(expectedUrl) {
     expected.origin !== here.origin ||
     !id ||
     expected.pathname.match(pattern)?.[1] !== id
-  )
+  ) {
     throw Error('Return to the selected Google Slides deck before importing.');
+  }
   const response = await (
     globalThis.content && typeof globalThis.content.fetch === 'function'
       ? globalThis.content.fetch.bind(globalThis.content)
@@ -22,18 +23,23 @@ export async function sourcePageExport(expectedUrl) {
     credentials: 'same-origin',
     signal: AbortSignal.timeout(30000),
   });
-  if (!response.ok)
+  if (!response.ok) {
     throw Error(
       'Google could not export this deck. Check access or import a downloaded PowerPoint file.'
     );
-  if (!response.body) throw Error('Google returned an empty export.');
+  }
+  if (!response.body) {
+    throw Error('Google returned an empty export.');
+  }
   const reader = response.body.getReader(),
     chunks = [];
   let size = 0;
   try {
     while (true) {
       const {done, value} = await reader.read();
-      if (done) break;
+      if (done) {
+        break;
+      }
       size += value.length;
       if (size > 32_000_000) {
         await reader.cancel();
@@ -50,14 +56,16 @@ export async function sourcePageExport(expectedUrl) {
     bytes.set(c, at);
     at += c.length;
   }
-  if (bytes[0] !== 80 || bytes[1] !== 75)
+  if (bytes[0] !== 80 || bytes[1] !== 75) {
     throw Error(
       'Google returned a sign-in or error page instead of a presentation.'
     );
+  }
   // Chrome scripting returns JSON-serializable values rather than ArrayBuffers.
   let encoded = '';
-  for (let i = 0; i < bytes.length; i += 16384)
+  for (let i = 0; i < bytes.length; i += 16384) {
     encoded += String.fromCharCode(...bytes.subarray(i, i + 16384));
+  }
   return {
     kind: 'google-slides-export',
     deckUrl: 'https://docs.google.com/presentation/d/' + id + '/edit',

@@ -150,7 +150,9 @@ test('serialized shared-record bridge uses exact course scope, POST encoding and
         ? Object.fromEntries(new URLSearchParams(posts[0].options.body))
         : JSON.parse(posts[0].options.body);
     assert.equal(String(payload.courseVersionId), '77');
-    if (kind === 'resources') assert.equal(payload.includeInPdf, 'false');
+    if (kind === 'resources') {
+      assert.equal(payload.includeInPdf, 'false');
+    }
     assert.ok(
       h.calls.every(c => !['DELETE', 'PATCH', 'PUT'].includes(c.options.method))
     );
@@ -159,9 +161,15 @@ test('serialized shared-record bridge uses exact course scope, POST encoding and
 test('serialized shared creation refuses changed baseline, scope, approval and expired reviews before POST', async () => {
   for (const mode of ['baseline', 'scope', 'approval', 'expiry']) {
     const h = await harness();
-    if (mode === 'baseline') h.fresh = {id: 123, name: 'Outside changes'};
-    if (mode === 'scope') h.course = 88;
-    if (mode === 'approval') h.review.id = 'changed';
+    if (mode === 'baseline') {
+      h.fresh = {id: 123, name: 'Outside changes'};
+    }
+    if (mode === 'scope') {
+      h.course = 88;
+    }
+    if (mode === 'approval') {
+      h.review.id = 'changed';
+    }
     if (mode === 'expiry') {
       h.review.expiresAt = 1;
       const copy = structuredClone(h.review);
@@ -174,8 +182,9 @@ test('serialized shared creation refuses changed baseline, scope, approval and e
 });
 test('shared bridge refuses destructive actions, wrong scopes and truncated searches', async () => {
   const h = await harness();
-  for (const action of ['delete', 'patch', 'save'])
+  for (const action of ['delete', 'patch', 'save']) {
     await assert.rejects(h.call({action, kind: 'vocabularies'}), /unavailable/);
+  }
   await assert.rejects(
     h.call({
       action: 'search',

@@ -31,19 +31,34 @@ export async function moveLessonDataToSession({
   const old = await c.storage.local.get(LESSON_KEYS);
   const current = await session.get([...LESSON_KEYS, RECORD_KEY]);
   const move = {};
-  for (const k of LESSON_KEYS)
-    if (old[k] !== undefined && current[k] === undefined) move[k] = old[k];
+  for (const k of LESSON_KEYS) {
+    if (old[k] !== undefined && current[k] === undefined) {
+      move[k] = old[k];
+    }
+  }
   const records = {...(current[RECORD_KEY] || {})},
     stale = [];
   for (let i = 0; ls && i < ls.length; i++) {
     const k = ls.key(i);
-    if (RECORD_PREFIXES.some(p => k?.startsWith(p))) stale.push(k);
+    if (RECORD_PREFIXES.some(p => k?.startsWith(p))) {
+      stale.push(k);
+    }
   }
-  for (const k of stale) if (!(k in records)) records[k] = ls.getItem(k);
-  if (stale.length) move[RECORD_KEY] = records;
-  if (Object.keys(move).length) await session.set(move);
+  for (const k of stale) {
+    if (!(k in records)) {
+      records[k] = ls.getItem(k);
+    }
+  }
+  if (stale.length) {
+    move[RECORD_KEY] = records;
+  }
+  if (Object.keys(move).length) {
+    await session.set(move);
+  }
   await c.storage.local.remove(LESSON_KEYS);
-  for (const k of stale) ls.removeItem(k);
+  for (const k of stale) {
+    ls.removeItem(k);
+  }
   return {moved: Object.keys(move).length, records: stale.length};
 }
 
@@ -58,7 +73,9 @@ export async function sessionRecordStore({
   );
   const size = () => {
     let n = 0;
-    for (const [k, v] of map) n += k.length + v.length;
+    for (const [k, v] of map) {
+      n += k.length + v.length;
+    }
     return n;
   };
   const flush = () =>
@@ -73,14 +90,19 @@ export async function sessionRecordStore({
       const previous = map.get(k);
       map.set(k, String(v));
       if (size() > RECORD_LIMIT) {
-        if (previous === undefined) map.delete(k);
-        else map.set(k, previous);
+        if (previous === undefined) {
+          map.delete(k);
+        } else {
+          map.set(k, previous);
+        }
         throw Error('Session storage is full.');
       }
       flush();
     },
     removeItem(k) {
-      if (map.delete(k)) flush();
+      if (map.delete(k)) {
+        flush();
+      }
     },
   };
 }

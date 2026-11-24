@@ -30,22 +30,26 @@ export async function clearImports() {
 }
 
 export async function importSlides(tab) {
-  if (!tab?.id || !isSlidesUrl(tab.url))
+  if (!tab?.id || !isSlidesUrl(tab.url)) {
     throw Error('Switch to the Google Slides deck first, then try again.');
+  }
   const [response] = await chrome.scripting.executeScript({
     target: {tabId: tab.id},
     func: sourcePageExport,
     args: [tab.url],
   });
   const result = response?.result;
-  if (result?.kind !== 'google-slides-export')
+  if (result?.kind !== 'google-slides-export') {
     throw Error(
       result?.error ||
         'The deck could not be read. Make sure you are signed in and the deck has speaker notes.'
     );
+  }
   const bytes = Uint8Array.from(atob(result.base64), c => c.charCodeAt(0));
   const item = presentationParts(await unzipOffice(bytes), result.name);
-  if (result.deckUrl) item.deckUrl = result.deckUrl;
+  if (result.deckUrl) {
+    item.deckUrl = result.deckUrl;
+  }
   return {
     item,
     url: result.deckUrl || tab.url,
@@ -55,19 +59,23 @@ export async function importSlides(tab) {
 }
 
 export async function importNotion(tab) {
-  if (!tab?.id || !isNotionUrl(tab.url))
+  if (!tab?.id || !isNotionUrl(tab.url)) {
     throw Error('Switch to the Notion lesson page first, then try again.');
+  }
   const [response] = await chrome.scripting.executeScript({
     target: {tabId: tab.id},
     func: notionPageExport,
   });
   const result = response?.result;
-  if (result?.kind !== 'notion-web-clip')
+  if (result?.kind !== 'notion-web-clip') {
     throw Error(
       'The Notion page could not be read. Make sure it has loaded fully.'
     );
+  }
   const item = notionMarkdown(result.markdown);
-  if (result.title) item.title = result.title;
+  if (result.title) {
+    item.title = result.title;
+  }
   return {
     item,
     url: result.url || tab.url,
@@ -80,7 +88,9 @@ export async function importNotion(tab) {
 export function cleanResourceUrl(url) {
   try {
     const u = new URL(url);
-    if (!/^(docs|drive)\.google\.com$/.test(u.hostname)) return url;
+    if (!/^(docs|drive)\.google\.com$/.test(u.hostname)) {
+      return url;
+    }
     u.searchParams.delete('usp');
     return u.toString().replace(/\?$/, '');
   } catch {
@@ -90,7 +100,9 @@ export function cleanResourceUrl(url) {
 
 // Slides are required (the lesson's sections come from speaker notes); Notion adds the front matter.
 export function buildLesson(imports) {
-  if (!imports?.slides) return null;
+  if (!imports?.slides) {
+    return null;
+  }
   const base = {
     title:
       imports.brief?.item?.title || imports.slides.name || 'Untitled lesson',

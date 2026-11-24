@@ -499,7 +499,7 @@ test('serialized native bridge edits existing title and assessment controls and 
   }
   assert.equal(fixture.section.scriptLevels[0].id, 20);
   assert.equal(fixture.section.scriptLevels[0].bonus, true);
-  for (const operation of operations.reverse())
+  for (const operation of operations.reverse()) {
     capture = await fixture.call({
       action: 'set-scalar',
       mode: 'unsaved-scalar-staging',
@@ -510,6 +510,7 @@ test('serialized native bridge edits existing title and assessment controls and 
       },
       expectedCaptureDigest: await digest(capture),
     });
+  }
   assert.equal(canonical(capture), canonical(initial));
   assert.equal(fixture.remote, 0);
 });
@@ -532,19 +533,20 @@ test('serialized native callout targeting edits the second of three records and 
       after: 'Ethics Opportunity',
     },
   ];
-  for (const operation of operations)
+  for (const operation of operations) {
     capture = await fixture.call({
       action: 'set-scalar',
       mode: 'unsaved-scalar-staging',
       operation,
       expectedCaptureDigest: await digest(capture),
     });
+  }
   assert.deepEqual(fixture.section.tips, [
     {key: 'tip-a', type: 'teachingTip', markdown: 'Neighbor before'},
     {key: 'tip-b', type: 'ethicsOpportunity', markdown: 'Reviewed text'},
     {key: 'tip-c', type: 'contentCorner', markdown: 'Neighbor after'},
   ]);
-  for (const operation of operations.reverse())
+  for (const operation of operations.reverse()) {
     capture = await fixture.call({
       action: 'set-scalar',
       mode: 'unsaved-scalar-staging',
@@ -555,6 +557,7 @@ test('serialized native callout targeting edits the second of three records and 
       },
       expectedCaptureDigest: await digest(capture),
     });
+  }
   assert.equal(canonical(capture), canonical(initial));
   assert.equal(fixture.remote, 0);
 });

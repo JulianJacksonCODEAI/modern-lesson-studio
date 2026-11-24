@@ -1,5 +1,7 @@
 export function reviewWindow(review, now = Date.now()) {
-  if (!review) return {expired: false, text: ''};
+  if (!review) {
+    return {expired: false, text: ''};
+  }
   const expiry = Number(review.expiresAt);
   const expired = !Number.isFinite(expiry) || now > expiry;
   return {

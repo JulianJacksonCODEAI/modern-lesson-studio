@@ -94,8 +94,9 @@ test('B11 this prototype cannot write even to its sandbox', () => {
     'https://levelbuilder-studio.code.org/courses/6-12-dev-playground/units/16/lessons/11',
     'https://levelbuilder-studio.code.org/courses/csp-dev-2027/units/1/lessons/16',
     'https://levelbuilder-studio.code.org/s/csp-unit1-dev-27-28/lessons/16/edit',
-  ])
+  ]) {
     assert.equal(canWrite(u), false);
+  }
 });
 test('B12 invalid input and teacher answer key in student resources are rejected', () => {
   assert.throws(() => validateSource({}), /title/);
@@ -117,6 +118,7 @@ test('export includes whole lesson and is explicitly a review artifact', () => {
     'Assessment Opportunity',
     'Wrap Up',
     'csp-unit1-lesson16-cfu3_27_28',
-  ])
+  ]) {
     assert.ok(out.includes(t), t);
+  }
 });

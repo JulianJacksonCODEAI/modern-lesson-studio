@@ -35,7 +35,7 @@ function harness() {
   state.pkg.lesson.frontMatter.preparation = 'Prepare a follow-up discussion.';
   for (const [index, activity] of state.pkg.lesson.activities
     .slice(0, 2)
-    .entries())
+    .entries()) {
     state.pkg.lesson.sections.push({
       id: 'new-' + index,
       activityId: activity.id,
@@ -46,6 +46,7 @@ function harness() {
       callouts: types.map(type => ({type, body: 'Review ' + type})),
       progression: null,
     });
+  }
   state.pkg.baseline = clone(state.pkg.lesson);
   const io = {
     ...demoAdapter(state, () => {}),
@@ -172,8 +173,9 @@ test('interrupted section filling removes only its checkpoint-owned append and r
     if (
       r.action === 'append-callout' &&
       r.operation.after.type === 'Discussion Goal'
-    )
+    ) {
       throw Error('Injected callout interruption');
+    }
     return bridge(r);
   };
   await assert.rejects(prepareTransfer(h.state.pkg, h.io), /interruption/);
@@ -220,8 +222,9 @@ test('recovery resumes interrupted scalar restoration after all new sections are
     bridge = h.io.bridge;
   let calls = 0;
   const interrupted = async r => {
-    if (r.action === 'set-scalar' && ++calls === 2)
+    if (r.action === 'set-scalar' && ++calls === 2) {
       throw Error('Interrupted scalar recovery');
+    }
     return bridge(r);
   };
   await assert.rejects(
@@ -235,7 +238,9 @@ test('recovery resumes interrupted scalar restoration after all new sections are
 
 test('multiple new sections in one activity preserve append order without requiring level changes', async () => {
   const h = harness();
-  for (const s of h.state.pkg.lesson.sections) s.progression = null;
+  for (const s of h.state.pkg.lesson.sections) {
+    s.progression = null;
+  }
   const additional = clone(h.state.pkg.lesson.sections.at(-2));
   additional.id = 'third-new';
   additional.title = 'Second reflection';

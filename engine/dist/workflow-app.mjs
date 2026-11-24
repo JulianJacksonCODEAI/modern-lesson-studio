@@ -50,10 +50,11 @@ let state = {
   evidenceError = '';
 try {
   state = readTransferRecord(localStorage, key) || state;
-  if (state.mode !== (native ? 'native' : 'demo'))
+  if (state.mode !== (native ? 'native' : 'demo')) {
     throw Error(
       'This run belongs to a different mode. Reopen it in its original browser context.'
     );
+  }
 } catch (error) {
   startupError = error.message;
   state = {
@@ -74,8 +75,9 @@ function settleVerifiedSaveState() {
   if (
     state.cleanupReceipt?.attempted ||
     state.receipt?.status !== 'saved-and-verified'
-  )
+  ) {
     return;
+  }
   state.needsRecovery = false;
   if (state.preparationError) {
     state.resolvedPreparationErrors ??= [];
@@ -88,7 +90,9 @@ function settleVerifiedSaveState() {
 }
 const status = message => {
   $('status').textContent = message;
-  if (baselineReading) $('baseline-status').textContent = message;
+  if (baselineReading) {
+    $('baseline-status').textContent = message;
+  }
 };
 const el = (tag, text, parent) => {
   const n = document.createElement(tag);
@@ -100,8 +104,11 @@ function progress(step) {
   for (let i = 1; i <= 4; i++) {
     const node = $('step-' + i);
     node.classList.toggle('active', i === step);
-    if (i === step) node.setAttribute('aria-current', 'step');
-    else node.removeAttribute('aria-current');
+    if (i === step) {
+      node.setAttribute('aria-current', 'step');
+    } else {
+      node.removeAttribute('aria-current');
+    }
   }
 }
 function updateReviewWindow() {
@@ -111,9 +118,13 @@ function updateReviewWindow() {
     note.hidden = !!state.receipt;
     note.textContent = state.receipt ? '' : window.text;
   }
-  if (window.expired && !state.receipt) $('approve').checked = false;
+  if (window.expired && !state.receipt) {
+    $('approve').checked = false;
+  }
   const cleanupExpired = reviewWindow(state.cleanupReview).expired;
-  if (cleanupExpired) $('approve-cleanup').checked = false;
+  if (cleanupExpired) {
+    $('approve-cleanup').checked = false;
+  }
   $('save-cleanup').disabled =
     busy ||
     !state.cleanupReview ||
@@ -133,7 +144,9 @@ function updateReviewWindow() {
 }
 
 function fieldDisplay(change, value) {
-  if (value === null || value === '') return '(blank)';
+  if (value === null || value === '') {
+    return '(blank)';
+  }
   const names = {
     teachingTip: 'Teaching Tip',
     contentCorner: 'Content Corner',
@@ -171,9 +184,10 @@ function render() {
     native &&
     !baselineReading &&
     (state.job || state.receipt || state.needsRecovery)
-  )
+  ) {
     $('baseline-status').textContent =
       'This run retains a review, save attempt, or staging recovery. Open a fresh reusable screen from the practice editor to read a new baseline without replacing this evidence.';
+  }
   $('download-baseline').disabled =
     busy || (!state.checkpoint && !state.preparationError);
   $('review-actions').hidden =
@@ -198,8 +212,9 @@ function render() {
     'package-file',
     'destination',
     'practice',
-  ])
+  ]) {
     $(id).disabled = busy || (native && !!state.job) || !!state.needsRecovery;
+  }
   $('changes').replaceChildren();
   if (state.job) {
     const review = state.job.review,
@@ -225,7 +240,7 @@ function render() {
       el('strong', value, item);
       el('span', label, item);
     }
-    if (review.preservationTest)
+    if (review.preservationTest) {
       el(
         'p',
         'Preservation test: save this lesson unchanged. Zero additions, removals, or text edits. All ' +
@@ -235,6 +250,7 @@ function render() {
           ' assessment flags must remain identical. Success requires native save acknowledgement and complete independent readback equality.',
         $('changes')
       );
+    }
     el('p', 'Destination title: ' + review.baseline.name, $('changes'));
     el(
       'p',
@@ -251,10 +267,11 @@ function render() {
       'Level group',
       'Existing level',
       'Assessment',
-    ])
+    ]) {
       el('th', text, head).setAttribute('scope', 'col');
+    }
     const body = el('tbody', '', table);
-    for (const c of reviewedLevelGroups(review))
+    for (const c of reviewedLevelGroups(review)) {
       for (const l of c.addLevels) {
         const row = el('tr', '', body);
         el('td', c.section || c.activity, row);
@@ -262,9 +279,10 @@ function render() {
         el('td', l.name, row);
         el('td', l.assessment ? 'Yes' : 'No', row);
       }
+    }
     if (review.sharedAdditions?.length) {
       el('h3', 'Resource and vocabulary associations', $('changes'));
-      for (const change of review.sharedAdditions)
+      for (const change of review.sharedAdditions) {
         el(
           'p',
           'Associate ' +
@@ -275,6 +293,7 @@ function render() {
             change.record.id,
           $('changes')
         );
+      }
       el(
         'p',
         'Existing associations and shared metadata are retained. No shared record is edited or deleted.',
@@ -354,7 +373,7 @@ function render() {
           details
         );
         el('pre', s.description || '(blank teaching text)', details);
-        if (s.scriptLevels.length)
+        if (s.scriptLevels.length) {
           el(
             'p',
             'Level group: ' +
@@ -364,6 +383,7 @@ function render() {
               ' reviewed existing level link(s), listed above.',
             details
           );
+        }
         for (const tip of s.tips) {
           el('h4', names[tip.type], details);
           el('pre', tip.markdown, details);
@@ -399,12 +419,13 @@ function render() {
     const expiryNote = el('p', '', $('changes'));
     expiryNote.id = 'review-expiry';
     expiryNote.setAttribute('aria-live', 'polite');
-  } else
+  } else {
     el(
       'p',
       'Prepare a fresh comparison to see exactly what would change.',
       $('changes')
     );
+  }
   $('report').replaceChildren();
   if (state.receipt) {
     const r = state.receipt,
@@ -419,7 +440,9 @@ function render() {
             : r.status,
         $('report')
       );
-    if (r.status === 'saved-and-verified') p.className = 'success';
+    if (r.status === 'saved-and-verified') {
+      p.className = 'success';
+    }
     el(
       'p',
       'Save requests sent: ' +
@@ -429,28 +452,33 @@ function render() {
         '. Automatic retries: none.',
       $('report')
     );
-    if (r.status === 'saved-and-verified' && !state.cleanupReceipt?.attempted)
+    if (r.status === 'saved-and-verified' && !state.cleanupReceipt?.attempted) {
       el(
         'p',
         'All reviewed changes match. Unlisted content and settings are preserved. Restore point retained.',
         $('report')
       );
-    for (const message of saveDiagnostics(r).messages)
+    }
+    for (const message of saveDiagnostics(r).messages) {
       el('p', message, $('report'));
-    for (const message of r.verification?.mismatches || [])
+    }
+    for (const message of r.verification?.mismatches || []) {
       el('p', message, $('report'));
-    if (state.automaticRecheck)
+    }
+    if (state.automaticRecheck) {
       el(
         'p',
         'Automatic readback-only recheck completed. No second save was sent.',
         $('report')
       );
-    if (native && r.verification?.passed && !state.cleanupReceipt?.attempted)
+    }
+    if (native && r.verification?.passed && !state.cleanupReceipt?.attempted) {
       el(
         'p',
         'Before manual editing, preserve any outside unsaved edits and reopen the lesson to synchronize its saved baseline.',
         $('report')
       );
+    }
   } else {
     el(
       'p',
@@ -467,22 +495,26 @@ function render() {
     if (stage?.blockers?.length) {
       el('h3', 'What needs attention', $('report'));
       const list = el('ul', '', $('report'));
-      for (const blocker of stage.blockers) el('li', blocker, list);
+      for (const blocker of stage.blockers) {
+        el('li', blocker, list);
+      }
     }
-    if (stage?.restored === true)
+    if (stage?.restored === true) {
       el(
         'p',
         'Original editor restored. No lesson save was attempted.',
         $('report')
       );
+    }
   }
   progress(state.receipt ? 4 : state.job ? 3 : state.pkg ? 2 : 1);
   updateReviewWindow();
   renderCleanup();
   renderShared();
   if (evidenceError) {
-    for (const control of document.querySelectorAll('button,input'))
+    for (const control of document.querySelectorAll('button,input')) {
       control.disabled = true;
+    }
     $('download').disabled = false;
     $('download-baseline').disabled = false;
     status(
@@ -539,16 +571,20 @@ function renderShared() {
           d
         );
         if (item.kind === 'resources') {
-          for (const field of ['type', 'audience', 'url'])
+          for (const field of ['type', 'audience', 'url']) {
             el('p', field + ': ' + item.intent[field], d);
-          if (item.action === 'create')
+          }
+          if (item.action === 'create') {
             el(
               'p',
               'Shown in resource dropdowns; no download URL, PDF inclusion, assessment flag or curriculum category.',
               d
             );
-        } else el('p', item.intent.definition, d);
-        if (item.record)
+          }
+        } else {
+          el('p', item.intent.definition, d);
+        }
+        if (item.record) {
           el(
             'p',
             'Existing record ' +
@@ -556,15 +592,17 @@ function renderShared() {
               ' · all shared settings retained.',
             d
           );
+        }
       }
     }
   }
-  if (sharedExpiryNote)
+  if (sharedExpiryNote) {
     sharedExpiryNote.textContent = expired
       ? 'Review expired. Check shared records again before creating anything.'
       : 'Creation approval expires at ' +
         new Date(review.expiresAt).toLocaleTimeString() +
         '.';
+  }
   $('shared-status').textContent = state.sharedReceipt
     ? state.sharedReceipt.status === 'shared-records-verified'
       ? 'Every shared record is verified. Continue to the separate lesson review; the lesson has not been saved.'
@@ -575,10 +613,11 @@ function renderShared() {
 }
 async function sharedIO() {
   io = await makeIO();
-  if (!io.sharedBridge)
+  if (!io.sharedBridge) {
     throw Error(
       'Shared-record creation is available only in the native companion.'
     );
+  }
   return {
     context: () => io.sharedBridge({action: 'context'}),
     search: (kind, intent, context) =>
@@ -619,8 +658,9 @@ $('prepare-shared').onclick = () =>
       state.job ||
       state.receipt ||
       state.needsRecovery
-    )
+    ) {
       throw Error('Load a package in a fresh, restored practice run first.');
+    }
     state.destination = selectDestination(
       $('destination').value,
       $('practice').checked
@@ -659,8 +699,9 @@ $('create-shared').onclick = () =>
       state.needsRecovery ||
       state.sharedApproval ||
       !$('approve-shared').checked
-    )
+    ) {
       throw Error('Review and approve shared-record creation first.');
+    }
     const shared = await sharedIO();
     await readTransferBaseline(io);
     state.sharedApproval = {reviewId: state.sharedReview?.id, approved: true};
@@ -684,8 +725,9 @@ $('check-shared').onclick = () =>
       state.receipt ||
       state.needsRecovery ||
       !state.sharedApproval
-    )
+    ) {
       throw Error('No shared-record run is available for recheck.');
+    }
     state.sharedReceipt = await executeSharedReview(
       state.sharedReview,
       state.sharedApproval,
@@ -699,8 +741,9 @@ $('check-shared').onclick = () =>
   });
 $('continue-shared').onclick = () =>
   run(async () => {
-    if (!native || state.job || state.receipt || state.needsRecovery)
+    if (!native || state.job || state.receipt || state.needsRecovery) {
       throw Error('Start a fresh restored review first.');
+    }
     state.pkg = await bindSharedRecords(state.pkg, state.sharedReceipt);
     persist();
     await prepareReview();
@@ -724,10 +767,11 @@ async function makeIO() {
     const transport = func =>
       createNativeTransport(async encoded => {
         const tab = await chrome.tabs.get(tabId);
-        if (tab.url !== destination.url || tab.discarded)
+        if (tab.url !== destination.url || tab.discarded) {
           throw Error(
             'The selected editor moved or was discarded. Reopen and review it again.'
           );
+        }
         const [result] = await chrome.scripting.executeScript({
           target: {tabId},
           injectImmediately: true,
@@ -761,16 +805,19 @@ async function makeIO() {
         const usages = [];
         for (const level of reviewedLevelGroups(review).flatMap(
           c => c.addLevels
-        ))
+        )) {
           usages.push(
             await usage(
               bound({action: 'read', levelId: level.levelId, name: level.name})
             )
           );
+        }
         return findUnitLevelConflicts(review, usages);
       },
     };
-  } else adapter = demoAdapter(state.demo, persist);
+  } else {
+    adapter = demoAdapter(state.demo, persist);
+  }
   const prefix = native ? 'native-approved-save-' : key + '-receipt-';
   return {
     ...adapter,
@@ -778,9 +825,11 @@ async function makeIO() {
     loadReceipt: async digest =>
       readTransferRecord(localStorage, prefix + digest),
     persist: async (digest, receipt) => {
-      if (receipt.kind === 'test-link-cleanup-receipt')
+      if (receipt.kind === 'test-link-cleanup-receipt') {
         state.cleanupReceipt = receipt;
-      else state.receipt = receipt;
+      } else {
+        state.receipt = receipt;
+      }
       settleVerifiedSaveState();
       persistRecord(prefix + digest, receipt);
       persist();
@@ -796,27 +845,30 @@ async function makeIO() {
 }
 async function run(action, {baseline = false} = {}) {
   if (busy || startupError || evidenceError) {
-    if (baseline)
+    if (baseline) {
       $('baseline-status').textContent =
         evidenceError ||
         startupError ||
         'Another operation is running. Wait for it to finish.';
+    }
     return;
   }
   busy = true;
   baselineReading = baseline;
-  if (baseline)
+  if (baseline) {
     status('Checking practice confirmation and access to the selected editor…');
+  }
   render();
   try {
     await navigator.locks.request(
       native ? 'lesson-studio-native-verification' : key,
       {ifAvailable: true},
       async lock => {
-        if (!lock)
+        if (!lock) {
           throw Error(
             'Another run is using this editor. Wait for it to finish.'
           );
+        }
         await action();
       }
     );
@@ -828,8 +880,9 @@ async function run(action, {baseline = false} = {}) {
       /* Keep the in-memory report available when storage is unavailable. */
     }
     status(evidenceError || error.message);
-    if (baseline || state.checkpoint || state.receipt || evidenceError)
+    if (baseline || state.checkpoint || state.receipt || evidenceError) {
       downloadReport();
+    }
   } finally {
     busy = false;
     baselineReading = false;
@@ -878,10 +931,11 @@ $('load-structure-demo').onclick = () =>
   });
 $('load-failure-demo').onclick = () =>
   run(async () => {
-    if (native)
+    if (native) {
       throw Error(
         'Failure simulation is available only in the isolated local demo.'
       );
+    }
     const source = await (await fetch('fixture.json')).json();
     state.demo = createDemo(source, {saveUnchanged: true});
     state.pkg = state.demo.pkg;
@@ -900,13 +954,18 @@ $('new-demo').onclick = () => {
 $('package-file').onchange = () =>
   run(async () => {
     const file = $('package-file').files[0];
-    if (!file) return;
-    if (file.size > 8_000_000)
+    if (!file) {
+      return;
+    }
+    if (file.size > 8_000_000) {
       throw Error('Choose a review package smaller than 8 MB.');
+    }
     const pkg = JSON.parse(await file.text());
     const {packageProblems} = await import('./transfer-core.mjs');
     const problems = packageProblems(pkg);
-    if (problems.length) throw Error(problems.join(' '));
+    if (problems.length) {
+      throw Error(problems.join(' '));
+    }
     state.pkg = pkg;
     delete state.job;
     delete state.sharedReview;
@@ -915,19 +974,22 @@ $('package-file').onchange = () =>
     $('approve-shared').checked = false;
     $('package-name').textContent = file.name;
     persist();
-    if ($('practice').checked) await prepareReview();
-    else
+    if ($('practice').checked) {
+      await prepareReview();
+    } else {
       status(
         'Package loaded. Confirm your practice destination to automatically prepare the review.'
       );
+    }
   });
 $('read-baseline').onclick = () =>
   run(
     async () => {
-      if (!native || state.job || state.receipt || state.needsRecovery)
+      if (!native || state.job || state.receipt || state.needsRecovery) {
         throw Error(
           'Start a fresh native transfer run before reading a baseline.'
         );
+      }
       state.destination = selectDestination(
         $('destination').value,
         $('practice').checked
@@ -947,15 +1009,18 @@ $('read-baseline').onclick = () =>
   );
 $('prepare-preservation').onclick = () =>
   run(async () => {
-    if (state.job || state.receipt || state.needsRecovery)
+    if (state.job || state.receipt || state.needsRecovery) {
       throw Error('Start a fresh run for the preservation test.');
+    }
     if (native) {
       state.destination = selectDestination(
         $('destination').value,
         $('practice').checked
       );
       state.practiceConfirmed = true;
-    } else if (!state.demo) throw Error('Load an isolated demo first.');
+    } else if (!state.demo) {
+      throw Error('Load an isolated demo first.');
+    }
     io = await makeIO();
     state.job = await preparePreservationTest(io);
     state.needsRecovery = false;
@@ -975,10 +1040,11 @@ async function prepareReview() {
       );
       state.practiceConfirmed = true;
       const tab = await chrome.tabs.get(state.tabId);
-      if (tab.url !== state.destination.url || tab.discarded)
+      if (tab.url !== state.destination.url || tab.discarded) {
         throw Error(
           'Open the exact selected editor in the original tab, then launch this screen from its companion.'
         );
+      }
       await chrome.tabs.update(state.tabId, {active: true});
     }
     delete state.job;
@@ -996,21 +1062,25 @@ async function prepareReview() {
     if (ownTab?.id) {
       try {
         const editor = await chrome.tabs.get(state.tabId);
-        if (editor.active) await chrome.tabs.update(ownTab.id, {active: true});
+        if (editor.active) {
+          await chrome.tabs.update(ownTab.id, {active: true});
+        }
       } catch {}
     }
   }
 }
 $('prepare').onclick = () => run(prepareReview);
 $('practice').onchange = () => {
-  if ($('practice').checked && state.pkg && !state.job && !state.receipt)
+  if ($('practice').checked && state.pkg && !state.job && !state.receipt) {
     run(prepareReview);
+  }
 };
 $('approve').onchange = render;
 $('save').onclick = () =>
   run(async () => {
-    if (!$('approve').checked || !state.job)
+    if (!$('approve').checked || !state.job) {
       throw Error('Review and explicitly approve the displayed changes first.');
+    }
     state.job = await approveTransfer(state.job);
     persist();
     io ??= await makeIO();
@@ -1023,10 +1093,11 @@ $('save').onclick = () =>
       const retained = await io.loadReceipt(
         await saveRequestDigest(state.job.review)
       );
-      if (!retained?.attempted)
+      if (!retained?.attempted) {
         throw Error(
           'Saved receipt is unavailable. No second save will be attempted.'
         );
+      }
       state.receipt = await executeTransfer(state.job, io);
       state.automaticRecheck = true;
       persist();
@@ -1053,22 +1124,25 @@ $('save').onclick = () =>
   });
 $('check').onclick = () =>
   run(async () => {
-    if (state.cleanupReceipt?.attempted)
+    if (state.cleanupReceipt?.attempted) {
       throw Error('Use the cleanup recheck for the current saved result.');
+    }
     io ??= await makeIO();
     const receipt = await io.loadReceipt(
       await saveRequestDigest(state.job.review)
     );
-    if (!receipt?.attempted)
+    if (!receipt?.attempted) {
       throw Error('No persisted attempt exists to check.');
+    }
     state.receipt = await executeTransfer(state.job, io);
     persist();
     status('Saved result checked again. No request was resent.');
   });
 $('recover').onclick = () =>
   run(async () => {
-    if (state.receipt?.attempted)
+    if (state.receipt?.attempted) {
       throw Error('A save was attempted; only saved readback is available.');
+    }
     io ??= await makeIO();
     await recoverNativeLevelCheck(io.bridge, state.checkpoint.stage);
     state.needsRecovery = false;
@@ -1118,8 +1192,8 @@ function renderCleanup() {
     el('p', 'Destination: ' + review.baseline.name, $('cleanup-review'));
     el('p', review.destination.url, $('cleanup-review'));
     const list = el('ul', '', $('cleanup-review'));
-    for (const removal of review.removals)
-      for (const link of removal.links)
+    for (const removal of review.removals) {
+      for (const link of removal.links) {
         el(
           'li',
           'Unlink ' +
@@ -1128,21 +1202,25 @@ function renderCleanup() {
             (removal.section || 'teaching section'),
           list
         );
+      }
+    }
     el(
       'p',
       'Existing content and settings will be preserved. Only these test-created associations are removed.',
       $('cleanup-review')
     );
   }
-  if (review && !receipt?.attempted)
+  if (review && !receipt?.attempted) {
     el('p', reviewWindow(review).text, $('cleanup-review'));
+  }
   $('cleanup-actions').hidden = !review || !!receipt?.attempted;
   $('check-cleanup').hidden = !receipt?.attempted;
   $('check-cleanup').disabled = busy;
   $('next-transfer').hidden = receipt?.status !== 'cleanup-saved-and-verified';
-  if (state.cleanupPreparationError && !review)
+  if (state.cleanupPreparationError && !review) {
     $('cleanup-status').textContent = state.cleanupPreparationError;
-  if (receipt)
+  }
+  if (receipt) {
     $('cleanup-status').textContent =
       receipt.status === 'cleanup-saved-and-verified'
         ? (native
@@ -1151,21 +1229,26 @@ function renderCleanup() {
           ' The underlying levels were retained. Recovery report downloaded. ' +
           (state.cleanupSyncNote || '')
         : 'Cleanup is not confirmed. Recheck saved data only; do not resend.';
+  }
   updateReviewWindow();
 }
 $('cleanup-file').onchange = () =>
   run(async () => {
     const file = $('cleanup-file').files[0];
-    if (!file) return;
-    if (file.size > 32000000)
+    if (!file) {
+      return;
+    }
+    if (file.size > 32000000) {
       throw Error('Cleanup report must be smaller than 32 MB.');
+    }
     const report = JSON.parse(await file.text()),
       receipt = report.receipt;
     if (
       receipt?.kind !== 'approved-native-save-receipt' ||
       receipt.status !== 'saved-and-verified'
-    )
+    ) {
       throw Error('Choose a report from a verified successful test save.');
+    }
     state.cleanupSource = receipt;
     delete state.cleanupReview;
     delete state.cleanupReceipt;
@@ -1174,16 +1257,19 @@ $('cleanup-file').onchange = () =>
   });
 async function prepareCleanupReview() {
   const source = state.cleanupSource || state.receipt;
-  if (!source) throw Error('Choose a verified test report first.');
+  if (!source) {
+    throw Error('Choose a verified test report first.');
+  }
   if (native) {
     const destination = selectDestination(
       $('destination').value,
       $('practice').checked
     );
-    if (destination.id !== source.review.destination.id)
+    if (destination.id !== source.review.destination.id) {
       throw Error(
         'Open the practice lesson that owns these test links before preparing cleanup.'
       );
+    }
     state.destination = destination;
     state.practiceConfirmed = true;
   }
@@ -1202,8 +1288,9 @@ $('prepare-cleanup').onclick = () => run(prepareCleanupReview);
 $('approve-cleanup').onchange = updateReviewWindow;
 $('save-cleanup').onclick = () =>
   run(async () => {
-    if (!$('approve-cleanup').checked)
+    if (!$('approve-cleanup').checked) {
       throw Error('Approve the displayed cleanup first.');
+    }
     state.cleanupApproval = await approveCleanup(state.cleanupReview);
     persist();
     io ??= await makeIO();
@@ -1231,8 +1318,9 @@ $('save-cleanup').onclick = () =>
   });
 $('check-cleanup').onclick = () =>
   run(async () => {
-    if (!state.cleanupReceipt?.attempted)
+    if (!state.cleanupReceipt?.attempted) {
       throw Error('No cleanup attempt exists.');
+    }
     io ??= await makeIO();
     state.cleanupReceipt = await executeCleanup(
       state.cleanupReview,
@@ -1244,7 +1332,9 @@ $('check-cleanup').onclick = () =>
     status('Cleanup checked without resending.');
   });
 async function synchronizeCleanedEditor() {
-  if (!native) return;
+  if (!native) {
+    return;
+  }
   try {
     const current = await io.bridge({action: 'read'});
     const {canonical} = await import('./transfer-core.mjs');
@@ -1316,14 +1406,15 @@ try {
   if (!startupError) {
     settleVerifiedSaveState();
     render();
-    if (state.cleanupReceipt?.attempted)
+    if (state.cleanupReceipt?.attempted) {
       status(
         'Cleanup run restored. Recheck cleanup to read the current saved result without resending.'
       );
-    else if (state.receipt)
+    } else if (state.receipt) {
       status(
         'Retained run restored. You can check the saved result without sending again.'
       );
+    }
   }
 } catch {
   startupError =
@@ -1332,18 +1423,21 @@ try {
 if (startupError) {
   status(startupError);
   $('status').setAttribute('role', 'alert');
-  for (const control of document.querySelectorAll('button,input'))
+  for (const control of document.querySelectorAll('button,input')) {
     control.disabled = true;
+  }
 }
 if (native) {
-  if (startupError) $('baseline-status').textContent = startupError;
-  else if (!state.job && !state.receipt && !state.needsRecovery)
+  if (startupError) {
+    $('baseline-status').textContent = startupError;
+  } else if (!state.job && !state.receipt && !state.needsRecovery) {
     $('baseline-status').textContent =
       'Companion ' +
       chrome.runtime.getManifest().version +
       ' · ' +
       (state.preparationError ||
         'Confirm the practice lesson, then read its baseline. No package is needed.');
+  }
 }
 
 if (!startupError) {
@@ -1354,6 +1448,8 @@ if (!startupError) {
     }
   }, 15000);
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && !evidenceError) updateReviewWindow();
+    if (!document.hidden && !evidenceError) {
+      updateReviewWindow();
+    }
   });
 }

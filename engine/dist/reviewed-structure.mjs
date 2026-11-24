@@ -44,7 +44,9 @@ export function inAppendedSection(op, scopes) {
   );
 }
 export function isSupportedSectionOperation(op, scopes) {
-  if (!inAppendedSection(op, scopes)) return false;
+  if (!inAppendedSection(op, scopes)) {
+    return false;
+  }
   return (
     (op.kind === 'append' &&
       (op.path.length === 3 ||
@@ -62,8 +64,9 @@ export function sectionPayload(section, position) {
     !section ||
     section.id != null ||
     !/^activitySection-/.test(section.key || '')
-  )
+  ) {
     fail('A new section must have an owned temporary native identity.');
+  }
   const allowed = [
     'id',
     'key',
@@ -77,34 +80,41 @@ export function sectionPayload(section, position) {
     'progressionName',
     'levels',
   ];
-  if (Object.keys(section).some(k => !allowed.includes(k)))
+  if (Object.keys(section).some(k => !allowed.includes(k))) {
     fail('A new section contains an unmapped native setting.');
-  if (section.position != null && section.position !== position)
+  }
+  if (section.position != null && section.position !== position) {
     fail('A new section has an unreviewed position.');
+  }
   if (
     section.levels != null &&
     (!Array.isArray(section.levels) || section.levels.length)
-  )
+  ) {
     fail('A new section contains unmapped levels.');
-  if (!Array.isArray(section.scriptLevels))
+  }
+  if (!Array.isArray(section.scriptLevels)) {
     fail('A new section has incomplete level links.');
+  }
   if (
     section.progressionName != null &&
     typeof section.progressionName !== 'string'
-  )
+  ) {
     fail('A new section has an invalid progression title.');
+  }
   if (
     typeof section.name !== 'string' ||
     typeof section.description !== 'string' ||
     typeof section.remarks !== 'boolean'
-  )
+  ) {
     fail('A new section has incomplete teaching fields.');
+  }
   const duration =
     section.duration === '' || section.duration == null
       ? null
       : Number(section.duration);
-  if (duration !== null && (!Number.isSafeInteger(duration) || duration <= 0))
+  if (duration !== null && (!Number.isSafeInteger(duration) || duration <= 0)) {
     fail('New-section timing must be blank or positive whole minutes.');
+  }
   if (
     !Array.isArray(section.tips) ||
     section.tips.some(
@@ -114,8 +124,9 @@ export function sectionPayload(section, position) {
         !t.markdown.trim() ||
         Object.keys(t).some(k => !['key', 'type', 'markdown'].includes(k))
     )
-  )
+  ) {
     fail('A new callout has unmapped content or identity.');
+  }
   return {
     position,
     name: section.name,
@@ -136,8 +147,9 @@ export function stripNewSections(capture, scopes) {
       copy.live.activities,
       copy.protection.unmanagedActivities,
     ]) {
-      if (root[ai]?.activitySections.length !== si + 1)
+      if (root[ai]?.activitySections.length !== si + 1) {
         fail('New sections must be an exact append-only suffix.');
+      }
       root[ai].activitySections.pop();
     }
   }
@@ -152,8 +164,9 @@ export async function recoverAppendedSections(bridge, previous) {
   reduced.plan.operations = reduced.plan.operations.filter(
     op => !inAppendedSection(op, scopes)
   );
-  if (reduced.stagedCapture)
+  if (reduced.stagedCapture) {
     reduced.stagedCapture = stripNewSections(reduced.stagedCapture, scopes);
+  }
   // Once every appended section is gone, the existing scalar/link recovery owns
   // validation of its intermediate restoration checkpoints.
   if (
@@ -163,8 +176,9 @@ export async function recoverAppendedSections(bridge, previous) {
         a.activitySections.length ===
         initial.live.activities[i].activitySections.length
     )
-  )
+  ) {
     return reduced;
+  }
   const evidence = [
       initial,
       previous.stagedCapture,
@@ -182,14 +196,17 @@ export async function recoverAppendedSections(bridge, previous) {
       }
     }
   }
-  if (!known.includes(canonical(current)))
+  if (!known.includes(canonical(current))) {
     fail(
       'Outside edits or missing section checkpoints prevent automatic recovery.'
     );
+  }
   for (const scope of [...scopes].reverse()) {
     const {activityIndex: ai, sectionIndex: si} = scope,
       sections = current.live.activities[ai].activitySections;
-    if (sections.length <= si) continue;
+    if (sections.length <= si) {
+      continue;
+    }
     const section = sections[si];
     sectionPayload(section, si + 1);
     const expected = stripNewSections(current, [scope]);
@@ -202,8 +219,9 @@ export async function recoverAppendedSections(bridge, previous) {
         createdKey: section.key,
       },
     });
-    if (canonical(current) !== canonical(expected))
+    if (canonical(current) !== canonical(expected)) {
       fail('Removing an owned unsaved section changed unrelated content.');
+    }
   }
   return reduced;
 }
@@ -217,26 +235,30 @@ export function newSectionLink(link, position, {persisted = false} = {}) {
     Number(link.levels[0].id) <= 0 ||
     typeof link.levels[0].name !== 'string' ||
     !link.levels[0].name.trim()
-  )
+  ) {
     fail('A new-section link has an invalid existing-level identity.');
+  }
   if (
     link.activitySectionPosition !== position ||
     typeof link.assessment !== 'boolean'
-  )
+  ) {
     fail('A new-section link has invalid order or assessment state.');
+  }
   if (
     link.activeId != null &&
     String(link.activeId) !== String(link.levels[0].id)
-  )
+  ) {
     fail('A new-section link has a different active variant.');
+  }
   const flags = [
     'bonus',
     'challenge',
     'instructor_in_training',
     'show_ai_analysis',
   ];
-  if (flags.some(k => Boolean(link[k])) || link.variants != null)
+  if (flags.some(k => Boolean(link[k])) || link.variants != null) {
     fail('New-section links contain unreviewed flags or variants.');
+  }
   return {
     levels: [{id: Number(link.levels[0].id), name: link.levels[0].name}],
     assessment: link.assessment,
@@ -311,8 +333,9 @@ export function tipPayload(tip) {
     typeof tip.markdown !== 'string' ||
     !tip.markdown.trim() ||
     Object.keys(tip).some(k => !['key', 'type', 'markdown'].includes(k))
-  )
+  ) {
     fail('A new callout contains unmapped fields.');
+  }
   return {type: tip.type, markdown: tip.markdown};
 }
 export function activityPayload(a, position) {
@@ -333,12 +356,14 @@ export function activityPayload(a, position) {
     ) ||
     typeof a.name !== 'string' ||
     (a.position != null && a.position !== position)
-  )
+  ) {
     fail('A new activity contains unowned identity or unmapped settings.');
+  }
   const duration =
     a.duration === '' || a.duration == null ? null : Number(a.duration);
-  if (duration !== null && (!Number.isSafeInteger(duration) || duration < 0))
+  if (duration !== null && (!Number.isSafeInteger(duration) || duration < 0)) {
     fail('New activity timing must be whole minutes.');
+  }
   return {name: a.name, duration, position, activitySections: []};
 }
 function stripExtra(capture, scope) {
@@ -350,12 +375,14 @@ function stripExtra(capture, scope) {
     if (scope.tipIndex != null) {
       const tips =
         root[scope.activityIndex]?.activitySections[scope.sectionIndex]?.tips;
-      if (tips?.length !== scope.tipIndex + 1)
+      if (tips?.length !== scope.tipIndex + 1) {
         fail('New callouts must be an exact suffix.');
+      }
       tips.pop();
     } else {
-      if (root.length !== scope.activityIndex + 1)
+      if (root.length !== scope.activityIndex + 1) {
         fail('New activities must be an exact suffix.');
+      }
       root.pop();
     }
   }
@@ -390,18 +417,24 @@ export async function recoverExtraStructure(bridge, previous) {
   );
   const strip = c => {
     let copy = clone(c);
-    for (const scope of scopes)
-      if (present(copy, scope)) copy = stripExtra(copy, scope);
+    for (const scope of scopes) {
+      if (present(copy, scope)) {
+        copy = stripExtra(copy, scope);
+      }
+    }
     return copy;
   };
-  if (reduced.stagedCapture)
+  if (reduced.stagedCapture) {
     reduced.stagedCapture = strip(reduced.stagedCapture);
+  }
   reduced.reports = (reduced.reports || []).map(r =>
     r.journal
       ? {...r, journal: {...r.journal, capture: strip(r.journal.capture)}}
       : r
   );
-  if (!scopes.some(s => present(current, s))) return reduced;
+  if (!scopes.some(s => present(current, s))) {
+    return reduced;
+  }
   const known = [];
   for (const point of [
     initial,
@@ -410,16 +443,20 @@ export async function recoverExtraStructure(bridge, previous) {
   ].filter(Boolean)) {
     let copy = clone(point);
     known.push(canonical(copy));
-    for (const scope of scopes)
+    for (const scope of scopes) {
       if (present(copy, scope)) {
         copy = stripExtra(copy, scope);
         known.push(canonical(copy));
       }
+    }
   }
-  if (!known.includes(canonical(current)))
+  if (!known.includes(canonical(current))) {
     fail('Outside edits or missing structural checkpoints prevent recovery.');
+  }
   for (const scope of scopes) {
-    if (!present(current, scope)) continue;
+    if (!present(current, scope)) {
+      continue;
+    }
     const {activityIndex: ai, sectionIndex: si, tipIndex: ti} = scope,
       expected = stripExtra(current, scope);
     const operation =
@@ -440,8 +477,9 @@ export async function recoverExtraStructure(bridge, previous) {
       expectedCaptureDigest: await digest(current),
       operation,
     });
-    if (canonical(current) !== canonical(expected))
+    if (canonical(current) !== canonical(expected)) {
       fail('Structural recovery changed unrelated content.');
+    }
   }
   return reduced;
 }

@@ -34,23 +34,28 @@ export function convertNotes(input) {
   return {text: text.trim(), changes};
 }
 export function validateSource(x) {
-  if (!x || typeof x.title !== 'string' || !x.title.trim())
+  if (!x || typeof x.title !== 'string' || !x.title.trim()) {
     throw Error('Provide a lesson title.');
-  if (!Array.isArray(x.slides) || !x.slides.length)
+  }
+  if (!Array.isArray(x.slides) || !x.slides.length) {
     throw Error('Provide at least one slide with speaker notes.');
+  }
   if (
     x.importWarnings !== undefined &&
     (!Array.isArray(x.importWarnings) ||
       x.importWarnings.some(w => typeof w !== 'string'))
-  )
+  ) {
     throw Error('Import warnings must be a list of text.');
+  }
   const ids = new Set();
   for (const s of x.slides) {
-    if (typeof s.id !== 'string' || !s.id || ids.has(s.id))
+    if (typeof s.id !== 'string' || !s.id || ids.has(s.id)) {
       throw Error('Each slide needs a unique stable id.');
+    }
     ids.add(s.id);
-    if (typeof s.notes !== 'string' || !Number.isInteger(s.number))
+    if (typeof s.notes !== 'string' || !Number.isInteger(s.number)) {
       throw Error('Each slide needs a number and notes text.');
+    }
   }
   for (const k of [
     'teacherOverview',
@@ -58,26 +63,35 @@ export function validateSource(x) {
     'preparation',
     'purpose',
     'assessmentOpportunities',
-  ])
-    if (x[k] !== undefined && typeof x[k] !== 'string')
+  ]) {
+    if (x[k] !== undefined && typeof x[k] !== 'string') {
       throw Error(`${k} must be text.`);
-  for (const k of ['objectives', 'vocabulary', 'resources'])
-    if (x[k] !== undefined && !Array.isArray(x[k]))
+    }
+  }
+  for (const k of ['objectives', 'vocabulary', 'resources']) {
+    if (x[k] !== undefined && !Array.isArray(x[k])) {
       throw Error(`${k} must be a list.`);
-  if (x.objectives?.some(o => typeof o !== 'string'))
+    }
+  }
+  if (x.objectives?.some(o => typeof o !== 'string')) {
     throw Error('Objectives must contain text.');
+  }
   for (const r of x.resources || []) {
-    if (!r.name || !r.type || !r.audience)
+    if (!r.name || !r.type || !r.audience) {
       throw Error('Resources need name, type, and audience.');
+    }
     let u;
     try {
       u = new URL(r.url);
     } catch {
       throw Error('Resource URL must use https.');
     }
-    if (u.protocol !== 'https:') throw Error('Resource URL must use https.');
-    if (r.type === 'Answer Key' && r.audience === 'Student')
+    if (u.protocol !== 'https:') {
+      throw Error('Resource URL must use https.');
+    }
+    if (r.type === 'Answer Key' && r.audience === 'Student') {
       throw Error('Answer Key resources cannot have Student audience.');
+    }
   }
   return x;
 }
@@ -98,7 +112,9 @@ export function generate(source) {
   };
   for (const slide of source.slides) {
     let notes = slide.notes.trim();
-    if (!notes) continue;
+    if (!notes) {
+      continue;
+    }
     const heading = notes.match(
       /^([^\n]+?)\s*\((\d+)\s*min(?:ute)?s?\)\s*(?:\n|$)/i
     );
@@ -132,10 +148,11 @@ export function generate(source) {
     const progression = structuredClone(
       source.levelAssociations?.[slide.id] || null
     );
-    if (/Lesson\s+\d+,?\s+Levels?\s+\d/i.test(notes) && !progression)
+    if (/Lesson\s+\d+,?\s+Levels?\s+\d/i.test(notes) && !progression) {
       warnings.push(
         `Slide ${slide.number}: transition text needs confirmed level associations.`
       );
+    }
     sections.push({
       id: slide.id,
       activityId: current.id,
@@ -154,14 +171,21 @@ export function generate(source) {
     const subtotal = sections
       .filter(s => s.activityId === a.id)
       .reduce((n, s) => n + s.duration, 0);
-    if (subtotal > a.duration)
+    if (subtotal > a.duration) {
       warnings.push(`${a.title}: section timing exceeds activity timing.`);
+    }
   }
-  for (const k of ['teacherOverview', 'studentOverview', 'preparation'])
-    if (!source[k]?.trim())
+  for (const k of ['teacherOverview', 'studentOverview', 'preparation']) {
+    if (!source[k]?.trim()) {
       warnings.push(`${k} is missing. Add or explicitly review this field.`);
-  if (!source.objectives?.length) warnings.push('No objectives supplied.');
-  if (!source.resources?.length) warnings.push('No resource records supplied.');
+    }
+  }
+  if (!source.objectives?.length) {
+    warnings.push('No objectives supplied.');
+  }
+  if (!source.resources?.length) {
+    warnings.push('No resource records supplied.');
+  }
   return {
     schemaVersion: 1,
     title: source.title,
@@ -190,48 +214,66 @@ export function objectivesEqual(a, b) {
   );
 }
 export function reconcileObjectives(base, current, incoming) {
-  if (objectivesEqual(current, incoming))
+  if (objectivesEqual(current, incoming)) {
     return {value: current, status: 'unchanged'};
-  if (objectivesEqual(base, incoming)) return {value: current, status: 'kept'};
+  }
+  if (objectivesEqual(base, incoming)) {
+    return {value: current, status: 'kept'};
+  }
   // Count occurrences: losing a duplicate still requires an explicit decision.
   const remaining = [...(incoming || [])];
   for (const objective of base || []) {
     const i = remaining.indexOf(objective);
-    if (i < 0) return {value: current, status: 'conflict'};
+    if (i < 0) {
+      return {value: current, status: 'conflict'};
+    }
     remaining.splice(i, 1);
   }
-  if (objectivesEqual(base, current))
+  if (objectivesEqual(base, current)) {
     return {value: incoming, status: 'updated'};
+  }
   return {value: current, status: 'conflict'};
 }
 export function reconcile(base, current, incoming) {
   const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
-  if (eq(current, incoming)) return {value: current, status: 'unchanged'};
-  if (eq(base, incoming)) return {value: current, status: 'kept'};
-  if (incoming == null && current != null)
+  if (eq(current, incoming)) {
+    return {value: current, status: 'unchanged'};
+  }
+  if (eq(base, incoming)) {
+    return {value: current, status: 'kept'};
+  }
+  if (incoming == null && current != null) {
     return {value: current, status: 'conflict'};
+  }
   if (
     Array.isArray(base) &&
     Array.isArray(incoming) &&
     base.some(old => !incoming.some(next => eq(old, next)))
-  )
+  ) {
     return {value: current, status: 'conflict'};
-  if (eq(base, current)) return {value: incoming, status: 'updated'};
+  }
+  if (eq(base, current)) {
+    return {value: incoming, status: 'updated'};
+  }
   return {value: current, status: 'conflict'};
 }
 export function exportMarkdown(p) {
   const f = p.frontMatter;
   let out = `# ${p.title}\n\nReview export — not a Level Builder import or published lesson.\n\n## Teacher overview\n${f.teacherOverview}\n\n## Student overview\n${f.studentOverview}\n\n## Objectives\n${f.objectives.map(o => '- ' + o).join('\n')}\n\n## Preparation\n${f.preparation}\n\n## Vocabulary\n${f.vocabulary.length ? f.vocabulary.map(v => (typeof v === 'string' ? '- ' + v : `- ${v.word}: ${v.definition}`)).join('\n') : 'None supplied'}\n\n## Purpose\n${f.purpose || 'Not supplied'}\n\n## Assessment opportunities\n${f.assessmentOpportunities || 'Not supplied'}\n\n## Resources\n`;
-  for (const r of p.resources)
+  for (const r of p.resources) {
     out += `- ${r.name} | ${r.type} | ${r.audience} | ${r.url}\n`;
+  }
   out += '\n## Teaching Guide\n';
   for (const a of p.activities) {
     out += `\n### ${a.title} (${a.duration} minutes)\n`;
     for (const s of p.sections.filter(s => s.activityId === a.id)) {
       out += `\n#### ${s.title || 'Untitled section'}${s.duration ? ` (${s.duration} minutes)` : ''}\n${s.origin === 'local' ? 'Source: added locally' : 'Source slide: ' + s.slide}; Remarks: ${s.remarks ? 'yes' : 'no'}\n\n${s.body}\n`;
-      for (const c of s.callouts) out += `\n**${c.type}**\n${c.body}\n`;
-      if (s.progression)
+      for (const c of s.callouts) {
+        out += `\n**${c.type}**\n${c.body}\n`;
+      }
+      if (s.progression) {
         out += `\nProgression: ${s.progression.title}\n${s.progression.levels.map(l => `- Level ${l.number}: ${l.key}${l.url ? ' | ' + l.url : ''}${l.assessment ? ' | Assessment' : ''}${l.mappingStatus === 'unverified' ? ' | Destination verification needed' : ''}`).join('\n')}\n`;
+      }
     }
   }
   return out;

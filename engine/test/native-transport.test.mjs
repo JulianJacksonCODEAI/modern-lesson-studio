@@ -94,8 +94,9 @@ test('automatic verification accepts the current owned playground without expand
     'https://levelbuilder-studio.code.org/lessons/123/edit',
     url + '?other=1',
     'https://example.com/lessons/8898984/edit',
-  ])
+  ]) {
     assert.equal(verificationDestination(value), null);
+  }
   let activated = false;
   await prepareNativeTarget(
     {

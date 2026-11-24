@@ -49,7 +49,7 @@ test('existing-section saved links reject unreviewed flags, variants, order and 
 test('existing-section verification accepts server string IDs and explicit false defaults without ignoring flags', async () => {
   const {job, receipt} = await savedTransfer(),
     saved = structuredClone(receipt.readback);
-  for (const s of saved.activities.flatMap(a => a.activitySections))
+  for (const s of saved.activities.flatMap(a => a.activitySections)) {
     for (const sl of s.scriptLevels) {
       sl.id = String(sl.id);
       sl.levels[0].id = String(sl.levels[0].id);
@@ -59,9 +59,11 @@ test('existing-section verification accepts server string IDs and explicit false
         'challenge',
         'instructor_in_training',
         'show_ai_analysis',
-      ])
+      ]) {
         sl[key] = false;
+      }
       sl.variants = null;
     }
+  }
   assert.equal((await verifySavedReadback(job.review, saved)).passed, true);
 });

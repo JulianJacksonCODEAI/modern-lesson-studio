@@ -14,7 +14,9 @@ import {savedFieldPath} from './reviewed-fields.mjs';
 import {unsupportedNativeTransferActions} from './native-transfer-runner.mjs';
 import {validateSaveReview, verifySavedReadback} from './save-review.mjs';
 export async function validatePublicationBinding(pkg, destination, saved) {
-  if (!pkg.publication) return;
+  if (!pkg.publication) {
+    return;
+  }
   const base = clone(pkg);
   delete base.publication;
   const binding = pkg.publication;
@@ -22,30 +24,35 @@ export async function validatePublicationBinding(pkg, destination, saved) {
     binding.schemaVersion !== 1 ||
     canonical(binding.destination) !== canonical(destination) ||
     binding.packageDigest !== (await digest(base))
-  )
+  ) {
     throw Error(
       'This publication package belongs to another destination or its approved content changed. Prepare it again.'
     );
-  if (binding.baselineDigest !== (await digest(saved)))
+  }
+  if (binding.baselineDigest !== (await digest(saved))) {
     throw Error(
       'The saved destination changed after the publication check. Read a new baseline and review the differences before staging.'
     );
+  }
 }
 export async function preparePublication(pkg, report, {objectiveTargets} = {}) {
   const problems = packageProblems(pkg);
-  if (problems.length) throw Error(problems.join(' '));
+  if (problems.length) {
+    throw Error(problems.join(' '));
+  }
   const {destination, saved} = await savedReport(report),
     base = clone(pkg);
   delete base.publication;
   base.schemaVersion = 1;
   base.sandbox = destination.url;
-  if (objectiveTargets)
+  if (objectiveTargets) {
     base.objectiveMapping = {
       schemaVersion: 1,
       destinationId: destination.id,
       baseline: clone(saved.objectives),
       targets: clone(objectiveTargets),
     };
+  }
   const objectiveChoices = {
     saved: saved.objectives.map(o => ({
       id: o.id,
@@ -76,29 +83,34 @@ export async function preparePublication(pkg, report, {objectiveTargets} = {}) {
   });
   snapshot.catalog.vocabularies = clone(saved.vocabularies);
   if (base.sharedRecords) {
-    for (const kind of ['resources', 'vocabularies'])
+    for (const kind of ['resources', 'vocabularies']) {
       for (const record of base.sharedRecords[kind] || []) {
         validateSharedRecord(kind, record);
         if (kind === 'resources') {
-          if (!snapshot.catalog.resources.some(r => r.key === record.key))
+          if (!snapshot.catalog.resources.some(r => r.key === record.key)) {
             snapshot.catalog.resources.push({
               ...resourceRow(record),
               markdownKey: record.markdownKey,
               destinationRecordId: record.id,
               verifiedSharedRecord: clone(record),
             });
+          }
         } else if (
           !snapshot.catalog.vocabularies.some(r => r.key === record.key)
-        )
+        ) {
           snapshot.catalog.vocabularies.push(clone(record));
+        }
       }
+    }
   }
   const first = await buildTransferPlan(base, snapshot),
     decisions = {};
   for (const operation of first.operations) {
-    if (operation.path.length === 1 && operation.path[0] === 'title')
+    if (operation.path.length === 1 && operation.path[0] === 'title') {
       decisions[operation.id] = 'keep';
-    else if (savedFieldPath(operation)) decisions[operation.id] = 'replace';
+    } else if (savedFieldPath(operation)) {
+      decisions[operation.id] = 'replace';
+    }
   }
   const plan = await buildTransferPlan(base, snapshot, decisions),
     unsupported = unsupportedNativeTransferActions(plan);
@@ -154,17 +166,19 @@ export async function verifyPublicationReceipt(handoff, report) {
     report?.mode !== 'native' ||
     report.receipt?.status !== 'saved-and-verified' ||
     report.receipt.review?.preservationTest
-  )
+  ) {
     throw Error(
       'Choose the completed native publication report, not a demo or unchanged-save test.'
     );
+  }
   if (
     canonical(report.pkg) !== canonical(handoff) ||
     canonical(report.job?.pkg) !== canonical(handoff)
-  )
+  ) {
     throw Error(
       'This receipt is for a different approved publication package.'
     );
+  }
   const receipt = report.receipt,
     plan = report.job?.rehearsal?.plan;
   await validateSaveReview(receipt.review, {checkExpiry: false});
@@ -173,8 +187,9 @@ export async function verifyPublicationReceipt(handoff, report) {
     plan.packageDigest !== (await digest(handoff)) ||
     plan.id !== receipt.review.rehearsalPlanId ||
     canonical(plan.expectedLesson) !== canonical(receipt.review.expectedLesson)
-  )
+  ) {
     throw Error('The receipt does not match the approved publication plan.');
+  }
   await validatePublicationBinding(
     handoff,
     receipt.review.destination,
@@ -184,10 +199,11 @@ export async function verifyPublicationReceipt(handoff, report) {
     receipt.review,
     receipt.readback
   );
-  if (!verification.passed)
+  if (!verification.passed) {
     throw Error(
       'Saved verification failed. Preserve the report; do not resend the save.'
     );
+  }
   return {
     status: 'saved-and-verified',
     destination: clone(receipt.review.destination),

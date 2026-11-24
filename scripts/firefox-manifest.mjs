@@ -5,7 +5,9 @@ export const FIREFOX_IDS = {
   full: 'lesson-studio-full@modern-lesson-studio',
 };
 export function firefoxManifest(m, {edition}) {
-  if (!FIREFOX_IDS[edition]) throw Error('Unknown edition ' + edition);
+  if (!FIREFOX_IDS[edition]) {
+    throw Error('Unknown edition ' + edition);
+  }
   const f = structuredClone(m);
   delete f.side_panel;
   f.permissions = (f.permissions || []).filter(p => p !== 'sidePanel');

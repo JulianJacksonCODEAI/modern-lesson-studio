@@ -211,9 +211,13 @@ function savedResult(review) {
   const result = clone(review.baseline);
   result.activities = JSON.parse(JSON.parse(review.request.body).activities);
   let id = 900;
-  for (const a of result.activities)
-    for (const s of a.activitySections)
-      for (const sl of s.scriptLevels) sl.id = ++id;
+  for (const a of result.activities) {
+    for (const s of a.activitySections) {
+      for (const sl of s.scriptLevels) {
+        sl.id = ++id;
+      }
+    }
+  }
   return result;
 }
 
@@ -497,9 +501,15 @@ test('HTTP 200 with unchanged saved baseline stays unconfirmed and readback-only
 test('missing approval, changed server and outside editor edits block before staging or saving', async () => {
   for (const scenario of ['approval', 'saved', 'editor']) {
     const h = await approvedHarness();
-    if (scenario === 'approval') h.job.approval.approved = false;
-    if (scenario === 'saved') h.changeSaved();
-    if (scenario === 'editor') h.changeEditor();
+    if (scenario === 'approval') {
+      h.job.approval.approved = false;
+    }
+    if (scenario === 'saved') {
+      h.changeSaved();
+    }
+    if (scenario === 'editor') {
+      h.changeEditor();
+    }
     await assert.rejects(runApprovedSave(h.job, h.dependencies));
     assert.equal(h.sendCount, 0);
     assert.equal(h.events.includes('stage'), false);
@@ -709,7 +719,9 @@ test('a failed independent read can recover with readback only and clears its st
     return result;
   };
   h.dependencies.readSaved = async () => {
-    if (offline) throw Error('Temporary read failure');
+    if (offline) {
+      throw Error('Temporary read failure');
+    }
     return read();
   };
   const first = await runApprovedSave(h.job, h.dependencies);

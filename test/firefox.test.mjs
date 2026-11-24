@@ -56,10 +56,11 @@ test("injected page reads use Firefox's page fetch when it exists, plain fetch o
     '../engine/dist/native-dom-adapter.mjs',
     '../engine/dist/native-level-usage.mjs',
     '../engine/dist/shared-record-bridge.mjs',
-  ])
+  ]) {
     assert.doesNotMatch(
       readFileSync(new URL(file, import.meta.url), 'utf8'),
       /await fetch\(/,
       file
     );
+  }
 });

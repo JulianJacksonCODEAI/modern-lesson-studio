@@ -13,15 +13,19 @@ export function captureAssignedEditor() {
   if (
     location.origin !== 'https://levelbuilder-studio.code.org' ||
     !paths.includes(location.pathname.replace(/\/$/, ''))
-  )
+  ) {
     throw Error(
       'Open the assigned practice lesson editor. Other destinations are refused.'
     );
+  }
   const bootstrap = document.querySelector('script[data-lesson]');
-  if (!bootstrap) throw Error('The native editor identity was not found.');
+  if (!bootstrap) {
+    throw Error('The native editor identity was not found.');
+  }
   const saved = JSON.parse(bootstrap.getAttribute('data-lesson'));
-  if (saved.id !== 8898985)
+  if (saved.id !== 8898985) {
     throw Error('The native lesson identity does not match.');
+  }
   const blockers = [],
     fields = {};
   const labels = {
@@ -47,19 +51,24 @@ export function captureAssignedEditor() {
             key === 'title' ? 'input:not([type="checkbox"])' : 'textarea'
           )
         : null;
-    if (!input)
+    if (!input) {
       blockers.push(
         'Cannot uniquely read ' + label + ' from the deployed editor.'
       );
-    else fields[key] = input.value;
+    } else {
+      fields[key] = input.value;
+    }
   }
   const hidden = {};
   for (const key of ['activities', 'objectives']) {
     const nodes = document.querySelectorAll(
       'input[type="hidden"][name="' + key + '"]'
     );
-    if (nodes.length !== 1) blockers.push('Cannot read current ' + key + '.');
-    else hidden[key] = JSON.parse(nodes[0].value);
+    if (nodes.length !== 1) {
+      blockers.push('Cannot read current ' + key + '.');
+    } else {
+      hidden[key] = JSON.parse(nodes[0].value);
+    }
   }
   const tables = [...document.querySelectorAll('table')].filter(table => {
     const headers = [...table.querySelectorAll('thead th')].map(cell =>
@@ -70,9 +79,9 @@ export function captureAssignedEditor() {
     );
   });
   let resources = [];
-  if (tables.length !== 1)
+  if (tables.length !== 1) {
     blockers.push('Cannot uniquely read the current resource table.');
-  else
+  } else {
     resources = [...tables[0].querySelectorAll('tbody tr')].map(row => {
       const cells = [...row.querySelectorAll('td')];
       return {
@@ -83,14 +92,16 @@ export function captureAssignedEditor() {
         url: cells[4]?.textContent.trim(),
       };
     });
+  }
   if (
     [...document.querySelectorAll('[role="dialog"],dialog[open]')].some(
       el => el.getClientRects().length
     )
-  )
+  ) {
     blockers.push(
       'Finish or cancel the open native editor dialog before capturing.'
     );
+  }
   // Vocabulary editing and associations are deliberately not inferred from saved data.
   blockers.push(
     'Native vocabulary and unknown-setting live-state mapping need verification before native staging.'
@@ -124,13 +135,16 @@ export function normalizeNativeCapture(capture) {
   if (
     capture?.kind !== 'native-dom-capture' ||
     !validDestination(capture.destination)
-  )
+  ) {
     throw Error('Choose a capture of the assigned practice lesson.');
+  }
   const {saved, live} = capture,
     blockers = [...(capture.blockers || [])],
     catalog = {resources: [], levels: []};
   const nativeMinutes = (value, label) => {
-    if (value === '' || value == null) return null;
+    if (value === '' || value == null) {
+      return null;
+    }
     const number =
       typeof value === 'string' && /^(0|[1-9]\d*)$/.test(value)
         ? Number(value)
@@ -151,13 +165,15 @@ export function normalizeNativeCapture(capture) {
     !Array.isArray(live.activities) ||
     !Array.isArray(live.objectives) ||
     !Array.isArray(live.resources)
-  )
+  ) {
     throw Error('The native capture is incomplete.');
+  }
   const frontMatter = {};
   for (const key of TEXT_FIELDS) {
     frontMatter[key] = live.fields[key] ?? '';
-    if (typeof live.fields[key] !== 'string')
+    if (typeof live.fields[key] !== 'string') {
       blockers.push('Current ' + key + ' was not captured.');
+    }
   }
   frontMatter.objectives = live.objectives.map(o => o.description);
   frontMatter.vocabulary = (live.vocabularies || saved.vocabularies || []).map(
@@ -166,10 +182,11 @@ export function normalizeNativeCapture(capture) {
   if (
     capture.readerVersion === 'native-scalars-v1' &&
     (!Array.isArray(live.vocabularies) || !capture.protection)
-  )
+  ) {
     blockers.push(
       'Current vocabulary or unmanaged native settings were not captured.'
     );
+  }
   for (const resource of live.resources) {
     const savedRecord = saved.resources.find(r => r.key === resource.key);
     catalog.resources.push({
@@ -197,10 +214,11 @@ export function normalizeNativeCapture(capture) {
             assessment: Boolean(sl.assessment),
           };
         }
-        if ((sl.levels || []).length !== 1)
+        if ((sl.levels || []).length !== 1) {
           blockers.push(
             'Native level variants require explicit mapping before transfer.'
           );
+        }
         const level = {
           key: active.name,
           number: ++position,

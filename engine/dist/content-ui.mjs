@@ -37,15 +37,17 @@ export function installContentAuthoring({
   );
   const remember = event => {
     const el = event.target;
-    if (el.matches?.('textarea[data-section][data-prop="body"]'))
+    if (el.matches?.('textarea[data-section][data-prop="body"]')) {
       selections.set(el.dataset.section, {
         body: el.value,
         start: el.selectionStart,
         end: el.selectionEnd,
       });
+    }
   };
-  for (const event of ['select', 'keyup', 'pointerup', 'focusout'])
+  for (const event of ['select', 'keyup', 'pointerup', 'focusout']) {
     document.addEventListener(event, remember, true);
+  }
   const input = (id, label, value = '', type = 'text') =>
     `<label for="insert-${id}">${label}</label><input class="editor" id="insert-${id}" type="${type}" value="${esc(value)}">`;
   const text = (id, label) =>
@@ -54,7 +56,9 @@ export function installContentAuthoring({
     `<label for="insert-${id}">${label}</label><select id="insert-${id}">${values.map(v => `<option value="${esc(v.value ?? v)}">${esc(v.label ?? v)}</option>`).join('')}</select>`;
   document.addEventListener('click', event => {
     const button = event.target.closest('[data-insert-kind]');
-    if (!button) return;
+    if (!button) {
+      return;
+    }
     const kind = button.dataset.insertKind,
       id = button.dataset.insertSection,
       draft = getDraft();
@@ -79,10 +83,11 @@ export function installContentAuthoring({
     $('#content-heading').textContent = 'Add ' + kind;
     $('#content-error').textContent = '';
     let fields = '';
-    if (kind === 'Callout')
+    if (kind === 'Callout') {
       fields =
         select('callout-type', 'Callout type', CALLOUT_TYPES) +
         text('body', 'Callout text');
+    }
     if (kind === 'Level') {
       const next =
         Math.max(
@@ -98,13 +103,14 @@ export function installContentAuthoring({
         input('url', 'Level link', '', 'url') +
         '<label class="inline-check"><input id="insert-assessment" type="checkbox"> Assessment level</label>';
     }
-    if (kind === 'Code Doc')
+    if (kind === 'Code Doc') {
       fields =
         '<p>Use the code syntax and link from an existing Code.org programming expression. The live Code Doc catalog is not connected.</p>' +
         input('syntax', 'Code syntax') +
         input('url', 'Code documentation link', '', 'url') +
         input('color', 'Code color (optional, for example #0094ca)');
-    if (kind === 'Resource')
+    }
+    if (kind === 'Resource') {
       fields =
         select(
           'resource',
@@ -134,13 +140,15 @@ export function installContentAuthoring({
         ]) +
         input('resource-url', 'Resource link', '', 'url') +
         '<p>Creates a record only in this browser draft. Shared Level Builder resource creation requires separate authorization.</p></div>';
-    if (kind === 'Image')
+    }
+    if (kind === 'Image') {
       fields =
         '<p>Use an image link or choose a local PNG, JPEG or WebP file up to 2 MB. Local files stay in this draft; no image is uploaded to Level Builder.</p>' +
         input('url', 'Image link (or choose a file below)', '', 'url') +
         '<label for="insert-image-file">Local image file</label><input id="insert-image-file" type="file" accept="image/png,image/jpeg,image/webp">' +
         input('alt', 'Image description') +
         '<label class="inline-check"><input id="insert-expandable" type="checkbox"> Expandable in Level Builder</label>';
+    }
     $('#content-fields').innerHTML = fields;
     if (kind === 'Resource') {
       const toggle = () => {
@@ -156,7 +164,9 @@ export function installContentAuthoring({
     $('#content-dialog').showModal();
   });
   $('#save-content').onclick = async () => {
-    if (!pending) return;
+    if (!pending) {
+      return;
+    }
     const button = $('#save-content'),
       dialog = $('#content-dialog');
     button.disabled = true;
@@ -166,16 +176,18 @@ export function installContentAuthoring({
       draft = getDraft(),
       value = key => $('#insert-' + key)?.value || '';
     try {
-      if (kind === 'Callout')
+      if (kind === 'Callout') {
         addCallout(draft, id, value('callout-type'), value('body'));
-      if (kind === 'Level')
+      }
+      if (kind === 'Level') {
         addLevel(draft, id, {
           name: value('name'),
           number: Number(value('number')),
           url: value('url'),
           assessment: $('#insert-assessment').checked,
         });
-      if (kind === 'Code Doc')
+      }
+      if (kind === 'Code Doc') {
         addCodeDoc(
           draft,
           id,
@@ -186,6 +198,7 @@ export function installContentAuthoring({
           },
           selection
         );
+      }
       if (kind === 'Resource') {
         const key = value('resource');
         if (key === '__new__') {
@@ -204,7 +217,9 @@ export function installContentAuthoring({
             selection
           );
           changed('resources');
-        } else addResource(draft, id, {existingKey: key}, selection);
+        } else {
+          addResource(draft, id, {existingKey: key}, selection);
+        }
       }
       if (kind === 'Image') {
         const file = $('#insert-image-file').files[0],
@@ -215,8 +230,9 @@ export function installContentAuthoring({
           if (
             !['image/png', 'image/jpeg', 'image/webp'].includes(file.type) ||
             file.size > 2_000_000
-          )
+          ) {
             throw Error('Choose a PNG, JPEG or WebP file smaller than 2 MB.');
+          }
           url = await new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = () => resolve(reader.result);
@@ -224,7 +240,9 @@ export function installContentAuthoring({
               reject(Error('The image could not be read.'));
             reader.readAsDataURL(file);
           });
-          if (!dialog.open || pending !== operation) return;
+          if (!dialog.open || pending !== operation) {
+            return;
+          }
         }
         addImage(draft, id, {url, alt, expandable}, selection);
       }

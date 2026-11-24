@@ -46,7 +46,9 @@ const ROOT_TEXT = [
   'preparation',
 ];
 function assert(condition, message) {
-  if (!condition) throw Error(message);
+  if (!condition) {
+    throw Error(message);
+  }
 }
 function records(value, label) {
   assert(
@@ -150,11 +152,12 @@ export async function buildSaveReview(
         canonical(staged) === canonical(initial),
       'Preservation tests must keep the entire editor unchanged and use the native save control.'
     );
-  } else
+  } else {
     assert(
       plan.operations.length > 0,
       'There are no reviewed changes to save.'
     );
+  }
   const scopes = appendedSections(plan),
     sectionAdditions = [],
     candidate = clone(freshSaved),
@@ -259,7 +262,9 @@ export async function buildSaveReview(
       tip = tipPayload(
         staged.live.activities[ai].activitySections[si].tips[ti]
       );
-    if (section.tips === null) section.tips = [];
+    if (section.tips === null) {
+      section.tips = [];
+    }
     assert(
       Array.isArray(section.tips) && section.tips.length === ti,
       'Callouts must append in order.'
@@ -310,8 +315,9 @@ export async function buildSaveReview(
       (op.kind === 'append' &&
         op.path.length === 5 &&
         op.path[4] === 'callouts')
-    )
+    ) {
       continue;
+    }
     const p = op.path,
       nativePath = savedFieldPath(op);
     if (nativePath) {
@@ -323,12 +329,13 @@ export async function buildSaveReview(
         'The staged native field differs from the reviewed value.'
       );
       if (nativePath.length > 1) {
-        for (const length of nativePath.length === 3 ? [2] : [2, 4])
+        for (const length of nativePath.length === 3 ? [2] : [2, 4]) {
           assert(
             fieldAt(freshSaved, nativePath.slice(0, length))?.id ===
               fieldAt(staged.live, nativePath.slice(0, length))?.id,
             'A reviewed native record identity changed.'
           );
+        }
       }
       putField(candidate, nativePath, after);
       putField(projection.live, livePath, fieldAt(initial.live, livePath));
@@ -509,12 +516,13 @@ export async function validateSaveReview(
     !checkExpiry || now <= review.expiresAt,
     'This save review expired. Read and review the lesson again.'
   );
-  if (freshSaved)
+  if (freshSaved) {
     assert(
       freshSaved.id === review.destination.id &&
         (await digest(freshSaved)) === review.baselineDigest,
       'Saved content changed after review. Do not save or retry the old request.'
     );
+  }
   return review;
 }
 
@@ -585,12 +593,13 @@ export async function validateStagedSaveReview(review, capture) {
     );
     protection.objectives.pop();
   }
-  for (const change of review.fieldChanges || [])
+  for (const change of review.fieldChanges || []) {
     restoreFieldProtection(
       protection,
       review.baselineNativeProtection,
       change.path
     );
+  }
   for (const c of review.activityAdditions || []) {
     const a = capture.live.activities[c.activityIndex];
     assert(
@@ -662,11 +671,12 @@ export async function validateStagedSaveReview(review, capture) {
         'challenge',
         'instructor_in_training',
         'show_ai_analysis',
-      ])
+      ]) {
         assert(
           Boolean(sl[key]) === Boolean(wanted[key]),
           'An unreviewed staged level flag changed.'
         );
+      }
       assert(
         canonical(sl.variants ?? null) === canonical(wanted.variants ?? null),
         'The staged level variants changed.'
@@ -699,7 +709,9 @@ export async function validateStagedSaveReview(review, capture) {
 // (normalizeNativeCapture): whole-minute durations may come back as digit strings, and an empty text
 // field may come back as null. Anything else must match exactly.
 export function sameSavedField(path, got, want) {
-  if (canonical(got) === canonical(want)) return true;
+  if (canonical(got) === canonical(want)) {
+    return true;
+  }
   const key = path.at(-1);
   if (key === 'duration') {
     const minutes = v =>
@@ -710,10 +722,12 @@ export function sameSavedField(path, got, want) {
           : v;
     return minutes(got) === minutes(want);
   }
-  if (key === 'remarks' || key === 'assessment')
+  if (key === 'remarks' || key === 'assessment') {
     return Boolean(got) === Boolean(want);
-  if (typeof got === 'string' || typeof want === 'string')
+  }
+  if (typeof got === 'string' || typeof want === 'string') {
     return (got ?? '') === (want ?? '');
+  }
   return false;
 }
 const fieldPreview = value => {
@@ -724,17 +738,18 @@ const fieldPreview = value => {
 export async function verifySavedReadback(review, saved) {
   await validateSaveReview(review, {checkExpiry: false});
   const mismatches = [];
-  if (saved?.id !== review.destination.id)
+  if (saved?.id !== review.destination.id) {
     return {
       passed: false,
       mismatches: ['The returned lesson identity is wrong.'],
     };
+  }
   if (
     !['activities', 'resources', 'objectives', 'vocabularies'].every(key =>
       Array.isArray(saved[key])
     ) ||
     saved.activities.some(a => !Array.isArray(a.activitySections))
-  )
+  ) {
     return {
       passed: false,
       mismatches: [
@@ -743,6 +758,7 @@ export async function verifySavedReadback(review, saved) {
       saved: true,
       saveRetried: false,
     };
+  }
   const capture = {
     schemaVersion: 1,
     kind: 'native-dom-capture',
@@ -771,14 +787,17 @@ export async function verifySavedReadback(review, saved) {
     },
   };
   const normalized = normalizeNativeCapture(capture);
-  if (normalized.blockers.length) mismatches.push(...normalized.blockers);
+  if (normalized.blockers.length) {
+    mismatches.push(...normalized.blockers);
+  }
   if (
     canonical(comparableLesson(normalized.lesson)) !==
     canonical(comparableLesson(review.expectedLesson))
-  )
+  ) {
     mismatches.push(
       'Saved lesson content, ordering or assessment flags differ from the reviewed result.'
     );
+  }
   const requestedActivities = JSON.parse(
     JSON.parse(review.request.body).activities
   );
@@ -799,23 +818,26 @@ export async function verifySavedReadback(review, saved) {
   const objectiveKeys = saved.objectives
     .map(o => o.key)
     .filter(k => typeof k === 'string');
-  if (new Set(objectiveKeys).size !== objectiveKeys.length)
+  if (new Set(objectiveKeys).size !== objectiveKeys.length) {
     mismatches.push('Saved objective keys are duplicated.');
+  }
   if (
     new Set(savedObjectiveIds).size !== savedObjectiveIds.length ||
     savedObjectiveIds.length !==
       objectiveIds.length + expectedObjectives.length ||
     objectiveIds.some(id => !savedObjectiveIds.includes(id))
-  )
+  ) {
     mismatches.push(
       'Saved objective identities are missing, duplicated or replaced.'
     );
-  else
+  } else {
     projection.objectives = objectiveIds.map(id =>
       clone(saved.objectives.find(o => o.id === id))
     );
-  if (addedObjectives.length !== expectedObjectives.length)
+  }
+  if (addedObjectives.length !== expectedObjectives.length) {
     mismatches.push('New saved objectives do not match the review.');
+  }
   for (const addition of expectedObjectives) {
     const matches = addedObjectives.filter(
       o => o.description === addition.objective.description
@@ -825,16 +847,19 @@ export async function verifySavedReadback(review, saved) {
       continue;
     }
     const record = clone(matches[0]);
-    if (!Number.isSafeInteger(record.id) || record.id < 1)
+    if (!Number.isSafeInteger(record.id) || record.id < 1) {
       mismatches.push('A new objective has no valid saved identity.');
+    }
     delete record.id;
     if (Object.hasOwn(record, 'key')) {
-      if (typeof record.key !== 'string' || !record.key)
+      if (typeof record.key !== 'string' || !record.key) {
         mismatches.push('A new objective has an invalid saved key.');
+      }
       delete record.key;
     }
-    if (canonical(record) !== canonical(addition.objective))
+    if (canonical(record) !== canonical(addition.objective)) {
       mismatches.push('A new objective contains unreviewed tags or metadata.');
+    }
   }
 
   for (const kind of ['resources', 'vocabularies']) {
@@ -852,13 +877,15 @@ export async function verifySavedReadback(review, saved) {
       wanted.some(
         record => !actual.some(r => canonical(r) === canonical(record))
       )
-    )
+    ) {
       mismatches.push(
         'Saved ' +
           kind +
           ' identities, content or metadata differ from the exact review.'
       );
-    else projection[kind] = clone(review.baseline[kind]);
+    } else {
+      projection[kind] = clone(review.baseline[kind]);
+    }
   }
   const sectionIds = new Set(
     review.baseline.activities.flatMap(a =>
@@ -883,25 +910,28 @@ export async function verifySavedReadback(review, saved) {
       !/^[1-9]\d*$/.test(id) ||
       !Number.isSafeInteger(Number(id)) ||
       sectionIds.has(id)
-    )
+    ) {
       mismatches.push(
         'A new section has a missing, reused or duplicated saved identity.'
       );
+    }
     sectionIds.add(id);
-    if (!Array.isArray(raw.scriptLevels))
+    if (!Array.isArray(raw.scriptLevels)) {
       mismatches.push('New-section saved links are incomplete.');
-    else
+    } else {
       raw.scriptLevels = raw.scriptLevels.map((sl, index) => {
         const id = String(sl.id);
         if (
           !/^[1-9]\d*$/.test(id) ||
           !Number.isSafeInteger(Number(id)) ||
           newIds.has(id)
-        )
+        ) {
           mismatches.push(
             'A new-section association has a missing, reused or duplicate identity.'
           );
-        else newIds.add(id);
+        } else {
+          newIds.add(id);
+        }
         try {
           return newSectionLink(sl, index + 1, {persisted: true});
         } catch (error) {
@@ -909,10 +939,11 @@ export async function verifySavedReadback(review, saved) {
           return sl;
         }
       });
+    }
     if (
       canonical(savedSectionBlanks(raw)) !==
       canonical(savedSectionBlanks(change.section))
-    )
+    ) {
       mismatches.push(
         'A new section or its callouts differ from the exact reviewed structure (' +
           sectionDifferences(
@@ -921,6 +952,7 @@ export async function verifySavedReadback(review, saved) {
           ) +
           ').'
       );
+    }
     activity.activitySections.pop();
   }
   const activityIds = new Set(
@@ -937,15 +969,17 @@ export async function verifySavedReadback(review, saved) {
       !/^[1-9]\d*$/.test(id) ||
       !Number.isSafeInteger(Number(id)) ||
       activityIds.has(id)
-    )
+    ) {
       mismatches.push(
         'A new activity has a missing, reused or duplicate saved identity.'
       );
+    }
     activityIds.add(id);
     const raw = clone(a);
     delete raw.id;
-    if (canonical(raw) !== canonical(c.activity))
+    if (canonical(raw) !== canonical(c.activity)) {
       mismatches.push('A new activity contains unreviewed fields.');
+    }
     projection.activities.pop();
   }
   for (const c of [...(review.calloutAdditions || [])].reverse()) {
@@ -956,17 +990,18 @@ export async function verifySavedReadback(review, saved) {
       s.id !== c.sectionId ||
       s.tips.length !== c.tipIndex + 1 ||
       canonical(s.tips[c.tipIndex]) !== canonical(c.tip)
-    )
+    ) {
       mismatches.push('A new callout differs from its exact review.');
-    else {
+    } else {
       s.tips.pop();
       if (
         !s.tips.length &&
         review.baseline.activities[c.activityIndex].activitySections[
           c.sectionIndex
         ].tips === null
-      )
+      ) {
         s.tips = null;
+      }
     }
   }
   for (const change of review.fieldChanges || []) {
@@ -974,7 +1009,7 @@ export async function verifySavedReadback(review, saved) {
       change.path[0] === 'objectives' ? projection : saved,
       change.path
     );
-    if (!sameSavedField(change.path, got, change.after))
+    if (!sameSavedField(change.path, got, change.after)) {
       mismatches.push(
         '"' +
           (change.label || change.path.join(' / ')) +
@@ -984,6 +1019,7 @@ export async function verifySavedReadback(review, saved) {
           fieldPreview(change.after) +
           '.'
       );
+    }
     try {
       putField(projection, change.path, change.before);
     } catch {
@@ -992,9 +1028,13 @@ export async function verifySavedReadback(review, saved) {
   }
   for (const change of review.changes) {
     let found;
-    for (const activity of projection.activities || [])
-      for (const section of activity.activitySections || [])
-        if (section.id === change.sectionId) found = section;
+    for (const activity of projection.activities || []) {
+      for (const section of activity.activitySections || []) {
+        if (section.id === change.sectionId) {
+          found = section;
+        }
+      }
+    }
     if (!found) {
       mismatches.push('A reviewed section identity is missing.');
       continue;
@@ -1002,21 +1042,24 @@ export async function verifySavedReadback(review, saved) {
     const requested = requestedActivities
       .flatMap(a => a.activitySections)
       .find(s => s.id === change.sectionId);
-    if (found.scriptLevels?.length !== change.addLevels.length)
+    if (found.scriptLevels?.length !== change.addLevels.length) {
       mismatches.push(
         'A saved progression has an unexpected number of levels.'
       );
+    }
     for (const [index, sl] of (found.scriptLevels || []).entries()) {
       const validId =
         (typeof sl.id === 'number' ||
           (typeof sl.id === 'string' && /^\d+$/.test(sl.id))) &&
         Number.isSafeInteger(Number(sl.id)) &&
         Number(sl.id) > 0;
-      if (!validId || newIds.has(String(sl.id)))
+      if (!validId || newIds.has(String(sl.id))) {
         mismatches.push(
           'New saved association identities are missing or duplicated.'
         );
-      else newIds.add(String(sl.id));
+      } else {
+        newIds.add(String(sl.id));
+      }
       const wanted = requested?.scriptLevels[index];
       if (
         sl.levels?.length !== 1 ||
@@ -1024,28 +1067,33 @@ export async function verifySavedReadback(review, saved) {
           String(change.addLevels[index]?.levelId) ||
         (sl.activeId != null &&
           String(sl.activeId) !== String(change.addLevels[index]?.levelId))
-      )
+      ) {
         mismatches.push(
           'A saved link points to a different level record or variant.'
         );
+      }
       if (
         !wanted ||
         sl.activitySectionPosition !== wanted.activitySectionPosition
-      )
+      ) {
         mismatches.push('A saved link has different per-section ordering.');
+      }
       for (const key of [
         'assessment',
         'bonus',
         'challenge',
         'instructor_in_training',
         'show_ai_analysis',
-      ])
-        if (Boolean(sl[key]) !== Boolean(wanted?.[key]))
+      ]) {
+        if (Boolean(sl[key]) !== Boolean(wanted?.[key])) {
           mismatches.push('A saved link has an unreviewed ' + key + ' flag.');
+        }
+      }
       if (
         canonical(sl.variants ?? null) !== canonical(wanted?.variants ?? null)
-      )
+      ) {
         mismatches.push('A saved link has unreviewed variants.');
+      }
     }
     const original = review.baseline.activities
       .flatMap(a => a.activitySections)
@@ -1053,10 +1101,11 @@ export async function verifySavedReadback(review, saved) {
     found.scriptLevels = clone(original.scriptLevels);
     found.progressionName = original.progressionName;
   }
-  if (canonical(projection) !== canonical(review.baseline))
+  if (canonical(projection) !== canonical(review.baseline)) {
     mismatches.push(
       'An existing record, setting or association changed outside the reviewed changes.'
     );
+  }
   const passed = mismatches.length === 0,
     baselineUnchanged = canonical(saved) === canonical(review.baseline);
   return {
@@ -1092,18 +1141,20 @@ export function buildSavedLessonPayload(
       freshSaved.programmingExpressions,
       'code definitions'
     );
-  for (const item of [...standards, ...opportunity])
+  for (const item of [...standards, ...opportunity]) {
     assert(
       typeof item.frameworkShortcode === 'string' &&
         typeof item.shortcode === 'string',
       'A saved standard mapping is incomplete.'
     );
-  for (const item of expressions)
+  }
+  for (const item of expressions) {
     assert(
       typeof item.programmingEnvironmentName === 'string' &&
         typeof item.key === 'string',
       'A saved code-definition mapping is incomplete.'
     );
+  }
   const objectives = records(candidate.objectives, 'objectives'),
     originalObjectives = records(freshSaved.objectives, 'objectives');
   assert(
@@ -1137,11 +1188,12 @@ export function buildSavedLessonPayload(
         candidate[kind].length >= freshSaved[kind].length,
       'Shared-record removals need a separate review.'
     );
-    for (const [i, record] of freshSaved[kind].entries())
+    for (const [i, record] of freshSaved[kind].entries()) {
       assert(
         canonical(candidate[kind][i]) === canonical(record),
         'An existing shared record changed.'
       );
+    }
   }
   payload.resources = JSON.stringify(keyList(candidate.resources, 'resources'));
   payload.vocabularies = JSON.stringify(
@@ -1172,15 +1224,25 @@ export function buildSavedLessonPayload(
 // AntiGrav (first live save, 2026-11-22): Level Builder saves an empty new section's title, remarks, callouts and
 // level-group name as null, where the reviewed section has '', false, [] and ''. Treat those blanks as equal; any real content still must match.
 export function savedSectionBlanks(section) {
-  if (!section || typeof section !== 'object') return section;
+  if (!section || typeof section !== 'object') {
+    return section;
+  }
   const s = clone(section);
-  for (const k of ['name', 'progressionName', 'description'])
-    if (s[k] == null) s[k] = '';
-  if (s.remarks == null) s.remarks = false;
-  if (s.tips == null) s.tips = [];
+  for (const k of ['name', 'progressionName', 'description']) {
+    if (s[k] == null) {
+      s[k] = '';
+    }
+  }
+  if (s.remarks == null) {
+    s.remarks = false;
+  }
+  if (s.tips == null) {
+    s.tips = [];
+  }
   // Live, 2026-11-22: a new section in a new activity saved its duration as text ("5" for 5).
-  if (typeof s.duration === 'string' && /^\d+$/.test(s.duration))
+  if (typeof s.duration === 'string' && /^\d+$/.test(s.duration)) {
     s.duration = Number(s.duration);
+  }
   return s;
 }
 
@@ -1198,7 +1260,9 @@ export function sectionDifferences(saved, reviewed) {
   for (const k of [
     ...new Set([...Object.keys(saved || {}), ...Object.keys(reviewed || {})]),
   ].sort()) {
-    if (canonical(saved?.[k]) === canonical(reviewed?.[k])) continue;
+    if (canonical(saved?.[k]) === canonical(reviewed?.[k])) {
+      continue;
+    }
     if (
       Array.isArray(saved?.[k]) &&
       Array.isArray(reviewed?.[k]) &&
@@ -1210,8 +1274,8 @@ export function sectionDifferences(saved, reviewed) {
             ...Object.keys(item || {}),
             ...Object.keys(reviewed[k][i] || {}),
           ]),
-        ].sort())
-          if (canonical(item?.[key]) !== canonical(reviewed[k][i]?.[key]))
+        ].sort()) {
+          if (canonical(item?.[key]) !== canonical(reviewed[k][i]?.[key])) {
             out.push(
               k +
                 '[' +
@@ -1223,8 +1287,10 @@ export function sectionDifferences(saved, reviewed) {
                 ', reviewed ' +
                 short(reviewed[k][i]?.[key])
             );
+          }
+        }
       });
-    } else
+    } else {
       out.push(
         k +
           ': saved ' +
@@ -1232,6 +1298,7 @@ export function sectionDifferences(saved, reviewed) {
           ', reviewed ' +
           short(reviewed?.[k])
       );
+    }
   }
   return out.join('; ') || 'no field differences';
 }

@@ -74,8 +74,9 @@ test('invalid additions do not mutate lesson content', () => {
     ['missing', 'Teaching Tip', 'text'],
     [first.id, 'Unknown', 'text'],
     [first.id, 'Teaching Tip', '  '],
-  ])
+  ]) {
     assert.throws(() => addCallout(draft, target, type, body));
+  }
   const valid = {
     id: 'new',
     activityId: first.activityId,
@@ -91,7 +92,8 @@ test('invalid additions do not mutate lesson content', () => {
     {duration: -1},
     {duration: NaN},
     {body: ' '},
-  ])
+  ]) {
     assert.throws(() => addSection(draft, {...valid, ...changes}));
+  }
   assert.deepEqual(draft, before);
 });

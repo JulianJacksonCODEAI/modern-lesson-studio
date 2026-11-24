@@ -130,8 +130,9 @@ test('ambiguous cleanup response is verified without a second dispatch', async (
     bridge = h.io.bridge;
   h.io.bridge = async request => {
     const result = await bridge(request);
-    if (request.action === 'save-approved-cleanup')
+    if (request.action === 'save-approved-cleanup') {
       throw Error('Response lost');
+    }
     return result;
   };
   const result = await executeCleanup(review, approval, h.io);
@@ -146,7 +147,9 @@ test('readback failure retains attempt and next execution only reads', async () 
     approval = await approveCleanup(review),
     read = h.io.readSaved;
   h.io.readSaved = async () => {
-    if (h.state.cleanupSendCount) throw Error('Read unavailable');
+    if (h.state.cleanupSendCount) {
+      throw Error('Read unavailable');
+    }
     return read();
   };
   assert.equal(

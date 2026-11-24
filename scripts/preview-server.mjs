@@ -65,23 +65,27 @@ window.chrome={runtime:{getManifest:()=>({version:'preview'}),getURL:p=>'/'+p,id
 http
   .createServer((req, res) => {
     const url = new URL(req.url, 'http://x');
-    if (url.pathname === '/')
+    if (url.pathname === '/') {
       return res.writeHead(302, {location: '/sidepanel/sidepanel.html'}).end();
-    if (url.pathname === '/__chrome-stub.js')
+    }
+    if (url.pathname === '/__chrome-stub.js') {
       return res.writeHead(200, {'content-type': 'text/javascript'}).end(stub);
+    }
     const file = path.join(base, decodeURIComponent(url.pathname));
     if (
       !file.startsWith(base) ||
       !fs.existsSync(file) ||
       fs.statSync(file).isDirectory()
-    )
+    ) {
       return res.writeHead(404).end('Not found');
+    }
     let body = fs.readFileSync(file);
-    if (file.endsWith('sidepanel.html'))
+    if (file.endsWith('sidepanel.html')) {
       body = String(body).replace(
         '<script type="module"',
         '<script src="/__chrome-stub.js"></script>\n<script type="module"'
       );
+    }
     res
       .writeHead(200, {
         'content-type': types[path.extname(file)] || 'application/octet-stream',

@@ -7,15 +7,18 @@ import {normalizeNativeCapture} from './transfer-native.mjs';
 export async function nativeEditorBridge(request = {action: 'read'}) {
   let diagnosticCapture;
   try {
-    if (typeof request === 'string') request = JSON.parse(request);
+    if (typeof request === 'string') {
+      request = JSON.parse(request);
+    }
     const checkDeadline = () => {
       if (
         Number.isFinite(request.deadlineAt) &&
         Date.now() > request.deadlineAt
-      )
+      ) {
         throw Error(
           'The native operation expired before the next change. No further control was changed.'
         );
+      }
     };
     const settle = () =>
       new Promise(resolve => {
@@ -41,8 +44,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
           'https://levelbuilder-studio.code.org/lessons/' +
             selected.id +
             '/edit')
-    )
+    ) {
       throw Error('Invalid selected destination.');
+    }
     const aliases = [
       '/courses/6-12-dev-playground/units/16/lessons/11/edit',
       '/s/scottsdale-levelbuilder-exploration/lessons/11/edit',
@@ -60,10 +64,11 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         !(selected
           ? location.href === selected.url
           : aliases.includes(location.pathname.replace(/\/$/, ''))))
-    )
+    ) {
       throw Error(
         'This is not the assigned sandbox editor. Official and unknown lessons are refused.'
       );
+    }
     const labels = {
       title: 'Title',
       teacherOverview: 'Overview',
@@ -83,16 +88,18 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
             .join('')
             .trim() === label
       );
-      if (matches.length !== 1)
+      if (matches.length !== 1) {
         throw Error('Cannot uniquely locate ' + label + '.');
+      }
       return matches[0];
     };
     const fieldNode = key => {
       const nodes = labelNode(labels[key]).querySelectorAll(
         key === 'title' ? 'input:not([type="checkbox"])' : 'textarea'
       );
-      if (nodes.length !== 1)
+      if (nodes.length !== 1) {
         throw Error('Missing or ambiguous editor field ' + labels[key] + '.');
+      }
       return nodes[0];
     };
     const tableFor = headers => {
@@ -107,10 +114,11 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
           actual.every((h, i) => h === headers[i])
         );
       });
-      if (tables.length !== 1)
+      if (tables.length !== 1) {
         throw Error(
           'Cannot uniquely read the ' + headers.join('/') + ' table.'
         );
+      }
       return tables[0];
     };
     function sharedSearchRoot(table) {
@@ -118,22 +126,29 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
       while (root && root.id !== 'edit-container') {
         const tables = root.querySelectorAll('table'),
           inputs = root.querySelectorAll('.Select-input input');
-        if (tables.length === 1 && inputs.length === 1) return root;
-        if (tables.length > 1) break;
+        if (tables.length === 1 && inputs.length === 1) {
+          return root;
+        }
+        if (tables.length > 1) {
+          break;
+        }
         root = root.parentElement;
       }
       return null;
     }
     function read() {
       const bootstrap = document.querySelector('script[data-lesson]');
-      if (!bootstrap) throw Error('Lesson identity evidence is missing.');
+      if (!bootstrap) {
+        throw Error('Lesson identity evidence is missing.');
+      }
       const saved = JSON.parse(bootstrap.getAttribute('data-lesson'));
-      if (saved.id !== destination.id)
+      if (saved.id !== destination.id) {
         throw Error('The sandbox lesson identity does not match.');
+      }
       const blockers = [],
         fields = {},
         managed = new Set();
-      for (const key of Object.keys(labels))
+      for (const key of Object.keys(labels)) {
         try {
           const node = fieldNode(key);
           fields[key] = node.value;
@@ -141,15 +156,20 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         } catch (error) {
           blockers.push(error.message);
         }
+      }
       const hidden = {};
       for (const key of ['activities', 'objectives']) {
         const nodes = document.querySelectorAll(
           '#edit-container input[type="hidden"][name="' + key + '"]'
         );
         try {
-          if (nodes.length !== 1) throw Error('missing or ambiguous');
+          if (nodes.length !== 1) {
+            throw Error('missing or ambiguous');
+          }
           const value = JSON.parse(nodes[0].value);
-          if (!Array.isArray(value)) throw Error('not a list');
+          if (!Array.isArray(value)) {
+            throw Error('not a list');
+          }
           hidden[key] = value;
         } catch {
           blockers.push(
@@ -174,7 +194,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
           ]).querySelectorAll('tbody tr'),
         ].map(row => {
           const cells = [...row.querySelectorAll('td')];
-          if (cells.length !== 6) throw Error('Unexpected resource row.');
+          if (cells.length !== 6) {
+            throw Error('Unexpected resource row.');
+          }
           return {
             key: cells[0].textContent.trim(),
             name: cells[1].textContent.trim(),
@@ -193,7 +215,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
           ),
         ].map(row => {
           const cells = [...row.querySelectorAll('td')];
-          if (cells.length !== 3) throw Error('Unexpected vocabulary row.');
+          if (cells.length !== 3) {
+            throw Error('Unexpected vocabulary row.');
+          }
           return {
             word: cells[0].textContent.trim(),
             definition: cells[1].textContent.trim(),
@@ -208,8 +232,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
             '[role="dialog"],[role="alertdialog"],dialog[open],.modal-content'
           ),
         ].some(el => el.getClientRects().length)
-      )
+      ) {
         blockers.push('Finish or cancel the open editor dialog first.');
+      }
       const objectiveTables = [
         ...document.querySelectorAll('#edit-container table'),
       ].filter(
@@ -223,13 +248,15 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
             'tbody tr > td:first-child textarea,tbody tr > td:first-child input:not([type="checkbox"]),tbody tr > td:first-child [contenteditable="true"]'
           )
         )
-      )
+      ) {
         blockers.push('Finish or cancel the inline objective edit first.');
+      }
       const cards = [...document.querySelectorAll('.uitest-activity-card')];
-      if (cards.length !== hidden.activities.length)
+      if (cards.length !== hidden.activities.length) {
         blockers.push(
           'Activity controls do not match current serialized activities.'
         );
+      }
       hidden.activities.forEach((activity, index) => {
         const card = cards[index],
           areas = card?.querySelectorAll('textarea');
@@ -246,10 +273,11 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
           duration.length !== 1 ||
           name[0].value !== (activity.name ?? activity.displayName ?? '') ||
           duration[0].value !== String(activity.duration ?? '')
-        )
+        ) {
           blockers.push(
             'An activity field has uncommitted or ambiguous state.'
           );
+        }
         (activity.activitySections || []).forEach((section, si) => {
           const area = areas[si],
             header = area.parentElement.firstElementChild,
@@ -262,10 +290,11 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
             inputs[1].value !== String(section.duration ?? '') ||
             checks[0].checked !== Boolean(section.remarks) ||
             area.value !== (section.description ?? section.text ?? '')
-          )
+          ) {
             blockers.push(
               'A section field has uncommitted or ambiguous state.'
             );
+          }
         });
       });
       for (const headers of [
@@ -274,9 +303,11 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
       ]) {
         try {
           const root = sharedSearchRoot(tableFor(headers));
-          if (root)
-            for (const input of root.querySelectorAll('.Select-input input'))
+          if (root) {
+            for (const input of root.querySelectorAll('.Select-input input')) {
               managed.add(input);
+            }
+          }
         } catch {}
       }
       // Protect all unrelated entity properties, associations, current controls and tables.
@@ -294,8 +325,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
             'description',
             'text',
             'remarks',
-          ])
+          ]) {
             delete section[key];
+          }
         }
       }
       const controls = [
@@ -335,17 +367,21 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
           if (
             !table.querySelector('thead') &&
             table.querySelector('.uitest-ProgressPill')
-          )
+          ) {
             return false;
-          if (table.querySelector('thead')) return true;
+          }
+          if (table.querySelector('thead')) {
+            return true;
+          }
           let parent = table.parentElement;
           while (parent && !parent.classList.contains('uitest-activity-card')) {
             if (
               [...parent.children].some(n =>
                 n.classList.contains('uitest-level-token-name')
               )
-            )
+            ) {
               return false;
+            }
             parent = parent.parentElement;
           }
           return true;
@@ -415,20 +451,24 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
       ]
         .map(b => b.toString(16).padStart(2, '0'))
         .join('');
-    if (request.action === 'read') return read();
+    if (request.action === 'read') {
+      return read();
+    }
     if (request.action === 'authorize-reviewed-reload') {
       if (
         request.mode !== 'restore-reviewed-rehearsal' ||
         request.initialCapture?.saved?.id !== destination.id
-      )
+      ) {
         throw Error('Invalid rehearsal restore point.');
+      }
       const current = read();
       if (
         current.blockers.length ||
         (await fingerprint(current)) !== request.expectedCaptureDigest ||
         stable(current.saved) !== stable(request.initialCapture.saved)
-      )
+      ) {
         throw Error('Outside edits prevent editor restoration.');
+      }
       const response = await (
         globalThis.content && typeof globalThis.content.fetch === 'function'
           ? globalThis.content.fetch.bind(globalThis.content)
@@ -438,8 +478,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         redirect: 'error',
         cache: 'no-store',
       });
-      if (!response.ok)
+      if (!response.ok) {
         throw Error('Saved baseline verification failed before restoration.');
+      }
       const doc = new DOMParser().parseFromString(
           await response.text(),
           'text/html'
@@ -449,13 +490,15 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
             .querySelector('script[data-lesson]')
             ?.getAttribute('data-lesson') || 'null'
         );
-      if (stable(saved) !== stable(request.initialCapture.saved))
+      if (stable(saved) !== stable(request.initialCapture.saved)) {
         throw Error(
           'The saved lesson changed. Preserve the editor instead of reloading.'
         );
+      }
       checkDeadline();
-      if ((await fingerprint(read())) !== request.expectedCaptureDigest)
+      if ((await fingerprint(read())) !== request.expectedCaptureDigest) {
         throw Error('Outside edits appeared during restoration checks.');
+      }
       return {
         kind: 'reviewed-reload-authorization',
         captureDigest: request.expectedCaptureDigest,
@@ -474,8 +517,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         request.mode !==
           (cleanup ? 'explicit-approved-cleanup' : 'explicit-approved-save') ||
         request.approval?.approved !== true
-      )
+      ) {
         throw Error('Explicit approval for this playground save is required.');
+      }
       const review = request.review,
         copy = structuredClone(review);
       delete copy.id;
@@ -486,16 +530,18 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         Date.now() > review.expiresAt ||
         review.destination.id !== destination.id ||
         review.destination.url !== destination.url
-      )
+      ) {
         throw Error('The approved review is invalid or expired.');
+      }
       const req = review.request;
       if (
         req.method !== 'PUT' ||
         req.url !==
           'https://levelbuilder-studio.code.org/lessons/' + destination.id ||
         req.contentType !== 'application/json;charset=UTF-8'
-      )
+      ) {
         throw Error('The approved save target changed.');
+      }
       const payload = JSON.parse(req.body),
         semantic = structuredClone(payload);
       for (const key of [
@@ -509,8 +555,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         'jitPlConceptIds',
         'announcements',
         'originalLessonData',
-      ])
+      ]) {
         semantic[key] = JSON.parse(semantic[key]);
+      }
       const approvedDigest = await fingerprint({
         method: req.method,
         url: req.url,
@@ -519,14 +566,16 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         ...(review.transport ? {transport: review.transport} : {}),
         ...(review.preservationTest ? {preservationTest: true} : {}),
       });
-      if (approvedDigest !== request.approval.approvedRequestDigest)
+      if (approvedDigest !== request.approval.approvedRequestDigest) {
         throw Error('The request does not match the user-approved save.');
+      }
       const current = read();
       if (
         current.blockers.length ||
         (await fingerprint(current)) !== request.expectedCaptureDigest
-      )
+      ) {
         throw Error('The editor changed before saving.');
+      }
       const fresh = await (
         globalThis.content && typeof globalThis.content.fetch === 'function'
           ? globalThis.content.fetch.bind(globalThis.content)
@@ -536,7 +585,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         redirect: 'error',
         cache: 'no-store',
       });
-      if (!fresh.ok) throw Error('The final saved-baseline check failed.');
+      if (!fresh.ok) {
+        throw Error('The final saved-baseline check failed.');
+      }
       const doc = new DOMParser().parseFromString(
           await fresh.text(),
           'text/html'
@@ -548,8 +599,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         !raw ||
         raw !== payload.originalLessonData ||
         (await fingerprint(JSON.parse(raw))) !== review.baselineDigest
-      )
+      ) {
         throw Error('Saved content changed. The save was blocked.');
+      }
       if (cleanup) {
         const source = review.sourceReceipt,
           sourceReview = source?.review,
@@ -561,8 +613,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
           source.verification?.passed !== true ||
           sourceReview?.destination.id !== destination.id ||
           (await fingerprint(sourceCopy)) !== sourceReview.id
-        )
+        ) {
           throw Error('Cleanup ownership evidence is invalid.');
+        }
         const freshSaved = JSON.parse(raw),
           expected = structuredClone(freshSaved),
           seen = new Set();
@@ -572,8 +625,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
             .filter(c => c.section.scriptLevels.length)
             .map(c => {
               const activity = source.readback.activities[c.activityIndex];
-              if (!c.newActivity && activity.id !== c.activityId)
+              if (!c.newActivity && activity.id !== c.activityId) {
                 throw Error('Cleanup section activity changed.');
+              }
               return {
                 newSection: true,
                 sectionId: activity.activitySections[c.sectionIndex].id,
@@ -588,11 +642,13 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
           !Array.isArray(review.removals) ||
           !review.removals.length ||
           review.removals.length !== groups.length
-        )
+        ) {
           throw Error('Cleanup scope is incomplete.');
+        }
         for (const removal of review.removals) {
-          if (seen.has(removal.sectionId))
+          if (seen.has(removal.sectionId)) {
             throw Error('Duplicate cleanup section.');
+          }
           seen.add(removal.sectionId);
           const find = lesson =>
             lesson.activities
@@ -614,9 +670,10 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
             stable(current.scriptLevels) !== stable(recorded.scriptLevels) ||
             current.progressionName !== recorded.progressionName ||
             recorded.scriptLevels.length !== change.addLevels.length
-          )
+          ) {
             throw Error('Saved test links changed or ownership is incomplete.');
-          for (const [i, link] of recorded.scriptLevels.entries())
+          }
+          for (const [i, link] of recorded.scriptLevels.entries()) {
             if (
               !link.id ||
               link.levels?.length !== 1 ||
@@ -624,16 +681,19 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
                 String(change.addLevels[i].levelId) ||
               Boolean(link.assessment) !==
                 Boolean(change.addLevels[i].assessment)
-            )
+            ) {
               throw Error('Cleanup link identity differs from the saved test.');
+            }
+          }
           target.scriptLevels = structuredClone(original.scriptLevels);
           target.progressionName = original.progressionName;
         }
         if (
           stable(expected) !== stable(review.expectedSaved) ||
           stable(semantic.activities) !== stable(expected.activities)
-        )
+        ) {
           throw Error('Cleanup includes unreviewed content changes.');
+        }
         const allowed = [
           'name',
           'overview',
@@ -661,11 +721,14 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         if (
           Object.keys(semantic).length !== allowed.length ||
           Object.keys(semantic).some(k => !allowed.includes(k))
-        )
+        ) {
           throw Error('Unexpected cleanup request fields.');
-        for (const k of allowed.slice(0, 12))
-          if (stable(semantic[k]) !== stable(freshSaved[k]))
+        }
+        for (const k of allowed.slice(0, 12)) {
+          if (stable(semantic[k]) !== stable(freshSaved[k])) {
             throw Error('Cleanup changes unrelated lesson fields.');
+          }
+        }
         const collections = {
           objectives: freshSaved.objectives,
           resources: freshSaved.resources.map(r => r.key),
@@ -676,9 +739,11 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
           jitPlConceptIds: freshSaved.jitPlConcepts.map(r => r.id),
           announcements: freshSaved.announcements,
         };
-        for (const [k, v] of Object.entries(collections))
-          if (stable(semantic[k]) !== stable(v))
+        for (const [k, v] of Object.entries(collections)) {
+          if (stable(semantic[k]) !== stable(v)) {
             throw Error('Cleanup changes unrelated collections.');
+          }
+        }
       }
       if (!cleanup && review.transport === 'native-editor') {
         // Use the deployed editor's own serializer and authenticated save handler.
@@ -690,24 +755,28 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
             b.textContent.trim() === 'Save and Keep Editing' &&
             b.getClientRects().length
         );
-        if (buttons.length !== 1 || buttons[0].disabled)
+        if (buttons.length !== 1 || buttons[0].disabled) {
           throw Error(
             'The native Save and Keep Editing control is unavailable or ambiguous. No save was clicked.'
           );
+        }
         const button = buttons[0],
           savedMarker = () =>
             document.body.textContent.match(/Last saved at:[^\n\r]*/)?.[0] ||
             '',
           beforeMarker = savedMarker();
         checkDeadline();
-        if ((await fingerprint(read())) !== request.expectedCaptureDigest)
+        if ((await fingerprint(read())) !== request.expectedCaptureDigest) {
           throw Error('The editor changed before the native save.');
+        }
         return await new Promise(resolve => {
           let observer,
             timer,
             finished = false;
           const finish = outcome => {
-            if (finished) return;
+            if (finished) {
+              return;
+            }
             finished = true;
             observer?.disconnect();
             clearTimeout(timer);
@@ -720,8 +789,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
             });
           };
           const inspect = () => {
-            if (!button.disabled && savedMarker() !== beforeMarker)
+            if (!button.disabled && savedMarker() !== beforeMarker) {
               finish('native-editor-acknowledged');
+            }
           };
           observer = new MutationObserver(inspect);
           observer.observe(document.body, {
@@ -749,10 +819,13 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         });
       }
       const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
-      if (!csrf) throw Error('The editor sign-in token is unavailable.');
+      if (!csrf) {
+        throw Error('The editor sign-in token is unavailable.');
+      }
       checkDeadline();
-      if ((await fingerprint(read())) !== request.expectedCaptureDigest)
+      if ((await fingerprint(read())) !== request.expectedCaptureDigest) {
         throw Error('The editor changed during the final check.');
+      }
       // The controller persisted the attempt before this call. Never retry here.
       try {
         const response = await (
@@ -834,7 +907,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
                       s.scriptLevels.some(sl => sl.levels.length > 20)
                     ),
                 };
-              } else responseSummary = {kind: 'unexpected-json'};
+              } else {
+                responseSummary = {kind: 'unexpected-json'};
+              }
             } catch {
               responseSummary = {kind: 'unreadable-json'};
             }
@@ -843,8 +918,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         if (!response.ok) {
           const contentType = response.headers.get('Content-Type') || '',
             text = await response.text();
-          if (contentType.includes('text/plain')) errorMessage = text;
-          else if (contentType.includes('application/json')) {
+          if (contentType.includes('text/plain')) {
+            errorMessage = text;
+          } else if (contentType.includes('application/json')) {
             try {
               const value = JSON.parse(text);
               errorMessage =
@@ -905,10 +981,11 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
       if (
         before.blockers.length ||
         (await fingerprint(before)) !== request.expectedCaptureDigest
-      )
+      ) {
         throw Error(
           'The editor changed before shared-record lookup or association.'
         );
+      }
       const op = request.operation,
         kind =
           request.kind ||
@@ -919,8 +996,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         !record ||
         !Number.isSafeInteger(record.id) ||
         !record.key
-      )
+      ) {
         throw Error('The shared-record identity is missing.');
+      }
       const script = document.querySelector(
           'script[data-lesson][data-unitforlesson]'
         ),
@@ -930,17 +1008,19 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         unit.courseVersionId < 1 ||
         (request.action === 'lookup-shared-record' &&
           unit.courseVersionId !== request.courseVersionId)
-      )
+      ) {
         throw Error(
           'The native course scope differs from the shared-record review.'
         );
+      }
       const query = kind === 'resources' ? record.name : record.word;
       if (
         typeof query !== 'string' ||
         query.trim().length < 3 ||
         query.length > 255
-      )
+      ) {
         throw Error('Shared records require a searchable name.');
+      }
       checkDeadline();
       const response = await (
         globalThis.content && typeof globalThis.content.fetch === 'function'
@@ -962,14 +1042,17 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
           headers: {'X-Requested-With': 'XMLHttpRequest'},
         }
       );
-      if (!response.ok) throw Error('Shared-record verification failed.');
+      if (!response.ok) {
+        throw Error('Shared-record verification failed.');
+      }
       const records = await response.json();
       if (
         !Array.isArray(records) ||
         records.length >= 40 ||
         records.filter(r => stable(r) === stable(record)).length !== 1
-      )
+      ) {
         throw Error('The shared record changed or its search is incomplete.');
+      }
       // React Select shows labels, not identities, and may return only seven options.
       // A unique visible option cannot distinguish same-label records outside that window.
       const sharedLabel = value =>
@@ -979,14 +1062,16 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
       if (
         records.filter(value => sharedLabel(value) === sharedLabel(record))
           .length !== 1
-      )
+      ) {
         throw Error(
           'Shared-record search is ambiguous: several records have the same label.'
         );
+      }
       if (request.action === 'lookup-shared-record') {
         const after = read();
-        if (stable(after) !== stable(before))
+        if (stable(after) !== stable(before)) {
           throw Error('The editor changed during shared-record lookup.');
+        }
         return {kind: 'native-shared-mapping', record, capture: after};
       }
       if (
@@ -995,8 +1080,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         !(kind === 'resources'
           ? stable(op.path) === '["resources"]'
           : stable(op.path) === '["frontMatter","vocabulary"]')
-      )
+      ) {
         throw Error('Only reviewed new associations are supported.');
+      }
       const table = tableFor(
           kind === 'resources'
             ? ['Key', 'Name', 'Type', 'Audience', 'URL', 'Actions']
@@ -1004,27 +1090,31 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         ),
         root = sharedSearchRoot(table),
         inputs = root?.querySelectorAll('.Select-input input');
-      if (inputs?.length !== 1)
+      if (inputs?.length !== 1) {
         throw Error('The native shared-record search control is ambiguous.');
+      }
       if (
         kind === 'resources'
           ? before.live.resources.some(r => r.key === record.key)
           : before.live.vocabularies.some(
               v => v.word === record.word && v.definition === record.definition
             )
-      )
+      ) {
         throw Error('This shared record is already associated.');
+      }
       if (!inputs[0].getClientRects().length) {
         const panel = kind === 'resources' ? 'Resources' : 'Vocabulary',
           headings = [
             ...document.querySelectorAll('#edit-container h2 button'),
           ].filter(b => b.textContent.trim() === panel);
-        if (headings.length !== 1)
+        if (headings.length !== 1) {
           throw Error('The shared-record panel is ambiguous.');
+        }
         headings[0].click();
       }
-      if (!inputs[0].getClientRects().length || inputs[0].disabled)
+      if (!inputs[0].getClientRects().length || inputs[0].disabled) {
         throw Error('The shared-record search is unavailable.');
+      }
       checkDeadline();
       inputs[0].focus();
       if (typeof document.hasFocus === 'function' && !document.hasFocus()) {
@@ -1056,11 +1146,13 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
             const options = [...root.querySelectorAll('.Select-option')].filter(
               n => n.getClientRects().length && n.textContent.trim() === label
             );
-            if (options.length > 1)
+            if (options.length > 1) {
               finish(
                 Error('More than one native search option matches this record.')
               );
-            else if (options.length === 1) finish(null, options[0]);
+            } else if (options.length === 1) {
+              finish(null, options[0]);
+            }
           } catch (error) {
             finish(error);
           }
@@ -1089,10 +1181,11 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         );
         inspect();
       });
-      if (stable(read()) !== stable(before))
+      if (stable(read()) !== stable(before)) {
         throw Error(
           'Outside edits appeared before adding the shared association.'
         );
+      }
       checkDeadline();
       option.dispatchEvent(
         new MouseEvent('mousedown', {bubbles: true, button: 0, buttons: 1})
@@ -1108,9 +1201,12 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
       ].includes(request.action)
     ) {
       const before = read();
-      if (before.blockers.length) throw Error(before.blockers.join(' '));
-      if ((await fingerprint(before)) !== request.expectedCaptureDigest)
+      if (before.blockers.length) {
+        throw Error(before.blockers.join(' '));
+      }
+      if ((await fingerprint(before)) !== request.expectedCaptureDigest) {
         throw Error('The editor changed before level lookup or linking.');
+      }
       const path = request.operation?.path || [
           'activities',
           0,
@@ -1129,15 +1225,17 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         !Number.isInteger(si) ||
         ai < 0 ||
         si < 0
-      )
+      ) {
         throw Error('Unsupported level location.');
+      }
       const activity = before.live.activities[ai],
         section = activity?.activitySections[si],
         card = [...document.querySelectorAll('.uitest-activity-card')][ai],
         area = card?.querySelectorAll('textarea')[si],
         root = area?.parentElement;
-      if (!section || !root)
+      if (!section || !root) {
         throw Error('The native section for level lookup is missing.');
+      }
       const modalFor = () =>
         [...document.querySelectorAll('.modal-content')].find(
           n =>
@@ -1158,7 +1256,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
             try {
               checkDeadline();
               const value = predicate();
-              if (value) finish(null, value);
+              if (value) {
+                finish(null, value);
+              }
             } catch (error) {
               finish(error);
             }
@@ -1196,8 +1296,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
           const buttons = [...modal.querySelectorAll('button')].filter(
             b => b.textContent.trim() === 'Close and save'
           );
-          if (buttons.length !== 1)
+          if (buttons.length !== 1) {
             throw Error('The level picker close control is ambiguous.');
+          }
           buttons[0].click();
           await settle();
         }
@@ -1207,8 +1308,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         const buttons = root.querySelectorAll(
           'button.uitest-open-add-level-button'
         );
-        if (buttons.length !== 1)
+        if (buttons.length !== 1) {
           throw Error('The native level picker is ambiguous.');
+        }
         buttons[0].click();
         return wait(() => {
           const modal = modalFor();
@@ -1221,15 +1323,20 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         const input = modal.querySelector('input.uitest-add-level-name-input'),
           filters = input.parentElement.parentElement,
           selects = filters.querySelectorAll('select');
-        if (selects.length !== 3)
+        if (selects.length !== 3) {
           throw Error('Unexpected native level filters.');
-        for (const select of selects)
-          if (select.value !== '') setControl(select, '');
+        }
+        for (const select of selects) {
+          if (select.value !== '') {
+            setControl(select, '');
+          }
+        }
         setControl(input, name);
         await settle();
         const searchIcons = filters.querySelectorAll('.fa-magnifying-glass');
-        if (searchIcons.length !== 1)
+        if (searchIcons.length !== 1) {
           throw Error('The native level search is ambiguous.');
+        }
         checkDeadline();
         searchIcons[0].closest('button').click();
         return wait(() => {
@@ -1239,21 +1346,25 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
                 .map(n => n.textContent.trim())
                 .join('|') === 'Actions|Name|Type|Owner|Last Updated'
           );
-          if (!table) return null;
+          if (!table) {
+            return null;
+          }
           const rows = [...table.querySelectorAll('tbody tr')].filter(
             row => row.querySelectorAll('td')[1]?.textContent.trim() === name
           );
-          if (rows.length > 1)
+          if (rows.length > 1) {
             throw Error(
               'More than one existing level exactly matches ' + name + '.'
             );
+          }
           if (!rows.length) {
             if (
               modal.textContent.includes(
                 'There are no levels matching the search you entered.'
               )
-            )
+            ) {
               throw Error('No existing level exactly matches ' + name + '.');
+            }
             return null;
           }
           if (
@@ -1262,10 +1373,11 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
                 /^\d+$/.test(b.textContent.trim()) &&
                 b.textContent.trim() !== '1'
             )
-          )
+          ) {
             throw Error(
               'The exact level search has multiple result pages; a unique mapping cannot be established.'
             );
+          }
           return rows[0];
         });
       };
@@ -1284,8 +1396,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         if (
           labels.length !== 1 ||
           labels[0].querySelectorAll('input').length !== 1
-        )
+        ) {
           throw Error('The progression title is ambiguous.');
+        }
         return labels[0].querySelector('input');
       };
       const names =
@@ -1300,8 +1413,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         names.length > 8 ||
         new Set(names).size !== names.length ||
         names.some(n => typeof n !== 'string' || !n.trim() || n.length > 250)
-      )
+      ) {
         throw Error('Choose up to eight distinct exact level names.');
+      }
       const mappings = [];
       try {
         if (request.action === 'lookup-levels') {
@@ -1326,16 +1440,18 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
             (section.scriptLevels || []).length ||
             typeof proposed.title !== 'string' ||
             proposed.levels.some(l => typeof l.assessment !== 'boolean')
-          )
+          ) {
             throw Error(
               'Only a reviewed empty progression can receive new existing-level links.'
             );
+          }
           for (const level of proposed.levels) {
             const modal = await openPicker(),
               row = await search(modal, level.key),
               plus = row.querySelectorAll('td:first-child .fa-plus');
-            if (plus.length !== 1 || plus[0].closest('button')?.disabled)
+            if (plus.length !== 1 || plus[0].closest('button')?.disabled) {
               throw Error('The exact existing level cannot be uniquely added.');
+            }
             checkDeadline();
             plus[0].closest('button').click();
             await settle();
@@ -1346,8 +1462,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
                 s => s.textContent.trim() === level.key
               )
             );
-            if (tokens.length !== 1)
+            if (tokens.length !== 1) {
               throw Error('The new native level token is ambiguous.');
+            }
             tokens[0].click();
             await settle();
             const expanded = [
@@ -1357,20 +1474,25 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
                 s => s.textContent.trim() === level.key
               )
             );
-            if (expanded.length !== 1)
+            if (expanded.length !== 1) {
               throw Error('The expanded level token is ambiguous.');
+            }
             const labels = [
               ...expanded[0].parentElement.querySelectorAll('label'),
             ].filter(
               n => n.querySelector('span')?.textContent.trim() === 'Assessment'
             );
-            if (labels.length !== 1)
+            if (labels.length !== 1) {
               throw Error('The new level Assessment control is ambiguous.');
+            }
             const check = labels[0].querySelector('input[type="checkbox"]');
-            if (!check || check.disabled)
+            if (!check || check.disabled) {
               throw Error('The new level Assessment control is unavailable.');
+            }
             checkDeadline();
-            if (check.checked !== level.assessment) check.click();
+            if (check.checked !== level.assessment) {
+              check.click();
+            }
             await settle();
             await closePicker();
           }
@@ -1381,10 +1503,11 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
           if (
             request.mode !== 'unsaved-level-staging' ||
             typeof request.operation.restoreProgressionName !== 'string'
-          )
+          ) {
             throw Error(
               'Level cleanup requires its original progression title.'
             );
+          }
           const actual = (section.scriptLevels || []).map(sl => ({
             key: sl.levels?.[0]?.name,
             assessment: Boolean(sl.assessment),
@@ -1397,8 +1520,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
                 assessment: l.assessment,
               }))
             )
-          )
+          ) {
             throw Error('Level cleanup does not match its exact owned links.');
+          }
           const savedIds = new Set(
             (before.saved.activities || []).flatMap(a =>
               (a.activitySections || []).flatMap(s =>
@@ -1410,8 +1534,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
             section.scriptLevels.some(
               sl => sl.id != null && savedIds.has(String(sl.id))
             )
-          )
+          ) {
             throw Error('Cleanup will not unlink saved native associations.');
+          }
           setControl(titleNode(), request.operation.restoreProgressionName);
           await settle();
           for (const name of [...names].reverse()) {
@@ -1423,11 +1548,13 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
                   s => s.textContent.trim() === name
                 )
               );
-            if (tokens.length !== 1)
+            if (tokens.length !== 1) {
               throw Error('The owned level token is ambiguous during cleanup.');
+            }
             const x = tokens[0].parentElement.querySelectorAll('.fa-xmark');
-            if (x.length !== 1)
+            if (x.length !== 1) {
               throw Error('The owned level unlink control is ambiguous.');
+            }
             checkDeadline();
             x[0].parentElement.dispatchEvent(
               new MouseEvent('mousedown', {
@@ -1448,10 +1575,11 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
                   name +
                   '" from the script?'
               )
-            )
+            ) {
               throw Error(
                 'The native unlink confirmation does not name the owned level.'
               );
+            }
             checkDeadline();
             confirms[0].click();
             await settle();
@@ -1479,22 +1607,24 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
               }))
             ) ||
           changed.progressionName !== request.operation.after.title
-        )
+        ) {
           throw Error(
             'Native level names, ordering, assessment flags or progression title did not match.'
           );
+        }
       }
       if (request.action === 'clear-owned-progression') {
         const changed = after.live.activities[ai].activitySections[si];
         if (
           changed.scriptLevels.length ||
           changed.progressionName !== request.operation.restoreProgressionName
-        )
+        ) {
           throw Error(
             'Original empty progression did not match after cleanup.'
           );
+        }
       }
-      if (request.action !== 'lookup-levels')
+      if (request.action !== 'lookup-levels') {
         for (const capture of [
           projection.live.activities[ai].activitySections[si],
           projection.protection.unmanagedActivities[ai].activitySections[si],
@@ -1504,15 +1634,23 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
               ? before.live.activities[ai].activitySections[si]
               : before.protection.unmanagedActivities[ai].activitySections[si];
           capture.scriptLevels = structuredClone(original.scriptLevels);
-          if (Object.prototype.hasOwnProperty.call(original, 'progressionName'))
+          if (
+            Object.prototype.hasOwnProperty.call(original, 'progressionName')
+          ) {
             capture.progressionName = original.progressionName;
-          else delete capture.progressionName;
+          } else {
+            delete capture.progressionName;
+          }
         }
-      if (stable(projection) !== stable(before))
+      }
+      if (stable(projection) !== stable(before)) {
         throw Error(
           'Unrelated native content changed during level lookup or linking.'
         );
-      if (after.blockers.length) throw Error(after.blockers.join(' '));
+      }
+      if (after.blockers.length) {
+        throw Error(after.blockers.join(' '));
+      }
       return request.action === 'lookup-levels'
         ? {kind: 'native-level-mappings', capture: after, mappings}
         : after;
@@ -1524,14 +1662,16 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         'remove-created-callout',
       ].includes(request.action)
     ) {
-      if (request.mode !== 'unsaved-structure-staging')
+      if (request.mode !== 'unsaved-structure-staging') {
         throw Error('Explicit structural mode is required.');
+      }
       const before = read();
       if (
         before.blockers.length ||
         (await fingerprint(before)) !== request.expectedCaptureDigest
-      )
+      ) {
         throw Error('The editor changed before structural action.');
+      }
       const op = request.operation,
         p = op?.path,
         ai = p?.[1],
@@ -1541,8 +1681,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         const matches = [...root.querySelectorAll('button')].filter(
           b => b.getClientRects().length && b.textContent.trim() === text
         );
-        if (matches.length !== 1)
+        if (matches.length !== 1) {
           throw Error('Ambiguous ' + text + ' control.');
+        }
         return matches[0];
       };
       const confirm = async title => {
@@ -1558,15 +1699,17 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
               ) ||
                 title.test(n.getAttribute('aria-label') || ''))
           );
-        if (dialogs.length !== 1)
+        if (dialogs.length !== 1) {
           throw Error('Structural removal confirmation is ambiguous.');
+        }
         const immediate = read();
         if (
           stable(immediate.live) !== stable(before.live) ||
           stable(immediate.saved) !== stable(before.saved) ||
           stable(immediate.protection) !== stable(before.protection)
-        )
+        ) {
           throw Error('Outside edits appeared before structural removal.');
+        }
         checkDeadline();
         choose(dialogs[0], 'Delete').click();
         await settle();
@@ -1592,11 +1735,13 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
           op.kind !== 'append' ||
           op.before?.length !== before.live.activities.length ||
           stable(op.after) !== stable(empty)
-        )
+        ) {
           throw Error('Only a reviewed blank activity may be appended.');
+        }
         const buttons = document.querySelectorAll('button.add-activity');
-        if (buttons.length !== 1)
+        if (buttons.length !== 1) {
           throw Error('Activity insertion control is ambiguous.');
+        }
         checkDeadline();
         buttons[0].dispatchEvent(
           new MouseEvent('mousedown', {bubbles: true, button: 0, buttons: 1})
@@ -1621,15 +1766,17 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
           section.remarks ||
           section.tips?.length ||
           section.scriptLevels?.length
-        )
+        ) {
           throw Error(
             'New native activity is not the expected blank structure.'
           );
+        }
         const projection = structuredClone(after);
         projection.live.activities.pop();
         projection.protection.unmanagedActivities.pop();
-        if (stable(projection) !== stable(before))
+        if (stable(projection) !== stable(before)) {
           throw Error('Activity insertion changed unrelated content.');
+        }
       } else if (request.action === 'remove-created-activity') {
         const a = before.live.activities[ai],
           card = document.querySelectorAll('.uitest-activity-card')[ai];
@@ -1641,13 +1788,15 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
           a.id != null ||
           a.key !== op.createdKey ||
           !/^activity-/.test(a.key || '')
-        )
+        ) {
           throw Error(
             'Only the exact owned last unsaved activity can be removed.'
           );
+        }
         const trash = card?.firstElementChild?.querySelectorAll('.fa-trash');
-        if (trash?.length !== 1)
+        if (trash?.length !== 1) {
           throw Error('Activity removal control is ambiguous.');
+        }
         checkDeadline();
         trash[0].dispatchEvent(
           new MouseEvent('mousedown', {bubbles: true, button: 0, buttons: 1})
@@ -1658,8 +1807,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         const expected = structuredClone(before);
         expected.live.activities.pop();
         expected.protection.unmanagedActivities.pop();
-        if (stable(expected) !== stable(after))
+        if (stable(expected) !== stable(after)) {
           throw Error('Activity removal changed unrelated content.');
+        }
       } else {
         const ti = p?.[5],
           section = before.live.activities[ai]?.activitySections[si],
@@ -1675,18 +1825,20 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
           ti !== section?.tips.length - 1 ||
           ti < (saved?.tips?.length || 0) ||
           stable(tip) !== stable(op.expectedTip)
-        )
+        ) {
           throw Error(
             'Only the exact appended unsaved callout may be removed.'
           );
+        }
         const area = document
             .querySelectorAll('.uitest-activity-card')
             [ai]?.querySelectorAll('textarea')[si],
           icons = area?.parentElement.querySelectorAll(
             'span[data-tip][data-for] > i'
           );
-        if (icons?.length !== section.tips.length)
+        if (icons?.length !== section.tips.length) {
           throw Error('Callout removal controls are ambiguous.');
+        }
         checkDeadline();
         icons[ti].click();
         await settle();
@@ -1697,21 +1849,24 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
               h => h.textContent.trim() === 'Add Callout'
             )
         );
-        if (dialogs.length !== 1)
+        if (dialogs.length !== 1) {
           throw Error('Callout editor did not open uniquely.');
+        }
         const modal = dialogs[0];
         if (
           modal.querySelector('select')?.value !== tip.type ||
           modal.querySelector('textarea[name="callout"]')?.value !==
             tip.markdown
-        )
+        ) {
           throw Error('Callout removal target changed.');
+        }
         const immediate = read();
         if (
           stable(immediate.live) !== stable(before.live) ||
           stable(immediate.saved) !== stable(before.saved)
-        )
+        ) {
           throw Error('Outside edits prevent callout removal.');
+        }
         checkDeadline();
         choose(modal, 'Delete').click();
         await settle();
@@ -1722,10 +1877,13 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         expected.protection.unmanagedActivities[ai].activitySections[
           si
         ].tips.pop();
-        if (stable(expected) !== stable(after))
+        if (stable(expected) !== stable(after)) {
           throw Error('Callout removal changed unrelated content.');
+        }
       }
-      if (after.blockers.length) throw Error(after.blockers.join(' '));
+      if (after.blockers.length) {
+        throw Error(after.blockers.join(' '));
+      }
       return after;
     }
     if (
@@ -1733,12 +1891,16 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         request.action
       )
     ) {
-      if (request.mode !== 'unsaved-structure-staging')
+      if (request.mode !== 'unsaved-structure-staging') {
         throw Error('Structural staging requires its explicit mode.');
+      }
       const before = read();
-      if (before.blockers.length) throw Error(before.blockers.join(' '));
-      if ((await fingerprint(before)) !== request.expectedCaptureDigest)
+      if (before.blockers.length) {
+        throw Error(before.blockers.join(' '));
+      }
+      if ((await fingerprint(before)) !== request.expectedCaptureDigest) {
         throw Error('Native editor changed before the structural action.');
+      }
       const path = request.operation?.path,
         ai = path?.[1],
         si = path?.[3];
@@ -1747,19 +1909,22 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         !Number.isInteger(ai) ||
         ai < 0 ||
         path[2] !== 'sections'
-      )
+      ) {
         throw Error('Unsupported structural location.');
+      }
       const activity = before.live.activities[ai],
         card = [...document.querySelectorAll('.uitest-activity-card')][ai];
-      if (!activity || !card)
+      if (!activity || !card) {
         throw Error('The structural activity no longer exists.');
+      }
       const sections = activity.activitySections;
       const choose = (root, text) => {
         const nodes = [...root.querySelectorAll('button')].filter(
           b => b.textContent.trim() === text
         );
-        if (nodes.length !== 1)
+        if (nodes.length !== 1) {
           throw Error('Cannot uniquely locate ' + text + '.');
+        }
         return nodes[0];
       };
       const setControl = (node, value) => {
@@ -1788,11 +1953,13 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
           request.operation.kind !== 'append' ||
           stable(request.operation.after) !== stable(empty) ||
           request.operation.before?.length !== sections.length
-        )
+        ) {
           throw Error('Only a reviewed empty section may be appended.');
+        }
         const buttons = card.querySelectorAll('button.add-activity-section');
-        if (buttons.length !== sections.length || !buttons.length)
+        if (buttons.length !== sections.length || !buttons.length) {
           throw Error('Native section insertion controls are ambiguous.');
+        }
         checkDeadline();
         buttons[buttons.length - 1].dispatchEvent(
           new MouseEvent('mousedown', {bubbles: true, button: 0, buttons: 1})
@@ -1812,21 +1979,26 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
           inserted.duration ||
           (inserted.tips || []).length ||
           (inserted.scriptLevels || []).length
-        )
+        ) {
           throw Error('Native section creation readback was unexpected.');
+        }
         const compare = structuredClone(after);
         compare.live.activities[ai].activitySections.pop();
         compare.protection.unmanagedActivities[ai].activitySections.pop();
-        if (stable(compare) !== stable(before))
+        if (stable(compare) !== stable(before)) {
           throw Error(
             'Unrelated native content changed while adding a section.'
           );
+        }
       } else {
-        if (!Number.isInteger(si) || si < 0 || !sections[si])
+        if (!Number.isInteger(si) || si < 0 || !sections[si]) {
           throw Error('The structural section no longer exists.');
+        }
         const area = card.querySelectorAll('textarea')[si],
           root = area?.parentElement;
-        if (!root) throw Error('The structural section controls are missing.');
+        if (!root) {
+          throw Error('The structural section controls are missing.');
+        }
         if (request.action === 'append-callout') {
           const types = {
               'Teaching Tip': 'teachingTip',
@@ -1846,8 +2018,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
             typeof callout.body !== 'string' ||
             !callout.body.trim() ||
             callout.body.length > 100000
-          )
+          ) {
             throw Error('The proposed callout is invalid.');
+          }
           checkDeadline();
           choose(root, 'Callout').click();
           await settle();
@@ -1860,13 +2033,15 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
                 h => h.textContent.trim() === 'Add Callout'
               )
           );
-          if (modals.length !== 1)
+          if (modals.length !== 1) {
             throw Error('The native Add Callout form did not open uniquely.');
+          }
           const modal = modals[0],
             selects = modal.querySelectorAll('select'),
             areas = modal.querySelectorAll('textarea[name="callout"]');
-          if (selects.length !== 1 || areas.length !== 1)
+          if (selects.length !== 1 || areas.length !== 1) {
             throw Error('Unexpected native callout fields.');
+          }
           checkDeadline();
           setControl(selects[0], types[callout.type]);
           setControl(areas[0], callout.body);
@@ -1874,8 +2049,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
           if (
             stable(immediate.live) !== stable(before.live) ||
             stable(immediate.saved) !== stable(before.saved)
-          )
+          ) {
             throw Error('Outside edits appeared before adding the callout.');
+          }
           checkDeadline();
           choose(modal, 'Save and close').click();
           await settle();
@@ -1887,17 +2063,19 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
             tips.length !== (sections[si].tips || []).length + 1 ||
             tip?.type !== types[callout.type] ||
             tip?.markdown !== callout.body
-          )
+          ) {
             throw Error('Native callout creation readback did not match.');
+          }
           const compare = structuredClone(after);
           compare.live.activities[ai].activitySections[si].tips.pop();
           compare.protection.unmanagedActivities[ai].activitySections[
             si
           ].tips.pop();
-          if (stable(compare) !== stable(before))
+          if (stable(compare) !== stable(before)) {
             throw Error(
               'Unrelated native content changed while adding a callout.'
             );
+          }
         } else {
           const section = sections[si],
             savedIds = new Set(
@@ -1911,13 +2089,15 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
             section.key !== request.operation.createdKey ||
             !/^activitySection-/.test(section.key || '') ||
             savedIds.has(String(section.id))
-          )
+          ) {
             throw Error(
               'Cleanup may remove only the last newly created unsaved section.'
             );
+          }
           const trash = root.firstElementChild?.querySelectorAll('.fa-trash');
-          if (trash?.length !== 1)
+          if (trash?.length !== 1) {
             throw Error('New section cleanup control is ambiguous.');
+          }
           checkDeadline();
           trash[0].dispatchEvent(
             new MouseEvent('mousedown', {bubbles: true, button: 0, buttons: 1})
@@ -1932,8 +2112,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
                 /^Are you sure you want to remove /.test(h.textContent.trim())
               )
           );
-          if (modals.length !== 1)
+          if (modals.length !== 1) {
             throw Error('New section cleanup confirmation is ambiguous.');
+          }
           checkDeadline();
           choose(modals[0], 'Delete').click();
           await settle();
@@ -1941,13 +2122,16 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
           const compare = structuredClone(before);
           compare.live.activities[ai].activitySections.pop();
           compare.protection.unmanagedActivities[ai].activitySections.pop();
-          if (stable(compare) !== stable(after))
+          if (stable(compare) !== stable(after)) {
             throw Error(
               'Original native state did not match after new section cleanup.'
             );
+          }
         }
       }
-      if (after.blockers.length) throw Error(after.blockers.join(' '));
+      if (after.blockers.length) {
+        throw Error(after.blockers.join(' '));
+      }
       return after;
     }
     if (
@@ -1958,15 +2142,18 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         before.blockers.length ||
         request.mode !== 'unsaved-structure-staging' ||
         (await fingerprint(before)) !== request.expectedCaptureDigest
-      )
+      ) {
         throw Error('The editor changed before objective staging.');
+      }
       const table = tableFor(['Description', 'Levels', 'Actions']),
         op = request.operation;
       const expand = () => {
         const headings = [
           ...document.querySelectorAll('#edit-container h2 button'),
         ].filter(b => b.textContent.trim() === 'Objectives');
-        if (headings.length === 1) headings[0].click();
+        if (headings.length === 1) {
+          headings[0].click();
+        }
       };
       if (request.action === 'append-objective') {
         if (
@@ -1977,14 +2164,18 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
           typeof op.after !== 'string' ||
           !op.after.trim() ||
           op.after.length > 100000
-        )
+        ) {
           throw Error('The proposed new objective is invalid.');
+        }
         const buttons = [
           ...document.querySelectorAll('#edit-container button'),
         ].filter(b => b.textContent.trim() === 'Create New Objective');
-        if (buttons.length !== 1 || buttons[0].disabled)
+        if (buttons.length !== 1 || buttons[0].disabled) {
           throw Error('The new objective control is unavailable.');
-        if (!buttons[0].getClientRects().length) expand();
+        }
+        if (!buttons[0].getClientRects().length) {
+          expand();
+        }
         checkDeadline();
         buttons[0].dispatchEvent(
           new MouseEvent('mousedown', {bubbles: true, button: 0, buttons: 1})
@@ -2009,8 +2200,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
           const edits = [
             ...row.querySelectorAll('.fa-pen-to-square,.fa-edit,.fa-pencil'),
           ].map(i => i.closest('button,[role="button"]') || i.parentElement);
-          if (edits.length !== 1)
+          if (edits.length !== 1) {
             throw Error('The new objective row has no single Edit button.');
+          }
           checkDeadline();
           edits[0].dispatchEvent(
             new MouseEvent('mousedown', {bubbles: true, button: 0, buttons: 1})
@@ -2032,8 +2224,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
           inputs?.length !== 1 ||
           save?.length !== 1 ||
           inputs[0].value !== ''
-        )
+        ) {
           throw Error('The new objective row did not open uniquely.');
+        }
         checkDeadline();
         Object.getOwnPropertyDescriptor(
           HTMLInputElement.prototype,
@@ -2085,11 +2278,14 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
           /* AntiGrav: name what differed, so live failures can be diagnosed from the message alone. */
           const where = [];
           const walk = (a, b, path) => {
-            if (where.length >= 6 || stable(a) === stable(b)) return;
+            if (where.length >= 6 || stable(a) === stable(b)) {
+              return;
+            }
             if (a && b && typeof a === 'object' && typeof b === 'object') {
-              for (const k of new Set([...Object.keys(a), ...Object.keys(b)]))
+              for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) {
                 walk(a[k], b[k], path + '.' + k);
-            } else
+              }
+            } else {
               where.push(
                 path +
                   ': ' +
@@ -2097,18 +2293,24 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
                   ' → ' +
                   JSON.stringify(a ?? null).slice(0, 60)
               );
+            }
           };
           walk(project, before, 'editor');
-          if (!record) where.push('no new objective row was read');
-          else {
-            if (record.id != null) where.push('new row id ' + record.id);
-            if (!['', op.after].includes(record.description))
+          if (!record) {
+            where.push('no new objective row was read');
+          } else {
+            if (record.id != null) {
+              where.push('new row id ' + record.id);
+            }
+            if (!['', op.after].includes(record.description)) {
               where.push(
                 'new row text ' +
                   JSON.stringify(String(record.description)).slice(0, 60)
               );
-            if (stable(record.scriptLevelIds || []) !== '[]')
+            }
+            if (stable(record.scriptLevelIds || []) !== '[]') {
               where.push('new row levels ' + stable(record.scriptLevelIds));
+            }
           }
           throw Error(
             'Outside edits appeared while creating the objective (' +
@@ -2132,10 +2334,11 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         op.index < before.saved.objectives.length ||
         record?.id != null ||
         stable(record) !== stable(op.expected)
-      )
+      ) {
         throw Error(
           'Only the exact appended unsaved objective may be removed.'
         );
+      }
       const row = table.querySelectorAll('tbody tr')[op.index];
       let remove = row?.querySelectorAll('.unit-test-remove-objective');
       if (!remove?.length) {
@@ -2144,9 +2347,12 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
             ...(row?.querySelectorAll('.fa-trash,.fa-xmark,.fa-times') || []),
           ].map(i => i.closest('button,[role="button"]') || i.parentElement);
       }
-      if (remove?.length !== 1)
+      if (remove?.length !== 1) {
         throw Error('The new objective removal control is ambiguous.');
-      if (!row.getClientRects().length) expand();
+      }
+      if (!row.getClientRects().length) {
+        expand();
+      }
       checkDeadline();
       remove[0].dispatchEvent(
         new MouseEvent('mousedown', {bubbles: true, button: 0, buttons: 1})
@@ -2156,31 +2362,37 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         expected = structuredClone(before);
       expected.live.objectives.pop();
       expected.protection.objectives.pop();
-      if (stable(after) !== stable(expected))
+      if (stable(after) !== stable(expected)) {
         throw Error('Objective cleanup changed unrelated content.');
+      }
       return after;
     }
     if (
       request.action !== 'set-scalar' ||
       request.mode !== 'unsaved-scalar-staging'
-    )
+    ) {
       throw Error(
         'Unsupported native action. Saving and collection mutations are unavailable.'
       );
+    }
     const current = read();
-    if (current.blockers.length) throw Error(current.blockers.join(' '));
-    if ((await fingerprint(current)) !== request.expectedCaptureDigest)
+    if (current.blockers.length) {
+      throw Error(current.blockers.join(' '));
+    }
+    if ((await fingerprint(current)) !== request.expectedCaptureDigest) {
       throw Error(
         'Native editor changed before the action. Nothing was filled.'
       );
+    }
     const op = request.operation,
       path = op?.path;
     if (
       op?.kind !== 'set' ||
       !Array.isArray(path) ||
       path.some(k => ['__proto__', 'prototype', 'constructor'].includes(k))
-    )
+    ) {
       throw Error('Only existing scalar fields are supported.');
+    }
     if (
       path[0] === 'activities' &&
       path[2] === 'sections' &&
@@ -2196,8 +2408,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
       const card = document.querySelectorAll('.uitest-activity-card')[path[1]],
         section = current.live.activities[path[1]]?.activitySections[path[3]],
         root = card?.querySelectorAll('textarea')[path[3]]?.parentElement;
-      if (!root || !section?.scriptLevels?.length)
+      if (!root || !section?.scriptLevels?.length) {
         throw Error('The existing progression is missing.');
+      }
       if (path.length === 6) {
         const labels = [...root.querySelectorAll('label')].filter(
           n =>
@@ -2220,8 +2433,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
           op.after.length > 100000 ||
           input.disabled ||
           input.readOnly
-        )
+        ) {
           throw Error('The progression title differs from its review.');
+        }
         checkDeadline();
         Object.getOwnPropertyDescriptor(
           HTMLInputElement.prototype,
@@ -2240,13 +2454,15 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
           .length !== 1 ||
         record.assessment !== op.before ||
         typeof op.after !== 'boolean'
-      )
+      ) {
         throw Error('The reviewed level association is ambiguous or changed.');
+      }
       const buttons = root.querySelectorAll(
         'button.uitest-open-add-level-button'
       );
-      if (buttons.length !== 1 || buttons[0].disabled)
+      if (buttons.length !== 1 || buttons[0].disabled) {
         throw Error('The native level editor is unavailable.');
+      }
       checkDeadline();
       buttons[0].click();
       await settle();
@@ -2257,8 +2473,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
             h => h.textContent.trim() === 'Add Levels'
           )
       );
-      if (dialogs.length !== 1)
+      if (dialogs.length !== 1) {
         throw Error('The native level editor did not open uniquely.');
+      }
       const modal = dialogs[0],
         tokens = [...modal.querySelectorAll('.uitest-level-token-name')].filter(
           n =>
@@ -2266,8 +2483,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
               s => s.textContent.trim() === name
             )
         );
-      if (tokens.length !== 1)
+      if (tokens.length !== 1) {
         throw Error('The existing level token is ambiguous.');
+      }
       checkDeadline();
       tokens[0].click();
       await settle();
@@ -2280,26 +2498,29 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
           labels.length === 1
             ? labels[0].querySelector('input[type="checkbox"]')
             : null;
-      if (!check || check.disabled || check.checked !== op.before)
+      if (!check || check.disabled || check.checked !== op.before) {
         throw Error(
           'The saved assessment flag differs from the reviewed control.'
         );
+      }
       const immediate = read();
       if (
         stable(immediate.live) !== stable(current.live) ||
         stable(immediate.saved) !== stable(current.saved)
-      )
+      ) {
         throw Error(
           'Outside edits appeared before changing the assessment flag.'
         );
+      }
       checkDeadline();
       check.click();
       await settle();
       const close = [...modal.querySelectorAll('button')].filter(
         b => b.textContent.trim() === 'Close and save'
       );
-      if (close.length !== 1)
+      if (close.length !== 1) {
         throw Error('The level editor close control is ambiguous.');
+      }
       checkDeadline();
       close[0].click();
       await settle();
@@ -2319,22 +2540,27 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         typeof op.after !== 'string' ||
         !op.after.trim() ||
         op.after.length > 100000
-      )
+      ) {
         throw Error('The objective differs from the reviewed replacement.');
+      }
       const table = tableFor(['Description', 'Levels', 'Actions']),
         row = table.querySelectorAll('tbody tr')[path[2]];
-      if (!row || row.children[0]?.textContent.trim() !== op.before.trim())
+      if (!row || row.children[0]?.textContent.trim() !== op.before.trim()) {
         throw Error('The objective row does not match its captured record.');
+      }
       if (!row.getClientRects().length) {
         const buttons = [
           ...document.querySelectorAll('#edit-container h2 button'),
         ].filter(b => b.textContent.trim() === 'Objectives');
-        if (buttons.length !== 1) throw Error('Objective panel is ambiguous.');
+        if (buttons.length !== 1) {
+          throw Error('Objective panel is ambiguous.');
+        }
         buttons[0].click();
       }
       const edits = row.querySelectorAll('.fa-pen-to-square');
-      if (edits.length !== 1)
+      if (edits.length !== 1) {
         throw Error('Objective edit control is ambiguous.');
+      }
       checkDeadline();
       edits[0].parentElement.dispatchEvent(
         new MouseEvent('mousedown', {bubbles: true, button: 0, buttons: 1})
@@ -2346,8 +2572,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         inputs.length !== 1 ||
         save.length !== 1 ||
         inputs[0].value !== op.before
-      )
+      ) {
         throw Error('Objective edit did not open with the reviewed value.');
+      }
       const node = inputs[0];
       checkDeadline();
       Object.getOwnPropertyDescriptor(
@@ -2361,8 +2588,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
       if (
         stable(immediate.live) !== stable(current.live) ||
         stable(immediate.saved) !== stable(current.saved)
-      )
+      ) {
         throw Error('Outside edits appeared during objective editing.');
+      }
       if (save[0].isConnected !== false) {
         checkDeadline();
         save[0].parentElement.dispatchEvent(
@@ -2399,8 +2627,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         tip[key] !== before ||
         typeof after !== 'string' ||
         after.length > 100000
-      )
+      ) {
         throw Error('The existing callout differs from the reviewed change.');
+      }
       const card = document.querySelectorAll('.uitest-activity-card')[path[1]],
         root = card?.querySelectorAll('textarea')[path[3]]?.parentElement,
         icons = root?.querySelectorAll('span[data-tip][data-for] > i');
@@ -2408,20 +2637,25 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         !icons ||
         icons.length !==
           current.live.activities[path[1]].activitySections[path[3]].tips.length
-      )
+      ) {
         throw Error('Existing callout controls could not be uniquely mapped.');
+      }
       if (!icons[path[5]].getClientRects().length) {
         const headings = [
           ...document.querySelectorAll('#edit-container h2 button'),
         ].filter(b => b.textContent.trim() === 'Activities & Levels');
-        if (headings.length === 1) headings[0].click();
-        if (card?.children[1]?.hidden)
+        if (headings.length === 1) {
+          headings[0].click();
+        }
+        if (card?.children[1]?.hidden) {
           card.querySelector('.fa-chevron-right')?.click();
+        }
       }
-      if (!icons[path[5]].getClientRects().length)
+      if (!icons[path[5]].getClientRects().length) {
         throw Error(
           'The existing callout control is hidden. No callout was changed.'
         );
+      }
       checkDeadline();
       icons[path[5]].click();
       await settle();
@@ -2432,8 +2666,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
             h => h.textContent.trim() === 'Add Callout'
           )
       );
-      if (modals.length !== 1)
+      if (modals.length !== 1) {
         throw Error('The existing callout editor did not open uniquely.');
+      }
       const modal = modals[0],
         selects = modal.querySelectorAll('select'),
         areas = modal.querySelectorAll('textarea[name="callout"]'),
@@ -2446,10 +2681,11 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         buttons.length !== 1 ||
         selects[0].value !== tip.type ||
         areas[0].value !== tip.markdown
-      )
+      ) {
         throw Error(
           'The opened callout does not match its captured type and text.'
         );
+      }
       const node = key === 'type' ? selects[0] : areas[0],
         proto =
           key === 'type'
@@ -2464,10 +2700,11 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
       if (
         stable(immediate.live) !== stable(current.live) ||
         stable(immediate.saved) !== stable(current.saved)
-      )
+      ) {
         throw Error(
           'Outside edits appeared while the callout dialog was open. No callout was saved.'
         );
+      }
       checkDeadline();
       buttons[0].click();
       await settle();
@@ -2496,7 +2733,9 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
           path[1]
         ],
         activity = current.live.activities[path[1]];
-      if (!card || !activity) throw Error('The activity no longer exists.');
+      if (!card || !activity) {
+        throw Error('The activity no longer exists.');
+      }
       if (path.length === 3 && ['title', 'duration'].includes(path[2])) {
         node = card.querySelector(
           path[2] === 'title'
@@ -2519,12 +2758,14 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         const area = card.querySelectorAll('textarea')[path[3]],
           section = activity.activitySections[path[3]],
           root = area?.parentElement;
-        if (!area || !section || !root)
+        if (!area || !section || !root) {
           throw Error('The section no longer exists.');
+        }
         const header = root.firstElementChild,
           inputs = header?.querySelectorAll('input:not([type="checkbox"])');
-        if (inputs?.length !== 2)
+        if (inputs?.length !== 2) {
           throw Error('Unexpected native section header.');
+        }
         if (path[4] === 'title') {
           node = inputs[0];
           value = section.name ?? section.displayName ?? '';
@@ -2543,18 +2784,21 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
         }
         if (path[4] === 'remarks') {
           const checks = header.querySelectorAll('input[type="checkbox"]');
-          if (checks.length !== 1) throw Error('Remarks control is ambiguous.');
+          if (checks.length !== 1) {
+            throw Error('Remarks control is ambiguous.');
+          }
           node = checks[0];
           value = Boolean(section.remarks);
         }
       }
     }
-    if (!node)
+    if (!node) {
       throw Error(
         'The reviewed native control could not be located: ' +
           path.join(' / ') +
           '.'
       );
+    }
     const numeric = path.at(-1) === 'duration',
       check = node.type === 'checkbox';
     // The reader already verifies that DOM and serialized state agree. Compare
@@ -2566,7 +2810,7 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
           ? null
           : Number(node.value)
         : node.value;
-    if (stable(controlValue) !== stable(op.before))
+    if (stable(controlValue) !== stable(op.before)) {
       throw Error(
         numeric
           ? 'The timing value changed: expected ' +
@@ -2576,20 +2820,24 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
               '.'
           : 'The native field changed before the reviewed action.'
       );
+    }
     if (
       numeric &&
       op.after !== null &&
       (!Number.isInteger(op.after) || op.after < 0)
-    )
+    ) {
       throw Error('Native duration controls require whole minutes or a blank.');
+    }
     if (
       check
         ? typeof op.after !== 'boolean'
         : !numeric && typeof op.after !== 'string'
-    )
+    ) {
       throw Error('The proposed scalar value has the wrong type.');
-    if (sectionDuration && op.after === 0)
+    }
+    if (sectionDuration && op.after === 0) {
       throw Error('Untimed native sections must use a blank, not zero.');
+    }
     // Expand only presentation controls; they do not change lesson content.
     if (!node.getClientRects().length) {
       const panel =
@@ -2605,18 +2853,24 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
       const headings = [
         ...document.querySelectorAll('#edit-container h2 button'),
       ].filter(b => b.textContent.trim() === panel);
-      if (headings.length === 1) headings[0].click();
+      if (headings.length === 1) {
+        headings[0].click();
+      }
       const card = node.closest('.uitest-activity-card');
-      if (card?.children[1]?.hidden)
+      if (card?.children[1]?.hidden) {
         card.querySelector('.fa-chevron-right')?.click();
+      }
     }
-    if (!node.getClientRects().length || node.disabled || node.readOnly)
+    if (!node.getClientRects().length || node.disabled || node.readOnly) {
       throw Error(
         'The native control is hidden or not editable. No field was changed.'
       );
+    }
     checkDeadline();
     if (check) {
-      if (node.checked !== op.after) node.click();
+      if (node.checked !== op.after) {
+        node.click();
+      }
     } else {
       const proto =
         node.tagName === 'TEXTAREA'
@@ -2633,12 +2887,13 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
     return read();
   } catch (error) {
     // Chrome otherwise drops rejected injected promises' messages from result.
-    if (request.transportErrors === true)
+    if (request.transportErrors === true) {
       return {
         nativeBridgeError: String(error?.message || error),
         action: request.action,
         ...(diagnosticCapture ? {diagnosticCapture} : {}),
       };
+    }
     throw error;
   }
 }
@@ -2646,22 +2901,32 @@ export async function nativeEditorBridge(request = {action: 'read'}) {
 export function unsupportedNativeActions(plan) {
   return plan.operations.filter(op => {
     const p = op.path;
-    if (op.kind !== 'set') return true;
-    if (p.length === 1 && p[0] === 'title') return false;
+    if (op.kind !== 'set') {
+      return true;
+    }
+    if (p.length === 1 && p[0] === 'title') {
+      return false;
+    }
     if (
       p.length === 3 &&
       p[0] === 'frontMatter' &&
       p[1] === 'objectives' &&
       Number.isInteger(p[2]) &&
       p[2] >= 0
-    )
+    ) {
       return (
         typeof op.after !== 'string' ||
         !op.after.trim() ||
         op.after.length > 100000
       );
-    if (p.length === 2 && p[0] === 'frontMatter' && TEXT_FIELDS.includes(p[1]))
+    }
+    if (
+      p.length === 2 &&
+      p[0] === 'frontMatter' &&
+      TEXT_FIELDS.includes(p[1])
+    ) {
       return false;
+    }
     if (p[0] === 'activities' && Number.isInteger(p[1]) && p[1] >= 0) {
       if (
         p[2] === 'sections' &&
@@ -2669,16 +2934,18 @@ export function unsupportedNativeActions(plan) {
         p[3] >= 0 &&
         p[4] === 'progression'
       ) {
-        if (p.length === 6 && p[5] === 'title')
+        if (p.length === 6 && p[5] === 'title') {
           return typeof op.after !== 'string' || op.after.length > 100000;
+        }
         if (
           p.length === 8 &&
           p[5] === 'levels' &&
           Number.isInteger(p[6]) &&
           p[6] >= 0 &&
           p[7] === 'assessment'
-        )
+        ) {
           return typeof op.after !== 'boolean';
+        }
       }
       if (
         p.length === 7 &&
@@ -2688,7 +2955,7 @@ export function unsupportedNativeActions(plan) {
         p[4] === 'callouts' &&
         Number.isInteger(p[5]) &&
         p[5] >= 0
-      )
+      ) {
         return p[6] === 'body'
           ? typeof op.after !== 'string' || op.after.length > 100000
           : p[6] !== 'type' ||
@@ -2699,24 +2966,27 @@ export function unsupportedNativeActions(plan) {
                 'Assessment Opportunity',
                 'Ethics Opportunity',
               ].includes(op.after);
-      if (p.length === 3 && ['title', 'duration'].includes(p[2]))
+      }
+      if (p.length === 3 && ['title', 'duration'].includes(p[2])) {
         return (
           p[2] === 'duration' &&
           op.after !== null &&
           !Number.isInteger(op.after)
         );
+      }
       if (
         p.length === 5 &&
         p[2] === 'sections' &&
         Number.isInteger(p[3]) &&
         p[3] >= 0 &&
         ['title', 'duration', 'body', 'remarks'].includes(p[4])
-      )
+      ) {
         return (
           p[4] === 'duration' &&
           op.after !== null &&
           (!Number.isInteger(op.after) || op.after === 0)
         );
+      }
     }
     return true;
   });
@@ -2730,38 +3000,45 @@ export function makeNativeScalarDriver(initialSnapshot, bridge) {
         initialSnapshot.mode !== 'native-read-only' ||
         initialSnapshot.raw?.readerVersion !== 'native-scalars-v1' ||
         !initialSnapshot.nativeProtection
-      )
+      ) {
         throw Error(
           'Capture the current native editor with the scalar adapter first.'
         );
+      }
       const unsupported = [
         ...unsupportedNativeActions(plan),
         ...plan.operations.filter(
           op => op.path.length === 7 && op.path[4] === 'callouts'
         ),
       ];
-      if (unsupported.length)
+      if (unsupported.length) {
         throw Error(
           'Native staging does not yet support these locations: ' +
             unsupported.map(op => op.label).join('; ') +
             '. No native fields were filled.'
         );
-      if (canonical(plan.originalSnapshot) !== canonical(initialSnapshot))
+      }
+      if (canonical(plan.originalSnapshot) !== canonical(initialSnapshot)) {
         throw Error(
           'The native adapter belongs to a different captured editor state.'
         );
+      }
     },
     read: async () => {
       lastCapture = await bridge({action: 'read'});
       const current = normalizeNativeCapture(lastCapture);
-      if (current.blockers.length) throw Error(current.blockers.join(' '));
+      if (current.blockers.length) {
+        throw Error(current.blockers.join(' '));
+      }
       // Immutable original evidence stays in the journal; fresh unmanaged state is protected separately.
       current.raw = clone(initialSnapshot.raw);
       current.catalog = clone(initialSnapshot.catalog);
       return current;
     },
     apply: async op => {
-      if (!lastCapture) throw Error('Read the editor before staging.');
+      if (!lastCapture) {
+        throw Error('Read the editor before staging.');
+      }
       lastCapture = await bridge({
         action: 'set-scalar',
         mode: 'unsaved-scalar-staging',

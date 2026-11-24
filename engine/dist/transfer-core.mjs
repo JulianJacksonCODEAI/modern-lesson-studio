@@ -14,8 +14,10 @@ export const TEXT_FIELDS = [
 ];
 export const clone = value => structuredClone(value);
 export function canonical(value) {
-  if (Array.isArray(value)) return '[' + value.map(canonical).join(',') + ']';
-  if (value && typeof value === 'object')
+  if (Array.isArray(value)) {
+    return '[' + value.map(canonical).join(',') + ']';
+  }
+  if (value && typeof value === 'object') {
     return (
       '{' +
       Object.keys(value)
@@ -24,6 +26,7 @@ export function canonical(value) {
         .join(',') +
       '}'
     );
+  }
   return JSON.stringify(value);
 }
 export async function digest(value) {
@@ -37,24 +40,35 @@ export async function digest(value) {
 }
 const equal = (a, b) => canonical(a) === canonical(b);
 const text = (value, label) => {
-  if (typeof value !== 'string') throw Error(label + ' must be text.');
+  if (typeof value !== 'string') {
+    throw Error(label + ' must be text.');
+  }
   return value;
 };
 const array = (value, label) => {
-  if (!Array.isArray(value)) throw Error(label + ' must be a list.');
+  if (!Array.isArray(value)) {
+    throw Error(label + ' must be a list.');
+  }
   return value;
 };
 const minutes = (value, label) => {
-  if (value == null || value === '') return null;
-  if (!Number.isFinite(value) || value < 0)
+  if (value == null || value === '') {
+    return null;
+  }
+  if (!Number.isFinite(value) || value < 0) {
     throw Error(label + ' needs nonnegative minutes or a blank.');
+  }
   return value;
 };
 export function normalizedDraft(draft) {
-  if (!draft?.frontMatter) throw Error('The package is missing front matter.');
+  if (!draft?.frontMatter) {
+    throw Error('The package is missing front matter.');
+  }
   const f = draft.frontMatter,
     frontMatter = {};
-  for (const key of TEXT_FIELDS) frontMatter[key] = text(f[key], key);
+  for (const key of TEXT_FIELDS) {
+    frontMatter[key] = text(f[key], key);
+  }
   frontMatter.objectives = array(f.objectives, 'Objectives').map(x =>
     text(x, 'Objective')
   );
@@ -70,12 +84,14 @@ export function normalizedDraft(draft) {
   if (
     new Set(activities.map(a => a.id)).size !== activities.length ||
     new Set(sections.map(s => s.id)).size !== sections.length
-  )
+  ) {
     throw Error('Activity and section identities must be unique.');
-  if (sections.some(s => !activities.some(a => a.id === s.activityId)))
+  }
+  if (sections.some(s => !activities.some(a => a.id === s.activityId))) {
     throw Error(
       'Some sections have no activity. Resolve source grouping before transfer.'
     );
+  }
   return {
     title: text(draft.title, 'Title'),
     frontMatter,
@@ -119,24 +135,27 @@ export function validateDestination(snapshot) {
     snapshot?.schemaVersion !== 1 ||
     snapshot.kind !== 'browser-editor-snapshot' ||
     !validDestination(snapshot.destination)
-  )
+  ) {
     throw Error(
       'The destination snapshot does not match the assigned practice lesson.'
     );
+  }
   if (
     !snapshot.lesson?.frontMatter ||
     !Array.isArray(snapshot.lesson.activities) ||
     !Array.isArray(snapshot.lesson.resources)
-  )
+  ) {
     throw Error('The destination snapshot is incomplete.');
+  }
   if (
     !Array.isArray(snapshot.catalog?.resources) ||
     !Array.isArray(snapshot.catalog?.levels) ||
     !Array.isArray(snapshot.blockers)
-  )
+  ) {
     throw Error(
       'The destination is missing its mapping catalog or capture checks.'
     );
+  }
   return snapshot;
 }
 export function packageProblems(pkg) {
@@ -153,17 +172,20 @@ export function packageProblems(pkg) {
         pkg.sandbox
       )
     )
-  )
+  ) {
     throw Error('Choose a review package for the assigned practice lesson.');
-  if (canonical(pkg).length > 8_000_000)
+  }
+  if (canonical(pkg).length > 8_000_000) {
     throw Error(
       'This package exceeds the 8 MB transfer-review limit. Replace embedded assets with verified HTTPS links.'
     );
-  if (pkg.status !== 'approved-locally')
+  }
+  if (pkg.status !== 'approved-locally') {
     errors.push('Approve this draft locally before transfer.');
-  if (!Array.isArray(pkg.conflicts))
+  }
+  if (!Array.isArray(pkg.conflicts)) {
     errors.push('The package is missing revision-conflict information.');
-  else
+  } else {
     errors.push(
       ...approvalBlockers({
         draft: pkg.lesson,
@@ -172,18 +194,23 @@ export function packageProblems(pkg) {
         resourceBuffer: pkg.review?.resourceBuffer,
       }).map(b => b.note)
     );
+  }
   const proposed = normalizedDraft(pkg.lesson);
-  if (!proposed.title.trim()) errors.push('The lesson title is empty.');
-  if (!pkg.baseline) errors.push('The approved baseline is missing.');
-  else {
+  if (!proposed.title.trim()) {
+    errors.push('The lesson title is empty.');
+  }
+  if (!pkg.baseline) {
+    errors.push('The approved baseline is missing.');
+  } else {
     const baseline = normalizedDraft(pkg.baseline);
     baseline.frontMatter.objectives.sort();
     const current = clone(proposed);
     current.frontMatter.objectives.sort();
-    if (!equal(baseline, current))
+    if (!equal(baseline, current)) {
       errors.push(
         'The package differs from its approved baseline. Review and approve it again.'
       );
+    }
   }
   return errors;
 }
@@ -198,21 +225,26 @@ export function applyOperation(lesson, operation) {
     operation.path.some(key =>
       ['__proto__', 'prototype', 'constructor'].includes(key)
     )
-  )
+  ) {
     throw Error('Unsupported transfer location.');
+  }
   const path = operation.path,
     parent = readPath(lesson, path.slice(0, -1)),
     key = path.at(-1);
-  if (!parent)
+  if (!parent) {
     throw Error(
       'The target location no longer exists. Rebuild the comparison.'
     );
+  }
   if (operation.kind === 'append') {
     const list = readPath(lesson, path);
-    if (!Array.isArray(list) || list.length !== operation.before.length)
+    if (!Array.isArray(list) || list.length !== operation.before.length) {
       throw Error('The collection changed. Rebuild the comparison.');
+    }
     list.push(clone(operation.after));
-  } else parent[key] = clone(operation.after);
+  } else {
+    parent[key] = clone(operation.after);
+  }
 }
 export async function buildTransferPlan(pkg, snapshot, decisions = {}) {
   validateDestination(snapshot);
@@ -239,11 +271,12 @@ export async function buildTransferPlan(pkg, snapshot, decisions = {}) {
     resourceKeys.set(resource.key, matches[0].markdownKey || matches[0].key);
   }
   const mapBody = (body, label) => {
-    if (/!\[[^\]]*\]\(data:/i.test(body))
+    if (/!\[[^\]]*\]\(data:/i.test(body)) {
       blockers.push(
         label +
           ': embedded local images need a verified destination asset URL before transfer.'
       );
+    }
     return body.replace(/\[r ([^\]\s]+)\]/g, (marker, key) => {
       const mapped = resourceKeys.get(key);
       if (!mapped) {
@@ -255,28 +288,32 @@ export async function buildTransferPlan(pkg, snapshot, decisions = {}) {
       return '[r ' + mapped + ']';
     });
   };
-  for (const key of TEXT_FIELDS)
+  for (const key of TEXT_FIELDS) {
     proposed.frontMatter[key] = mapBody(proposed.frontMatter[key], key);
-  for (const activity of proposed.activities)
+  }
+  for (const activity of proposed.activities) {
     for (const section of activity.sections) {
       section.body = mapBody(
         section.body,
         activity.title + ' / ' + (section.title || 'Untitled section')
       );
-      for (const callout of section.callouts)
+      for (const callout of section.callouts) {
         callout.body = mapBody(callout.body, 'Callout / ' + callout.type);
+      }
       for (const level of section.progression?.levels || []) {
         const matches = snapshot.catalog.levels.filter(
           l => l.key === level.key && l.verified === true
         );
-        if (matches.length !== 1)
+        if (matches.length !== 1) {
           blockers.push(
             'Levels / ' +
               level.key +
               ': a unique verified destination mapping is required.'
           );
+        }
       }
     }
+  }
   async function propose(path, after, label, kind = 'set', record = null) {
     const current = clone(readPath(working, path));
     if (
@@ -284,8 +321,9 @@ export async function buildTransferPlan(pkg, snapshot, decisions = {}) {
       (path.at(-1) === 'objectives'
         ? objectivesEqual(current, after)
         : equal(current, after))
-    )
+    ) {
       return;
+    }
     const op = {
       kind,
       path,
@@ -312,16 +350,18 @@ export async function buildTransferPlan(pkg, snapshot, decisions = {}) {
       return;
     }
     op.requiresDecision = occupied && decision !== 'replace';
-    if (operations.length >= 500)
+    if (operations.length >= 500) {
       throw Error(
         'This comparison exceeds the 500-action batch limit. Split the transfer into a smaller reviewed batch.'
       );
+    }
     operations.push(op);
     applyOperation(working, op);
   }
   async function scalarFields(path, source, label, keys) {
-    for (const key of keys)
+    for (const key of keys) {
       await propose([...path, key], source[key], label + ' / ' + key);
+    }
   }
   await propose(['title'], proposed.title, 'Lesson title');
   await scalarFields(
@@ -330,15 +370,17 @@ export async function buildTransferPlan(pkg, snapshot, decisions = {}) {
     'Front matter',
     TEXT_FIELDS
   );
-  if (snapshot.raw?.kind !== 'native-dom-capture')
+  if (snapshot.raw?.kind !== 'native-dom-capture') {
     await propose(
       ['frontMatter', 'vocabulary'],
       proposed.frontMatter.vocabulary,
       'Front matter / vocabulary'
     );
-  else
+  } else {
     for (const vocabulary of proposed.frontMatter.vocabulary) {
-      if (working.frontMatter.vocabulary.includes(vocabulary)) continue;
+      if (working.frontMatter.vocabulary.includes(vocabulary)) {
+        continue;
+      }
       const matches = (snapshot.catalog.vocabularies || []).filter(
         r => r.word + ': ' + r.definition === vocabulary
       );
@@ -358,12 +400,15 @@ export async function buildTransferPlan(pkg, snapshot, decisions = {}) {
         matches[0]
       );
     }
-  for (const vocabulary of before.frontMatter.vocabulary)
-    if (!proposed.frontMatter.vocabulary.includes(vocabulary))
+  }
+  for (const vocabulary of before.frontMatter.vocabulary) {
+    if (!proposed.frontMatter.vocabulary.includes(vocabulary)) {
       preserved.push({
         label: 'Vocabulary / ' + vocabulary,
         reason: 'Destination-only association retained',
       });
+    }
+  }
   const oldObjectives = working.frontMatter.objectives,
     newObjectives = proposed.frontMatter.objectives;
   if (pkg.objectiveMapping) {
@@ -373,12 +418,13 @@ export async function buildTransferPlan(pkg, snapshot, decisions = {}) {
         snapshot.destination,
         snapshot.raw?.live?.objectives,
         newObjectives
-      ))
+      )) {
         await propose(
           ['frontMatter', 'objectives', replacement.index],
           replacement.description,
           'Objective ' + (replacement.index + 1) + ' / description'
         );
+      }
     } catch (error) {
       blockers.push(error.message);
     }
@@ -397,37 +443,41 @@ export async function buildTransferPlan(pkg, snapshot, decisions = {}) {
       removed.length === 1 &&
       added.length === 1 &&
       added[0].trim()
-    )
+    ) {
       await propose(
         ['frontMatter', 'objectives', removed[0].index],
         added[0],
         'Objective ' + (removed[0].index + 1) + ' / description'
       );
-    else if (
+    } else if (
       !removed.length &&
       new Set(oldObjectives).size === oldObjectives.length &&
       new Set(newObjectives).size === newObjectives.length &&
       added.every(description => description.trim())
     ) {
-      for (const description of added)
+      for (const description of added) {
         await propose(
           ['frontMatter', 'objectives'],
           description,
           'Add objective / ' + description,
           'append'
         );
-    } else
+      }
+    } else {
       await propose(
         ['frontMatter', 'objectives'],
         newObjectives,
         'Front matter / objectives'
       );
+    }
   }
   for (const resource of proposed.resources) {
     const mapped = snapshot.catalog.resources.filter(r =>
       resourceEqual(resource, r)
     );
-    if (mapped.length !== 1) continue;
+    if (mapped.length !== 1) {
+      continue;
+    }
     if (!working.resources.some(r => resourceEqual(resource, r))) {
       if (
         !mapped[0].verifiedSharedRecord &&
@@ -455,16 +505,18 @@ export async function buildTransferPlan(pkg, snapshot, decisions = {}) {
       );
     }
   }
-  for (const resource of before.resources)
-    if (!proposed.resources.some(r => resourceEqual(r, resource)))
+  for (const resource of before.resources) {
+    if (!proposed.resources.some(r => resourceEqual(r, resource))) {
       preserved.push({
         label: 'Resource / ' + resource.name,
         reason: 'Destination-only association retained',
       });
+    }
+  }
   for (let ai = 0; ai < proposed.activities.length; ai++) {
     const activity = proposed.activities[ai],
       ap = ['activities', ai];
-    if (!working.activities[ai])
+    if (!working.activities[ai]) {
       await propose(
         ['activities'],
         {
@@ -484,6 +536,7 @@ export async function buildTransferPlan(pkg, snapshot, decisions = {}) {
         'Add activity ' + (ai + 1),
         'append'
       );
+    }
     await scalarFields(ap, activity, 'Activity ' + (ai + 1), [
       'title',
       'duration',
@@ -492,7 +545,7 @@ export async function buildTransferPlan(pkg, snapshot, decisions = {}) {
       const section = activity.sections[si],
         sp = [...ap, 'sections', si],
         label = 'Activity ' + (ai + 1) + ' / Section ' + (si + 1);
-      if (!readPath(working, sp))
+      if (!readPath(working, sp)) {
         await propose(
           [...ap, 'sections'],
           {
@@ -506,6 +559,7 @@ export async function buildTransferPlan(pkg, snapshot, decisions = {}) {
           'Add ' + label,
           'append'
         );
+      }
       await scalarFields(sp, section, label, [
         'title',
         'duration',
@@ -513,20 +567,21 @@ export async function buildTransferPlan(pkg, snapshot, decisions = {}) {
         'remarks',
       ]);
       for (let ci = 0; ci < section.callouts.length; ci++) {
-        if (!readPath(working, [...sp, 'callouts', ci]))
+        if (!readPath(working, [...sp, 'callouts', ci])) {
           await propose(
             [...sp, 'callouts'],
             section.callouts[ci],
             label + ' / Add ' + section.callouts[ci].type,
             'append'
           );
-        else
+        } else {
           await scalarFields(
             [...sp, 'callouts', ci],
             section.callouts[ci],
             label + ' / Callout ' + (ci + 1),
             ['type', 'body']
           );
+        }
       }
       // A progression is a single reviewed association group; unknown destination settings remain outside it.
       if (section.progression) {
@@ -544,7 +599,7 @@ export async function buildTransferPlan(pkg, snapshot, decisions = {}) {
             section.progression.title,
             label + ' / Progression title'
           );
-          for (let li = 0; li < section.progression.levels.length; li++)
+          for (let li = 0; li < section.progression.levels.length; li++) {
             await propose(
               [...sp, 'progression', 'levels', li, 'assessment'],
               section.progression.levels[li].assessment,
@@ -553,36 +608,42 @@ export async function buildTransferPlan(pkg, snapshot, decisions = {}) {
                 section.progression.levels[li].key +
                 ' / Assessment'
             );
-        } else
+          }
+        } else {
           await propose(
             [...sp, 'progression'],
             section.progression,
             label + ' / Level associations'
           );
+        }
       }
       const existing = readPath(before, sp);
-      if (existing?.callouts.length > section.callouts.length)
+      if (existing?.callouts.length > section.callouts.length) {
         preserved.push({
           label: label + ' / Extra destination callouts',
           reason: 'Not removed',
         });
-      if (existing?.progression && !section.progression)
+      }
+      if (existing?.progression && !section.progression) {
         preserved.push({
           label: label + ' / Destination level associations',
           reason: 'Not removed',
         });
+      }
     }
-    if (before.activities[ai]?.sections.length > activity.sections.length)
+    if (before.activities[ai]?.sections.length > activity.sections.length) {
       preserved.push({
         label: 'Activity ' + (ai + 1) + ' / Extra destination sections',
         reason: 'Not removed',
       });
+    }
   }
-  if (before.activities.length > proposed.activities.length)
+  if (before.activities.length > proposed.activities.length) {
     preserved.push({
       label: 'Extra destination activities',
       reason: 'Not removed',
     });
+  }
   const uniqueBlockers = [...new Set(blockers)];
   const plan = {
     schemaVersion: 1,
@@ -607,20 +668,25 @@ export async function validatePlan(plan) {
     plan.kind !== 'browser-transfer-plan' ||
     plan.saveAllowed !== false ||
     plan.remoteWrites !== false
-  )
+  ) {
     throw Error('Invalid transfer plan.');
+  }
   validateDestination(plan.originalSnapshot);
-  if (!equal(plan.destination, plan.originalSnapshot.destination))
+  if (!equal(plan.destination, plan.originalSnapshot.destination)) {
     throw Error('The plan destination does not match its evidence.');
+  }
   const copy = clone(plan);
   delete copy.id;
-  if ((await digest(copy)) !== plan.id)
+  if ((await digest(copy)) !== plan.id) {
     throw Error('The transfer plan changed. Rebuild the comparison.');
-  if ((await digest(plan.originalSnapshot)) !== plan.destinationDigest)
+  }
+  if ((await digest(plan.originalSnapshot)) !== plan.destinationDigest) {
     throw Error('The destination evidence changed. Rebuild the comparison.');
-  if (plan.blockers.length || plan.operations.some(op => op.requiresDecision))
+  }
+  if (plan.blockers.length || plan.operations.some(op => op.requiresDecision)) {
     throw Error(
       'Resolve every transfer blocker and content decision before staging.'
     );
+  }
   return plan;
 }

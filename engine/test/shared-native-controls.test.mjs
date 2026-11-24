@@ -113,7 +113,7 @@ async function harness(kind = 'resources', mode = 'normal') {
     dispatchEvent(event) {
       assert.equal(event.type, 'mousedown');
       selections++;
-      if (mode !== 'failed-click')
+      if (mode !== 'failed-click') {
         linked[kind].push(
           kind === 'resources'
             ? Object.fromEntries(
@@ -124,6 +124,7 @@ async function harness(kind = 'resources', mode = 'normal') {
               )
             : {word: record.word, definition: record.definition}
         );
+      }
     },
   };
   const roots = tables.map(table => ({
@@ -146,8 +147,9 @@ async function harness(kind = 'resources', mode = 'normal') {
     r => r.id === 'shared-' + kind
   ).querySelectorAll;
   roots.find(r => r.id === 'shared-' + kind).querySelectorAll = function (s) {
-    if (s === '.Select-option' && mode === 'outside-edit')
+    if (s === '.Select-option' && mode === 'outside-edit') {
       fields.Overview.value = 'Keep outside edit';
+    }
     return originalOptionQuery(s);
   };
   const script = {
@@ -289,7 +291,7 @@ async function harness(kind = 'resources', mode = 'normal') {
 }
 
 test('serialized shared controls associate exact resource and vocabulary records through one native option', async () => {
-  for (const kind of ['resources', 'vocabularies'])
+  for (const kind of ['resources', 'vocabularies']) {
     for (const mode of ['normal', 'collapsed']) {
       const h = await harness(kind, mode),
         after = await h.call();
@@ -311,6 +313,7 @@ test('serialized shared controls associate exact resource and vocabulary records
         )
       );
     }
+  }
 });
 
 test('serialized shared lookup preserves the editor and refuses stale scope, capture and capped searches', async () => {
@@ -379,7 +382,9 @@ test('failed shared selection never invents a staged record or reloads outside e
   await assert.rejects(
     recoverSharedRehearsal(
       async request => {
-        if (request.action === 'read') return current;
+        if (request.action === 'read') {
+          return current;
+        }
         reloads++;
         throw Error('Must not reload');
       },
@@ -401,16 +406,17 @@ test('real serialized association rehearsal restores through independently autho
         sections: [],
         resources: [],
       };
-    if (kind === 'resources')
+    if (kind === 'resources') {
       lesson.resources = [
         Object.fromEntries(
           ['key', 'name', 'type', 'audience', 'url'].map(k => [k, h.record[k]])
         ),
       ];
-    else
+    } else {
       lesson.frontMatter.vocabulary = [
         h.record.word + ': ' + h.record.definition,
       ];
+    }
     const pkg = {
       schemaVersion: 1,
       sandbox: h.initial.destination.url,
@@ -436,8 +442,9 @@ test('real serialized association rehearsal restores through independently autho
         reload: async () => {
           reloads++;
           h.linked[kind].length = 0;
-          for (const fn of [...listeners])
+          for (const fn of [...listeners]) {
             fn(1, {status: 'complete'}, {url: h.initial.destination.url});
+          }
         },
       };
     const bridge = withReviewedReload(h.bridge, {

@@ -64,7 +64,9 @@ let storedRevision = null;
 try {
   storedRevision = localStorage.getItem(workspaceKey);
   state = JSON.parse(storedRevision);
-  if (!state?.draft || !state?.source) state = fresh();
+  if (!state?.draft || !state?.source) {
+    state = fresh();
+  }
 } catch {
   state = fresh();
 }
@@ -326,7 +328,9 @@ function render() {
   }
   if (editTarget && view !== 'preview' && view !== 'revisions') {
     document.querySelectorAll('#content [data-review]').forEach(el => {
-      if (el.dataset.review !== editTarget) el.closest('.card').hidden = true;
+      if (el.dataset.review !== editTarget) {
+        el.closest('.card').hidden = true;
+      }
     });
     $('#content').classList.add('targeted-editor');
     $('#content').classList.remove('show-source');
@@ -343,7 +347,9 @@ function render() {
         esc(editTarget) +
         '">Flag an issue here</button></div>'
     );
-  } else $('#content').classList.remove('targeted-editor');
+  } else {
+    $('#content').classList.remove('targeted-editor');
+  }
 }
 function moveControls(kind, record) {
   const items =
@@ -405,7 +411,9 @@ async function copy(text) {
 }
 document.addEventListener('click', async e => {
   const b = e.target.closest('button');
-  if (!b) return;
+  if (!b) {
+    return;
+  }
   if (b.dataset.view) {
     const returnTo = b.dataset.view === 'preview' ? editTarget : null;
     view = b.dataset.view;
@@ -417,7 +425,9 @@ document.addEventListener('click', async e => {
       ).find(el => el.dataset.previewId === returnTo);
       card?.scrollIntoView({block: 'start'});
       card?.focus({preventScroll: true});
-    } else $('#view-title').focus();
+    } else {
+      $('#view-title').focus();
+    }
   }
   if (b.dataset.addCallout || b.dataset.addSection) {
     const sectionMode = Boolean(b.dataset.addSection);
@@ -462,7 +472,9 @@ document.addEventListener('click', async e => {
       notice(error.message);
     }
   }
-  if (b.dataset.editTarget) openEditor(b.dataset.editTarget);
+  if (b.dataset.editTarget) {
+    openEditor(b.dataset.editTarget);
+  }
   if (b.dataset.flagTarget) {
     $('#flag-target').value = b.dataset.flagTarget;
     $('#flag-note').value = '';
@@ -516,17 +528,19 @@ document.addEventListener('click', async e => {
     activity = b.dataset.activity;
     render();
   }
-  if (b.dataset.copyField)
+  if (b.dataset.copyField) {
     await copy(
       fieldText(
         b.dataset.copyField,
         state.draft.frontMatter[b.dataset.copyField]
       )
     );
-  if (b.dataset.copySection)
+  }
+  if (b.dataset.copySection) {
     await copy(
       state.draft.sections.find(s => s.id === b.dataset.copySection).body
     );
+  }
   if (b.dataset.resolve) {
     try {
       const i = Number(b.dataset.index),
@@ -598,14 +612,17 @@ document.addEventListener('input', e => {
     const orderOnly =
       k === 'objectives' && objectivesEqual(state.draft.frontMatter[k], value);
     state.draft.frontMatter[k] = value;
-    if (orderOnly) persist();
-    else changed(k);
+    if (orderOnly) {
+      persist();
+    } else {
+      changed(k);
+    }
   }
   if (el.dataset.section) {
     const s = state.draft.sections.find(s => s.id === el.dataset.section);
-    if (el.dataset.callout !== undefined)
+    if (el.dataset.callout !== undefined) {
       s.callouts[Number(el.dataset.callout)].body = el.value;
-    else {
+    } else {
       const k = el.dataset.prop;
       s[k] =
         k === 'remarks'
@@ -635,8 +652,11 @@ document.addEventListener('change', e => {
   if (e.target.dataset.review) {
     const id = e.target.dataset.review;
     state.reviewed = state.reviewed.filter(x => x !== id);
-    if (e.target.checked) state.reviewed.push(id);
-    else state.approved = false;
+    if (e.target.checked) {
+      state.reviewed.push(id);
+    } else {
+      state.approved = false;
+    }
     persist();
     updateSummary();
   }
@@ -649,7 +669,9 @@ $('#sources').onclick = () => {
 let importingSources = false;
 $('#source-file').onchange = async e => {
   const files = [...e.target.files];
-  if (!files.length) return;
+  if (!files.length) {
+    return;
+  }
   importingSources = true;
   $('#generate').disabled = true;
   $('#source-file').disabled = true;
@@ -674,7 +696,9 @@ $('#source-file').onchange = async e => {
   }
 };
 $('#generate').onclick = () => {
-  if (importingSources) return;
+  if (importingSources) {
+    return;
+  }
   try {
     const source = JSON.parse($('#source-input').value);
     validateSource(source);
@@ -833,9 +857,12 @@ $('#workspace-backup').onclick = () =>
 $('#workspace-restore').onchange = async e => {
   try {
     const file = e.target.files[0];
-    if (!file) return;
-    if (file.size > 32000000)
+    if (!file) {
+      return;
+    }
+    if (file.size > 32000000) {
       throw Error('Choose a workspace backup smaller than 32 MB.');
+    }
     const id = crypto.randomUUID();
     restoreWorkspace(localStorage, await file.text(), id);
     const target = new URL(location.href);
@@ -858,10 +885,11 @@ if (pendingSourceId) {
     const item = JSON.parse(
       localStorage.getItem('lesson-studio-pending-source-' + pendingSourceId)
     );
-    if (!item)
+    if (!item) {
       throw Error(
         'The imported deck is no longer available. Import it again from its Slides tab.'
       );
+    }
     const result = combineSourceImports(state.source, [item]);
     $('#source-input').value = JSON.stringify(result.source, null, 2);
     $('#import-error').textContent =
@@ -879,10 +907,13 @@ document.addEventListener('change', async event => {
     !['destination-baseline-file', 'destination-revision-file'].includes(
       input.id
     )
-  )
+  ) {
     return;
+  }
   const file = input.files[0];
-  if (!file) return;
+  if (!file) {
+    return;
+  }
   if (importingDestination) {
     notice('Wait for the current saved report to finish loading.');
     input.value = '';
@@ -929,7 +960,9 @@ if (
   ['127.0.0.1', 'localhost'].includes(location.hostname)
 ) {
   const link = new URL('notion.html', location.href);
-  if (workspaceId) link.searchParams.set('workspace', workspaceId);
+  if (workspaceId) {
+    link.searchParams.set('workspace', workspaceId);
+  }
   $('#notion-link').href = link.href;
 }
 
@@ -937,8 +970,9 @@ $('#publish').onclick = () => {
   try {
     const pkg = reviewPackage(),
       problems = approvalBlockers(state);
-    if (!state.approved || problems.length)
+    if (!state.approved || problems.length) {
       throw Error('Review and approve the complete lesson before publishing.');
+    }
     sessionStorage.setItem('lesson-publication-input', JSON.stringify(pkg));
     location.href = 'publish.html';
   } catch (error) {

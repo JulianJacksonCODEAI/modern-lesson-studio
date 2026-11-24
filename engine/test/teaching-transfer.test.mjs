@@ -29,10 +29,15 @@ function harness({links = true} = {}) {
     state.server,
     state.editor.saved,
     state.editor.protection.bootstrap,
-  ])
+  ]) {
     root.purpose = 'Original purpose to clear';
+  }
   state.editor.live.fields.purpose = 'Original purpose to clear';
-  if (!links) for (const s of state.pkg.lesson.sections) s.progression = null;
+  if (!links) {
+    for (const s of state.pkg.lesson.sections) {
+      s.progression = null;
+    }
+  }
   Object.assign(state.pkg.lesson.frontMatter, {
     teacherOverview: 'Reviewed **overview**',
     studentOverview: 'Student guidance',
@@ -155,10 +160,13 @@ test('failed teaching rehearsal restores its owned prefix and retains a recovery
     bridge = h.io.bridge;
   let changed = 0;
   h.io.bridge = async r => {
-    if (r.action === 'set-scalar' && r.operation.after === 'Student guidance')
+    if (r.action === 'set-scalar' && r.operation.after === 'Student guidance') {
       throw Error('Injected unavailable control');
+    }
     const result = await bridge(r);
-    if (r.action === 'set-scalar') changed++;
+    if (r.action === 'set-scalar') {
+      changed++;
+    }
     return result;
   };
   await assert.rejects(

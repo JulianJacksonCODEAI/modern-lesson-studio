@@ -76,8 +76,11 @@ test('connector refuses another lesson before making a request', async () => {
   try {
     await assert.rejects(readAssignedLesson, /assigned Julian Playground/);
   } finally {
-    if (old === undefined) delete globalThis.location;
-    else globalThis.location = old;
+    if (old === undefined) {
+      delete globalThis.location;
+    } else {
+      globalThis.location = old;
+    }
   }
 });
 test('connector makes only an authenticated read and rejects unexpected returned identity', async () => {
@@ -120,8 +123,11 @@ test('connector makes only an authenticated read and rejects unexpected returned
     );
   } finally {
     for (const [key, value] of Object.entries(originals)) {
-      if (value === undefined) delete globalThis[key];
-      else globalThis[key] = value;
+      if (value === undefined) {
+        delete globalThis[key];
+      } else {
+        globalThis[key] = value;
+      }
     }
   }
 });

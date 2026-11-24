@@ -62,7 +62,9 @@ async function dispatch(
         if (delayed) {
           button.disabled = true;
           setTimeout(finish, 5);
-        } else finish();
+        } else {
+          finish();
+        }
       }
     },
   };
@@ -137,8 +139,9 @@ async function dispatch(
     'opportunityStandards',
     'jitPlConceptIds',
     'announcements',
-  ])
+  ]) {
     payload[k] = '[]';
+  }
   const request = {
     method: 'PUT',
     url: 'https://levelbuilder-studio.code.org/lessons/123',
@@ -186,7 +189,9 @@ async function dispatch(
     throw error;
   }
   assert.equal(puts, native ? 0 : 1);
-  if (native) assert.equal(clicks, 1);
+  if (native) {
+    assert.equal(clicks, 1);
+  }
   return JSON.parse(JSON.stringify(result));
 }
 const json = value =>
@@ -291,11 +296,12 @@ test('ambiguous, disabled and changed-transport native approvals block before an
     {ambiguous: true},
     {disabled: true},
     {tamperTransport: true},
-  ])
+  ]) {
     await assert.rejects(
       dispatch(null, {native: true, ...options}),
       /unavailable|ambiguous|approved/
     );
+  }
 });
 
 test('native save observes asynchronous editor acknowledgement without sending an API fallback', async () => {

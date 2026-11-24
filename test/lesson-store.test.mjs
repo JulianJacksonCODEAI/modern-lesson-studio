@@ -24,7 +24,9 @@ function area(initial = {}) {
       Object.assign(data, structuredClone(items));
     },
     remove: async keys => {
-      for (const k of [].concat(keys)) delete data[k];
+      for (const k of [].concat(keys)) {
+        delete data[k];
+      }
     },
   };
 }
@@ -59,8 +61,9 @@ test('lesson data saved to disk by earlier versions moves to session storage and
   const chrome = {storage: {local, session}};
   const r = await moveLessonDataToSession({chrome, localStorage: ls});
   assert.equal(r.records, 3);
-  for (const k of LESSON_KEYS)
+  for (const k of LESSON_KEYS) {
     assert.ok(!(k in local.data), k + ' removed from disk');
+  }
   assert.equal(local.data.preferredAiModel, 'builtin', 'settings stay on disk');
   assert.deepEqual(session.data.teamImports, {slides: {name: 'Deck'}});
   assert.deepEqual(session.data.pendingReports, [{id: 'r1'}]);

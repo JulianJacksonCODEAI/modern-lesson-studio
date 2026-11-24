@@ -11,10 +11,11 @@ export function objectiveReplacements(
     !Array.isArray(mapping.baseline) ||
     !Array.isArray(mapping.targets) ||
     !Array.isArray(records)
-  )
+  ) {
     throw Error(
       'Objective mapping is incomplete. Check the saved destination again.'
     );
+  }
   const stable = value =>
     JSON.stringify(value, (_key, item) =>
       item && typeof item === 'object' && !Array.isArray(item)
@@ -23,19 +24,21 @@ export function objectiveReplacements(
           )
         : item
     );
-  if (stable(mapping.baseline) !== stable(records))
+  if (stable(mapping.baseline) !== stable(records)) {
     throw Error(
       'Saved objectives or their level tags changed. Review their mappings again.'
     );
+  }
   if (
     records.length !== descriptions.length ||
     mapping.targets.length !== records.length ||
     new Set(records.map(o => o.id)).size !== records.length ||
     records.some(o => !Number.isSafeInteger(o.id) || o.id < 1)
-  )
+  ) {
     throw Error(
       'Objective mapping requires every existing record exactly once. Additions and removals need a separate review.'
     );
+  }
   const ids = new Set(),
     indices = new Set();
   for (const target of mapping.targets) {
@@ -48,10 +51,11 @@ export function objectiveReplacements(
       target.sourceIndex < 0 ||
       target.sourceIndex >= descriptions.length ||
       !descriptions[target.sourceIndex]?.trim()
-    )
+    ) {
       throw Error(
         'Choose a different imported objective for every saved objective.'
       );
+    }
     ids.add(target.destinationId);
     indices.add(target.sourceIndex);
   }

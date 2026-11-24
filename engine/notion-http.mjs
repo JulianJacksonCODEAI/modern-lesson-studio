@@ -9,7 +9,9 @@ export function notionRoutes(service, {origin}) {
     res.end(JSON.stringify(data));
   };
   return async (req, res, url) => {
-    if (!url.pathname.startsWith('/api/notion/')) return false;
+    if (!url.pathname.startsWith('/api/notion/')) {
+      return false;
+    }
     if (req.headers.host !== new URL(origin).host) {
       reply(res, 403, {error: 'Use the local Lesson Studio address.'});
       return true;
@@ -28,7 +30,9 @@ export function notionRoutes(service, {origin}) {
         req.headers.cookie,
         url.pathname === '/api/notion/status' && req.method === 'GET'
       );
-      if (!value) throw Error('Open Notion connection settings first.');
+      if (!value) {
+        throw Error('Open Notion connection settings first.');
+      }
       if (url.pathname === '/api/notion/status' && req.method === 'GET') {
         res.setHeader(
           'Set-Cookie',
@@ -63,24 +67,29 @@ export function notionRoutes(service, {origin}) {
       if (
         req.headers.origin !== origin ||
         req.headers['x-lesson-csrf'] !== value.csrf
-      )
+      ) {
         throw Error(
           'This connection action expired. Reload the page and try again.'
         );
+      }
       let raw = '';
       for await (const chunk of req) {
         raw += chunk;
-        if (raw.length > 8000) throw Error('Request is too large.');
+        if (raw.length > 8000) {
+          throw Error('Request is too large.');
+        }
       }
       const data = raw ? JSON.parse(raw) : {};
-      if (url.pathname === '/api/notion/start')
+      if (url.pathname === '/api/notion/start') {
         reply(res, 200, {url: service.start(value)});
-      else if (url.pathname === '/api/notion/import')
+      } else if (url.pathname === '/api/notion/import') {
         reply(res, 200, await service.importPage(value, data.page));
-      else if (url.pathname === '/api/notion/disconnect') {
+      } else if (url.pathname === '/api/notion/disconnect') {
         service.disconnect(value);
         reply(res, 200, {connected: false});
-      } else reply(res, 404, {error: 'Unknown connection action.'});
+      } else {
+        reply(res, 404, {error: 'Unknown connection action.'});
+      }
     } catch (error) {
       reply(res, 400, {
         error:

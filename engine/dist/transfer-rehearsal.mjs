@@ -66,13 +66,17 @@ export function mountRehearsal(container, initial, onChange = () => {}) {
   let snapshot = clone(initial);
   const paths = [];
   function collect(value, path = []) {
-    if (path.length) paths.push(path);
-    if (value && typeof value === 'object')
-      for (const key of Object.keys(value))
+    if (path.length) {
+      paths.push(path);
+    }
+    if (value && typeof value === 'object') {
+      for (const key of Object.keys(value)) {
         collect(value[key], [
           ...path,
           Array.isArray(value) ? Number(key) : key,
         ]);
+      }
+    }
   }
   function render() {
     paths.length = 0;
@@ -85,14 +89,18 @@ export function mountRehearsal(container, initial, onChange = () => {}) {
           ),
           value = JSON.parse(container.querySelector('#rehearsal-value').value),
           kind = container.querySelector('#rehearsal-kind').value;
-        if (!paths.some(p => JSON.stringify(p) === JSON.stringify(path)))
+        if (!paths.some(p => JSON.stringify(p) === JSON.stringify(path))) {
           throw Error('Unknown editor location.');
+        }
         if (kind === 'append') {
           const list = readPath(snapshot.lesson, path);
-          if (!Array.isArray(list)) throw Error('Choose a collection.');
+          if (!Array.isArray(list)) {
+            throw Error('Choose a collection.');
+          }
           list.push(value);
-        } else
+        } else {
           readPath(snapshot.lesson, path.slice(0, -1))[path.at(-1)] = value;
+        }
         render();
         onChange(clone(snapshot));
       } catch (error) {
@@ -123,7 +131,9 @@ export function mountRehearsal(container, initial, onChange = () => {}) {
       );
       container.querySelector('#rehearsal-apply').click();
       const error = container.querySelector('#rehearsal-error').textContent;
-      if (error) throw Error(error);
+      if (error) {
+        throw Error(error);
+      }
       await new Promise(resolve => setTimeout(resolve, 0));
     },
   };

@@ -17,10 +17,11 @@ export function objectivePayload(record) {
     Object.keys(record).some(
       k => !['id', 'key', 'description', 'scriptLevelIds'].includes(k)
     )
-  )
+  ) {
     throw Error(
       'A new objective contains unreviewed identity, tags or metadata.'
     );
+  }
   return {description: record.description, scriptLevelIds: []};
 }
 const strip = capture => {
@@ -38,18 +39,23 @@ export async function recoverObjectiveAdditions(bridge, previous) {
   );
   const trim = c => {
     let copy = clone(c);
-    while (copy.live.objectives.length > count) copy = strip(copy);
+    while (copy.live.objectives.length > count) {
+      copy = strip(copy);
+    }
     return copy;
   };
-  if (reduced.stagedCapture)
+  if (reduced.stagedCapture) {
     reduced.stagedCapture = trim(reduced.stagedCapture);
+  }
   reduced.reports = (reduced.reports || []).map(r =>
     r.journal
       ? {...r, journal: {...r.journal, capture: trim(r.journal.capture)}}
       : r
   );
   let current = await bridge({action: 'read'});
-  if (current.live.objectives.length === count) return reduced;
+  if (current.live.objectives.length === count) {
+    return reduced;
+  }
   const known = [];
   for (const point of [
     previous.initialCapture,
@@ -63,16 +69,18 @@ export async function recoverObjectiveAdditions(bridge, previous) {
       known.push(canonical(copy));
     }
   }
-  if (!known.includes(canonical(current)))
+  if (!known.includes(canonical(current))) {
     throw Error(
       'Outside edits or missing objective checkpoints prevent recovery.'
     );
+  }
   while (current.live.objectives.length > count) {
     const index = current.live.objectives.length - 1,
       record = current.live.objectives[index],
       op = operations.find(o => o.before.length === index);
-    if (!op || objectivePayload(record).description !== op.after)
+    if (!op || objectivePayload(record).description !== op.after) {
       throw Error('The unsaved objective is not owned by this review.');
+    }
     const expected = strip(current);
     current = await bridge({
       action: 'remove-created-objective',
@@ -84,8 +92,9 @@ export async function recoverObjectiveAdditions(bridge, previous) {
       },
       expectedCaptureDigest: await digest(current),
     });
-    if (canonical(current) !== canonical(expected))
+    if (canonical(current) !== canonical(expected)) {
       throw Error('Objective recovery changed unrelated content.');
+    }
   }
   return reduced;
 }

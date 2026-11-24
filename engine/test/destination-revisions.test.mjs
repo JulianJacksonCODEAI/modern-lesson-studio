@@ -175,8 +175,9 @@ test('unchanged saved resources preserve local source metadata and approval', as
     url: 'https://example.com/guide',
     sourceNote: 'Approved source evidence',
   };
-  for (const lesson of [state.baseline, state.generated, state.draft])
+  for (const lesson of [state.baseline, state.generated, state.draft]) {
     lesson.resources = [clone(resource)];
+  }
   report.checkpoint.freshSaved.resources = [{...resource, id: 88}];
   state = await connectDestinationBaseline(state, report);
   const result = await mergeDestinationReport(state, report);
@@ -193,8 +194,9 @@ test('moving a saved section across activities retains its local identity and ca
     body: 'Keep evidence',
     sourceNote: 'Original note',
   };
-  for (const lesson of [state.baseline, state.generated, state.draft])
+  for (const lesson of [state.baseline, state.generated, state.draft]) {
     lesson.sections[0].callouts = [clone(callout)];
+  }
   report.checkpoint.freshSaved.activities[0].activitySections[0].tips = [
     {type: 'teachingTip', markdown: 'Keep evidence'},
   ];
@@ -227,8 +229,9 @@ test('saved assessment edits retain verified level metadata only for the same na
       },
     ],
   };
-  for (const lesson of [state.baseline, state.generated, state.draft])
+  for (const lesson of [state.baseline, state.generated, state.draft]) {
     lesson.sections[0].progression = clone(progression);
+  }
   const savedSection =
     report.checkpoint.freshSaved.activities[0].activitySections[0];
   savedSection.progressionName = 'Practice';

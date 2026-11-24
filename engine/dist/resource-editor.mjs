@@ -9,15 +9,19 @@ export function resourceDraft(resources, buffer) {
   if (
     !Array.isArray(rows) ||
     rows.some(r => !r || typeof r !== 'object' || Array.isArray(r))
-  )
+  ) {
     throw Error('Resource edits must contain a list of resource records.');
+  }
   return rows;
 }
 export function updateResource(resources, buffer, index, field, value) {
-  if (!['name', 'type', 'audience', 'url'].includes(field))
+  if (!['name', 'type', 'audience', 'url'].includes(field)) {
     throw Error('Unknown resource field.');
+  }
   const rows = resourceDraft(resources, buffer);
-  if (!rows[index]) throw Error('Resource no longer exists.');
+  if (!rows[index]) {
+    throw Error('Resource no longer exists.');
+  }
   rows[index][field] = value;
   return JSON.stringify(rows, null, 2);
 }

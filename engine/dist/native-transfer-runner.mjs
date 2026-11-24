@@ -28,21 +28,27 @@ const calloutTypes = [
 ];
 export function unsupportedNativeTransferActions(plan) {
   return plan.operations.filter(op => {
-    if (!unsupportedNativeActions({operations: [op]}).length) return false;
-    if (sharedKind(op)) return !sharedAppendValid(op);
-    if (isObjectiveAppend(op))
+    if (!unsupportedNativeActions({operations: [op]}).length) {
+      return false;
+    }
+    if (sharedKind(op)) {
+      return !sharedAppendValid(op);
+    }
+    if (isObjectiveAppend(op)) {
       return (
         !Array.isArray(op.before) ||
         typeof op.after !== 'string' ||
         !op.after.trim() ||
         op.after.length > 100000
       );
+    }
     const p = op.path;
-    if (op.kind === 'append' && p.length === 1 && p[0] === 'activities')
+    if (op.kind === 'append' && p.length === 1 && p[0] === 'activities') {
       return (
         canonical(op.after) !==
         canonical({title: '', duration: null, sections: [emptySection]})
       );
+    }
     if (
       op.kind === 'set' &&
       p.length === 5 &&
@@ -79,29 +85,39 @@ export function unsupportedNativeTransferActions(plan) {
       !Number.isInteger(p[1]) ||
       p[1] < 0 ||
       p[2] !== 'sections'
-    )
+    ) {
       return true;
-    if (p.length === 3) return canonical(op.after) !== canonical(emptySection);
+    }
+    if (p.length === 3) {
+      return canonical(op.after) !== canonical(emptySection);
+    }
     if (
       p.length === 5 &&
       Number.isInteger(p[3]) &&
       p[3] >= 0 &&
       p[4] === 'callouts'
-    )
+    ) {
       return (
         !calloutTypes.includes(op.after?.type) ||
         typeof op.after.body !== 'string' ||
         !op.after.body.trim() ||
         op.after.body.length > 100000
       );
+    }
     return true;
   });
 }
 function snapshot(capture) {
   const value = normalizeNativeCapture(capture);
-  if (value.blockers.length) throw Error(value.blockers.join(' '));
-  if (capture.readerVersion !== 'native-scalars-v1' || !value.nativeProtection)
+  if (value.blockers.length) {
+    throw Error(value.blockers.join(' '));
+  }
+  if (
+    capture.readerVersion !== 'native-scalars-v1' ||
+    !value.nativeProtection
+  ) {
     throw Error('Capture with the current native companion first.');
+  }
   return value;
 }
 function preserved(before, after, op) {
@@ -114,11 +130,17 @@ function preserved(before, after, op) {
   );
   if (op.kind === 'append') {
     const activity = protection.unmanagedActivities[p[1]];
-    if (sharedKind(op)) protection[sharedKind(op)].pop();
-    else if (isObjectiveAppend(op)) protection.objectives.pop();
-    else if (p.length === 1) protection.unmanagedActivities.pop();
-    else if (p.length === 3) activity.activitySections.pop();
-    else activity.activitySections[p[3]].tips.pop();
+    if (sharedKind(op)) {
+      protection[sharedKind(op)].pop();
+    } else if (isObjectiveAppend(op)) {
+      protection.objectives.pop();
+    } else if (p.length === 1) {
+      protection.unmanagedActivities.pop();
+    } else if (p.length === 3) {
+      activity.activitySections.pop();
+    } else {
+      activity.activitySections[p[3]].tips.pop();
+    }
   } else if (p.at(-1) === 'progression') {
     const section = protection.unmanagedActivities[p[1]].activitySections[p[3]],
       original =
@@ -126,9 +148,11 @@ function preserved(before, after, op) {
           p[3]
         ];
     section.scriptLevels = clone(original.scriptLevels);
-    if (Object.prototype.hasOwnProperty.call(original, 'progressionName'))
+    if (Object.prototype.hasOwnProperty.call(original, 'progressionName')) {
       section.progressionName = original.progressionName;
-    else delete section.progressionName;
+    } else {
+      delete section.progressionName;
+    }
   }
   return canonical(protection) === canonical(before.nativeProtection);
 }
@@ -142,18 +166,20 @@ export async function stageNativeTransferPlan(
 ) {
   await validatePlan(plan);
   const unsupported = unsupportedNativeTransferActions(plan);
-  if (unsupported.length)
+  if (unsupported.length) {
     throw Error(
       'This native transfer cannot fill: ' +
         unsupported.map(op => op.label).join('; ') +
         '. No fields were changed.'
     );
+  }
   if (
     !Number.isInteger(maxOperations) ||
     maxOperations < 1 ||
     maxOperations > 500
-  )
+  ) {
     throw Error('Choose from 1 to 500 actions.');
+  }
   snapshot(plan.originalSnapshot.raw);
   const completed = journal?.completed ?? 0;
   if (
@@ -161,20 +187,24 @@ export async function stageNativeTransferPlan(
     completed < 0 ||
     completed > plan.operations.length ||
     (journal && (journal.planId !== plan.id || !journal.capture))
-  )
+  ) {
     throw Error('The native checkpoint does not belong to this reviewed plan.');
+  }
   let capture = await bridge({action: 'read'}),
     current = snapshot(capture);
   const checkpoint = journal?.capture || plan.originalSnapshot.raw;
-  if (canonical(capture) !== canonical(checkpoint))
+  if (canonical(capture) !== canonical(checkpoint)) {
     throw Error(
       'The editor changed or lost unsaved progress. Read / recompare before continuing; no actions were replayed.'
     );
+  }
   const expected = clone(plan.originalSnapshot.lesson);
-  for (const op of plan.operations.slice(0, completed))
+  for (const op of plan.operations.slice(0, completed)) {
     applyOperation(expected, op);
-  if (canonical(current.lesson) !== canonical(expected))
+  }
+  if (canonical(current.lesson) !== canonical(expected)) {
     throw Error('The native checkpoint does not match its reviewed content.');
+  }
   const result = {
     schemaVersion: 1,
     kind: 'native-transfer-report',
@@ -202,7 +232,9 @@ export async function stageNativeTransferPlan(
   checkpointReport();
   let performed = 0;
   for (let index = completed; index < plan.operations.length; index++) {
-    if (signal?.aborted || performed >= maxOperations) break;
+    if (signal?.aborted || performed >= maxOperations) {
+      break;
+    }
     const op = plan.operations[index],
       before = current;
     const fresh = await bridge({action: 'read'});
@@ -256,7 +288,9 @@ export async function stageNativeTransferPlan(
       if (!nextCapture) {
         result.status = 'blocked';
         result.reason = op.label + ': ' + error.message;
-        if (error.nativeCapture) result.unverifiedCapture = error.nativeCapture;
+        if (error.nativeCapture) {
+          result.unverifiedCapture = error.nativeCapture;
+        }
         break;
       }
     }
@@ -280,8 +314,9 @@ export async function stageNativeTransferPlan(
     checkpointReport();
     await onProgress(clone(result));
   }
-  if (result.completed === plan.operations.length)
+  if (result.completed === plan.operations.length) {
     result.status = 'staged-unsaved';
+  }
   checkpointReport();
   return result;
 }

@@ -15,13 +15,17 @@ export class NotionConnector {
    * Extracts clean Notion page ID from URL or raw ID
    */
   static extractPageId(input) {
-    if (!input || typeof input !== 'string') return null;
+    if (!input || typeof input !== 'string') {
+      return null;
+    }
     const clean = input.trim();
     // Match 32 hex chars with optional hyphens at end of URL or standalone
     const match = clean.match(
       /([0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}|[0-9a-f]{32})(?:[?#]|$)/i
     );
-    if (!match) return null;
+    if (!match) {
+      return null;
+    }
     return match[1].replace(/-/g, '').toLowerCase();
   }
 
@@ -50,7 +54,9 @@ export class NotionConnector {
     return new Promise(resolve => {
       const clean = (token || '').trim();
       // An empty box deletes the token rather than storing an empty string.
-      if (!clean) return this.clearToken().then(resolve);
+      if (!clean) {
+        return this.clearToken().then(resolve);
+      }
       if (typeof chrome !== 'undefined' && chrome.storage?.local) {
         chrome.storage.local.set({notionIntegrationToken: clean}, () =>
           resolve(true)
@@ -67,8 +73,9 @@ export class NotionConnector {
    */
   static async fetchFromApi(pageUrlOrId, overrideToken = null) {
     const pageId = this.extractPageId(pageUrlOrId);
-    if (!pageId)
+    if (!pageId) {
       throw new Error('Invalid Notion page URL or ID. Check the link.');
+    }
 
     const token = overrideToken || (await this.getToken());
     if (!token) {
@@ -134,7 +141,9 @@ export class NotionConnector {
 
     // 3. Convert blocks using verified notionBlocks parser
     const parsedBrief = notionBlocks({results: allBlocks});
-    if (pageTitle) parsedBrief.title = pageTitle;
+    if (pageTitle) {
+      parsedBrief.title = pageTitle;
+    }
     parsedBrief.sourceUrl = `https://www.notion.so/${pageId}`;
     parsedBrief.kind = 'brief';
 
@@ -168,7 +177,9 @@ export class NotionConnector {
     }
 
     const parsedBrief = notionMarkdown(result.markdown);
-    if (result.title) parsedBrief.title = result.title;
+    if (result.title) {
+      parsedBrief.title = result.title;
+    }
     parsedBrief.sourceUrl = tab.url;
 
     return parsedBrief;

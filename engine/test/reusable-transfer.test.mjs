@@ -32,7 +32,7 @@ function harness() {
   return {state, io, storage};
 }
 test('destination selection requires explicit practice confirmation and an exact canonical HTTPS lesson editor', () => {
-  for (const id of [8898984, 8898985, 123])
+  for (const id of [8898984, 8898985, 123]) {
     assert.deepEqual(
       selectDestination(
         `https://levelbuilder-studio.code.org/lessons/${id}/edit`,
@@ -40,6 +40,7 @@ test('destination selection requires explicit practice confirmation and an exact
       ),
       {id, url: `https://levelbuilder-studio.code.org/lessons/${id}/edit`}
     );
+  }
   assert.throws(
     () =>
       selectDestination(
@@ -62,15 +63,16 @@ test('destination selection requires explicit practice confirmation and an exact
     'https://levelbuilder-studio.code.org/lessons/123/edit?other=1',
     'https://levelbuilder-studio.code.org/lessons/0/edit',
     'https://levelbuilder-studio.code.org/lessons/999999999999999999/edit',
-  ])
+  ]) {
     assert.throws(() => selectDestination(url, true));
+  }
 });
 test('injected adapters refuse a selected destination without confirmation before inspecting the browser', async () => {
   for (const adapter of [
     nativeEditorBridge,
     readAssignedLesson,
     readAssignedLevelUsage,
-  ])
+  ]) {
     await assert.rejects(
       adapter({
         action: 'read',
@@ -81,6 +83,7 @@ test('injected adapters refuse a selected destination without confirmation befor
       }),
       /Invalid selected destination/
     );
+  }
 });
 test('selected destination is pinned to the exact tab URL, including for saved reads', async () => {
   const previous = globalThis.location;
@@ -95,7 +98,7 @@ test('selected destination is pinned to the exact tab URL, including for saved r
       nativeEditorBridge,
       readAssignedLesson,
       readAssignedLevelUsage,
-    ])
+    ]) {
       await assert.rejects(
         adapter({
           action: 'read',
@@ -107,9 +110,13 @@ test('selected destination is pinned to the exact tab URL, including for saved r
         }),
         /assigned|sandbox/
       );
+    }
   } finally {
-    if (previous === undefined) delete globalThis.location;
-    else globalThis.location = previous;
+    if (previous === undefined) {
+      delete globalThis.location;
+    } else {
+      globalThis.location = previous;
+    }
   }
 });
 test('reusable pipeline prepares from supplied package and selected destination, restores, approves, saves and verifies once', async () => {

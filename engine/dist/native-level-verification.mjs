@@ -40,28 +40,33 @@ import {
 } from './native-transfer-runner.mjs';
 
 export async function recoverNativeLevelCheck(bridge, previous) {
-  if (!previous?.initialCapture || !previous.plan)
+  if (!previous?.initialCapture || !previous.plan) {
     throw Error('The original level rehearsal checkpoint is missing.');
-  if (previous.plan.operations.some(sharedKind))
+  }
+  if (previous.plan.operations.some(sharedKind)) {
     return recoverSharedRehearsal(bridge, previous);
-  if (previous.plan.operations.some(isObjectiveAppend))
+  }
+  if (previous.plan.operations.some(isObjectiveAppend)) {
     return recoverNativeLevelCheck(
       bridge,
       await recoverObjectiveAdditions(bridge, previous)
     );
+  }
   if (
     appendedActivities(previous.plan).length ||
     appendedCallouts(previous.plan).length
-  )
+  ) {
     return recoverNativeLevelCheck(
       bridge,
       await recoverExtraStructure(bridge, previous)
     );
-  if (appendedSections(previous.plan).length)
+  }
+  if (appendedSections(previous.plan).length) {
     return recoverNativeLevelCheck(
       bridge,
       await recoverAppendedSections(bridge, previous)
     );
+  }
   const initial = previous.initialCapture;
   let current = await bridge({action: 'read'});
   const scalarOps = previous.plan.operations.filter(op => savedFieldPath(op));
@@ -100,10 +105,11 @@ export async function recoverNativeLevelCheck(bridge, previous) {
         }
         known.push(canonical(checkpoint));
       }
-      if (!known.includes(canonical(current)))
+      if (!known.includes(canonical(current))) {
         throw Error(
           'Outside changes prevent automatic teaching-transfer recovery.'
         );
+      }
     }
     // Verify the complete capture, including unrelated data, before restoring fields.
     const projection = clone(current),
@@ -113,8 +119,9 @@ export async function recoverNativeLevelCheck(bridge, previous) {
       if (
         canonical(value) !== canonical(op.before) &&
         canonical(value) !== canonical(op.after)
-      )
+      ) {
         throw Error('Outside teaching edits prevent automatic recovery.');
+      }
       putField(
         projection.live,
         liveFieldPath(op),
@@ -129,9 +136,12 @@ export async function recoverNativeLevelCheck(bridge, previous) {
     // A read-only pass through existing level recovery validates link ownership.
     await recoverNativeLevelCheck(
       async request => {
-        if (request.action === 'read') return clone(projection);
-        if (request.action !== 'clear-owned-progression')
+        if (request.action === 'read') {
+          return clone(projection);
+        }
+        if (request.action !== 'clear-owned-progression') {
           throw Error('Unexpected recovery projection action.');
+        }
         const [, ai, , si] = request.operation.path;
         for (const root of [
           projection.live.activities,
@@ -158,7 +168,9 @@ export async function recoverNativeLevelCheck(bridge, previous) {
     );
     for (const op of [...scalarOps].reverse()) {
       const value = readPath(normalizeNativeCapture(current).lesson, op.path);
-      if (canonical(value) === canonical(op.before)) continue;
+      if (canonical(value) === canonical(op.before)) {
+        continue;
+      }
       current = await bridge({
         action: 'set-scalar',
         mode: 'unsaved-scalar-staging',
@@ -193,10 +205,11 @@ export async function recoverNativeLevelCheck(bridge, previous) {
       }
       known.push(canonical(checkpoint));
     }
-    if (!known.includes(canonical(current)))
+    if (!known.includes(canonical(current))) {
       throw Error(
         'Outside changes prevent automatic cleanup of the staged level links.'
       );
+    }
   }
   const projection = clone(current);
   for (const op of operations) {
@@ -215,8 +228,9 @@ export async function recoverNativeLevelCheck(bridge, previous) {
           (l.assessment !== op.after.levels[i].assessment &&
             !(i === actual.length - 1 && l.assessment === false))
       )
-    )
+    ) {
       throw Error('Outside level changes prevent automatic rehearsal cleanup.');
+    }
     for (const object of [
       projection.live.activities[ai].activitySections[si],
       projection.protection.unmanagedActivities[ai].activitySections[si],
@@ -225,15 +239,19 @@ export async function recoverNativeLevelCheck(bridge, previous) {
       object.progressionName = original.progressionName;
     }
   }
-  if (canonical(projection) !== canonical(initial))
+  if (canonical(projection) !== canonical(initial)) {
     throw Error('Outside changes prevent level rehearsal cleanup.');
+  }
   for (const op of [...operations].reverse()) {
     const [, ai, , si] = op.path,
       section = current.live.activities[ai].activitySections[si];
-    if (!section.scriptLevels.length) continue;
+    if (!section.scriptLevels.length) {
+      continue;
+    }
     const fresh = await bridge({action: 'read'});
-    if (canonical(fresh) !== canonical(current))
+    if (canonical(fresh) !== canonical(current)) {
       throw Error('Outside edits detected during level cleanup.');
+    }
     current = await bridge({
       action: 'clear-owned-progression',
       mode: 'unsaved-level-staging',
@@ -250,8 +268,9 @@ export async function recoverNativeLevelCheck(bridge, previous) {
       },
     });
   }
-  if (canonical(current) !== canonical(initial))
+  if (canonical(current) !== canonical(initial)) {
     throw Error('Original native capture did not match after level cleanup.');
+  }
   return {
     status: 'restored',
     restored: true,
@@ -275,10 +294,14 @@ export async function runAcceptedNativeRehearsal(
   };
   try {
     const problems = packageProblems(pkg);
-    if (problems.length) throw Error(problems.join(' '));
+    if (problems.length) {
+      throw Error(problems.join(' '));
+    }
     result.initialCapture = await bridge({action: 'read'});
     const original = normalizeNativeCapture(result.initialCapture);
-    if (original.blockers.length) throw Error(original.blockers.join(' '));
+    if (original.blockers.length) {
+      throw Error(original.blockers.join(' '));
+    }
     const names = [
       ...new Set(
         pkg.lesson.sections.flatMap(s =>
@@ -299,10 +322,11 @@ export async function runAcceptedNativeRehearsal(
       if (
         lookup.kind !== 'native-level-mappings' ||
         canonical(lookup.capture) !== canonical(result.initialCapture)
-      )
+      ) {
         throw Error(
           'Existing-level lookup did not preserve the original editor.'
         );
+      }
       result.mappings.push(...lookup.mappings);
       onProgress(
         'Verified ' +
@@ -320,14 +344,16 @@ export async function runAcceptedNativeRehearsal(
       if (
         !Number.isSafeInteger(pkg.sharedRecords.courseVersionId) ||
         pkg.sharedRecords.courseVersionId < 1
-      )
+      ) {
         throw Error('Shared-record scope is missing.');
+      }
       for (const kind of ['resources', 'vocabularies']) {
         if (
           !Array.isArray(pkg.sharedRecords[kind]) ||
           pkg.sharedRecords[kind].length > 40
-        )
+        ) {
           throw Error('Shared-record mappings are incomplete.');
+        }
         for (const record of pkg.sharedRecords[kind]) {
           validateSharedRecord(kind, record);
           const checked = await bridge({
@@ -341,35 +367,42 @@ export async function runAcceptedNativeRehearsal(
             checked.kind !== 'native-shared-mapping' ||
             canonical(checked.record) !== canonical(record) ||
             canonical(checked.capture) !== canonical(result.initialCapture)
-          )
+          ) {
             throw Error(
               'The shared-record lookup changed or did not preserve the editor.'
             );
+          }
           if (kind === 'resources') {
-            if (!snapshot.catalog.resources.some(r => r.key === record.key))
+            if (!snapshot.catalog.resources.some(r => r.key === record.key)) {
               snapshot.catalog.resources.push({
                 ...resourceRow(record),
                 markdownKey: record.markdownKey,
                 destinationRecordId: record.id,
                 verifiedSharedRecord: clone(record),
               });
+            }
           } else if (
             !snapshot.catalog.vocabularies.some(r => r.key === record.key)
-          )
+          ) {
             snapshot.catalog.vocabularies.push(clone(record));
+          }
         }
       }
     }
 
-    for (const mapping of result.mappings)
-      if (!snapshot.catalog.levels.some(l => l.key === mapping.key))
+    for (const mapping of result.mappings) {
+      if (!snapshot.catalog.levels.some(l => l.key === mapping.key)) {
         snapshot.catalog.levels.push(mapping);
+      }
+    }
     const first = await buildTransferPlan(pkg, snapshot),
       decisions = {};
     for (const op of first.operations) {
-      if (op.path.length === 1 && op.path[0] === 'title')
+      if (op.path.length === 1 && op.path[0] === 'title') {
         decisions[op.id] = 'keep';
-      else if (savedFieldPath(op)) decisions[op.id] = 'replace';
+      } else if (savedFieldPath(op)) {
+        decisions[op.id] = 'replace';
+      }
     }
     const plan = await buildTransferPlan(pkg, snapshot, decisions);
     result.plan = plan;
@@ -386,10 +419,11 @@ export async function runAcceptedNativeRehearsal(
         op => op.label + ': this change is not supported by native transfer.'
       ),
     ];
-    if (result.blockers.length)
+    if (result.blockers.length) {
       throw Error(
         'Preparation blocked by unresolved items: ' + result.blockers.join(' ')
       );
+    }
     if (
       plan.operations.some(op =>
         isObjectiveAppend(op) || sharedKind(op)
@@ -403,10 +437,11 @@ export async function runAcceptedNativeRehearsal(
               ? !isSupportedSectionOperation(op, appendedSections(plan))
               : op.path.at(-1) !== 'progression' && !savedFieldPath(op)
       )
-    )
+    ) {
       throw Error(
         'This rehearsal supports teaching fields, appended sections with callouts, and existing-section level links; callout additions on existing sections and other collections need separate review.'
       );
+    }
     await onCheckpoint(clone({...result, status: 'running'}));
     onProgress(
       'Rehearsing proposed teaching fields and level links without saving.'
@@ -424,8 +459,9 @@ export async function runAcceptedNativeRehearsal(
       },
     });
     result.reports.push(partial);
-    if (!['interrupted', 'staged-unsaved'].includes(partial.status))
+    if (!['interrupted', 'staged-unsaved'].includes(partial.status)) {
       throw Error(partial.reason || 'Native level staging stopped.');
+    }
     const complete = await stageNativeTransferPlan(plan, bridge, {
       journal: partial.journal,
       maxOperations: 500,
@@ -440,20 +476,23 @@ export async function runAcceptedNativeRehearsal(
       },
     });
     result.reports.push(complete);
-    if (complete.status !== 'staged-unsaved')
+    if (complete.status !== 'staged-unsaved') {
       throw Error(complete.reason || 'Native level resume stopped.');
+    }
     const rerun = await stageNativeTransferPlan(plan, bridge, {
       journal: complete.journal,
     });
     result.reports.push(rerun);
-    if (rerun.items.some(i => i.status !== 'already-present'))
+    if (rerun.items.some(i => i.status !== 'already-present')) {
       throw Error('Native level rerun did not recognize its existing links.');
+    }
     result.stagedCapture = await bridge({action: 'read'});
     const lesson = normalizeNativeCapture(result.stagedCapture).lesson;
-    if (canonical(lesson) !== canonical(plan.expectedLesson))
+    if (canonical(lesson) !== canonical(plan.expectedLesson)) {
       throw Error(
         'The staged native lesson differs from the accepted transfer plan.'
       );
+    }
     const sections = lesson.activities.flatMap(a => a.sections),
       levels = sections.flatMap(s => s.progression?.levels || []);
     result.counts = {

@@ -6,8 +6,9 @@ import {saveDiagnostics} from '../dist/save-diagnostics.mjs';
 async function audit(file) {
   const report = JSON.parse(await readFile(file, 'utf8')),
     receipt = report.receipt || report;
-  if (receipt.kind !== 'approved-native-save-receipt' || !receipt.review)
+  if (receipt.kind !== 'approved-native-save-receipt' || !receipt.review) {
     throw Error('Choose a retained transfer receipt or run report.');
+  }
   await validateSaveReview(receipt.review, {checkExpiry: false});
   const verification = receipt.readback
     ? await verifySavedReadback(receipt.review, receipt.readback)

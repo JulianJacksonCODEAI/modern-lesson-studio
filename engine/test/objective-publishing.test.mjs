@@ -29,8 +29,9 @@ function setup() {
     state.editor.protection.bootstrap,
     state.editor.live,
     state.editor.protection,
-  ])
+  ]) {
     root.objectives[0].scriptLevelIds = [123];
+  }
   state.pkg.lesson.frontMatter.objectives = [
     'Explain',
     'Observe with evidence',
@@ -501,7 +502,9 @@ test('AntiGrav: live-style objective row opens with Edit, shows typed text at on
     }
     set value(v) {
       this.pending = v;
-      if (editing !== null) objectives[editing].description = v;
+      if (editing !== null) {
+        objectives[editing].description = v;
+      }
     }
     dispatchEvent() {}
   }
@@ -531,10 +534,13 @@ test('AntiGrav: live-style objective row opens with Edit, shows typed text at on
       },
       getClientRects: () => [{}],
       querySelectorAll: s => {
-        if (s === '.fa-check') return editing === index ? [save] : [];
-        if (s === 'td:first-child input[type="text"]')
+        if (s === '.fa-check') {
+          return editing === index ? [save] : [];
+        }
+        if (s === 'td:first-child input[type="text"]') {
           return editing === index ? [input] : [];
-        if (s === '.fa-pen-to-square,.fa-edit,.fa-pencil')
+        }
+        if (s === '.fa-pen-to-square,.fa-edit,.fa-pencil') {
           return editing === index
             ? []
             : [
@@ -543,7 +549,8 @@ test('AntiGrav: live-style objective row opens with Edit, shows typed text at on
                   parentElement: editButton(index),
                 },
               ];
-        if (s === '.fa-trash,.fa-xmark,.fa-times')
+        }
+        if (s === '.fa-trash,.fa-xmark,.fa-times') {
           return [
             {
               closest: () => ({
@@ -553,6 +560,7 @@ test('AntiGrav: live-style objective row opens with Edit, shows typed text at on
               }),
             },
           ];
+        }
         return [];
       },
     }));

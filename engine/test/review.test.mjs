@@ -75,7 +75,9 @@ test('assembled preview includes edits, resources, every section, callouts and l
   }
   for (const s of p.sections) {
     assert.ok(html.includes('data-flag-target="' + s.id + '"'));
-    for (const c of s.callouts) assert.ok(html.includes(c.type));
+    for (const c of s.callouts) {
+      assert.ok(html.includes(c.type));
+    }
   }
   assert.ok(html.includes('csp-unit1-lesson16-cfu3_27_28'));
 });
@@ -113,12 +115,13 @@ test('objective reordering preserves the current text and does not count as a so
 test('objective comparison detects missing, duplicate and edited text', () => {
   assert.equal(objectivesEqual(['First', 'Second'], ['First', 'First']), false);
   assert.equal(objectivesEqual(['First'], ['first']), false);
-  for (const incoming of [[], ['First'], ['First', 'Changed']])
+  for (const incoming of [[], ['First'], ['First', 'Changed']]) {
     assert.equal(
       reconcileObjectives(['First', 'Second'], ['First', 'Second'], incoming)
         .status,
       'conflict'
     );
+  }
   assert.equal(
     reconcileObjectives(['First', 'First'], ['First', 'First'], ['First'])
       .status,

@@ -13,25 +13,30 @@ export async function planTestLinkCleanup(receipt, freshSaved) {
     receipt.status !== 'saved-and-verified' ||
     !receipt.attempted ||
     !receipt.verification?.passed
-  )
+  ) {
     throw Error('Cleanup needs a verified saved test receipt.');
+  }
   const review = receipt.review;
-  if (!reviewedLevelGroups(review).length)
+  if (!reviewedLevelGroups(review).length) {
     throw Error(
       'This transfer added no test links to clean up. Teaching changes are retained.'
     );
+  }
   const verified = await verifySavedReadback(review, receipt.readback);
-  if (!verified.passed)
+  if (!verified.passed) {
     throw Error('The receipt does not prove the saved test links.');
-  if (freshSaved?.id !== review.destination.id)
+  }
+  if (freshSaved?.id !== review.destination.id) {
     throw Error('Cleanup destination differs from the test receipt.');
+  }
   const result = clone(freshSaved),
     removals = [];
   for (const change of reviewedLevelGroups(review)) {
     if (change.newSection) {
       const activity = receipt.readback.activities[change.activityIndex];
-      if (!change.newActivity && activity.id !== change.activityId)
+      if (!change.newActivity && activity.id !== change.activityId) {
         throw Error('The new section activity identity changed.');
+      }
       change.sectionId = activity.activitySections[change.sectionIndex].id;
     }
     const find = lesson =>
@@ -44,17 +49,20 @@ export async function planTestLinkCleanup(receipt, freshSaved) {
       recorded = find(receipt.readback),
       current = find(freshSaved),
       target = find(result);
-    if (!before || !recorded || !current || before.scriptLevels.length)
+    if (!before || !recorded || !current || before.scriptLevels.length) {
       throw Error('Cleanup requires a recorded originally empty progression.');
+    }
     if (
       canonical(current.scriptLevels) !== canonical(recorded.scriptLevels) ||
       current.progressionName !== recorded.progressionName
-    )
+    ) {
       throw Error(
         'The test links changed after saving. Cleanup needs a new review.'
       );
-    if (recorded.scriptLevels.length !== change.addLevels.length)
+    }
+    if (recorded.scriptLevels.length !== change.addLevels.length) {
       throw Error('The recorded link ownership is incomplete.');
+    }
     removals.push({
       sectionId: change.sectionId,
       section: change.section,
@@ -91,8 +99,9 @@ export async function buildCleanupReview(
   if (
     typeof fresh.originalLessonJson !== 'string' ||
     canonical(JSON.parse(fresh.originalLessonJson)) !== canonical(fresh.lesson)
-  )
+  ) {
     throw Error('The original saved snapshot is required.');
+  }
   const review = {
     schemaVersion: 1,
     kind: 'native-cleanup-review',
@@ -130,22 +139,26 @@ export async function validateCleanupReview(
     review?.kind !== 'native-cleanup-review' ||
     review.remoteWrites !== false ||
     review.requiresExactSaveApproval !== true
-  )
+  ) {
     throw Error('Invalid cleanup review.');
+  }
   const copy = clone(review);
   delete copy.id;
-  if ((await digest(copy)) !== review.id)
+  if ((await digest(copy)) !== review.id) {
     throw Error('Cleanup review changed. Prepare it again.');
-  if (checkExpiry && now > review.expiresAt)
+  }
+  if (checkExpiry && now > review.expiresAt) {
     throw Error('Cleanup review expired. Prepare it again.');
+  }
   const raw = JSON.parse(review.request.body).originalLessonData;
   const rebuilt = await buildCleanupReview(
     review.sourceReceipt,
     {lesson: review.baseline, originalLessonJson: raw},
     {now: review.createdAt}
   );
-  if (canonical(rebuilt) !== canonical(review))
+  if (canonical(rebuilt) !== canonical(review)) {
     throw Error('Cleanup differs from the receipt-owned changes.');
+  }
   return review;
 }
 export async function approveCleanup(review) {
@@ -175,8 +188,9 @@ function checkEditor(editor, sourceReceipt, saved) {
     if (
       !sourceReceipt.stagedCapture ||
       canonical(editor) !== canonical(sourceReceipt.stagedCapture)
-    )
+    ) {
       throw error;
+    }
   }
 }
 export async function prepareCleanup(sourceReceipt, io) {
@@ -192,8 +206,9 @@ export async function executeCleanup(review, approval, io) {
   if (
     approval?.approved !== true ||
     approval.approvedRequestDigest !== requestDigest
-  )
+  ) {
     throw Error('Exact cleanup approval is required.');
+  }
   let receipt = await io.loadReceipt(key);
   const verify = async () => {
     const fresh = await io.readSaved(),
@@ -210,15 +225,18 @@ export async function executeCleanup(review, approval, io) {
     await io.persist(key, receipt);
     return receipt;
   };
-  if (receipt?.attempted) return verify();
+  if (receipt?.attempted) {
+    return verify();
+  }
   await validateCleanupReview(review);
   const fresh = await io.readSaved();
   if (
     (await digest(fresh.lesson)) !== review.baselineDigest ||
     fresh.originalLessonJson !==
       JSON.parse(review.request.body).originalLessonData
-  )
+  ) {
     throw Error('Saved lesson changed. Prepare cleanup again.');
+  }
   const editor = await io.bridge({action: 'read'});
   checkEditor(editor, review.sourceReceipt, fresh.lesson);
   receipt = {

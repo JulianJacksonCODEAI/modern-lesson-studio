@@ -117,8 +117,9 @@ test('the posted body uses every entry ID and requires a type and note', () => {
     'missing content',
     'The objectives are missing.'
   );
-  for (const entry of Object.values(config.fields))
+  for (const entry of Object.values(config.fields)) {
     assert.ok(body.has(entry), entry);
+  }
   assert.equal(body.get(config.fields.problemType), 'missing content');
   assert.equal(body.get(config.fields.note), 'The objectives are missing.');
 });
@@ -168,8 +169,9 @@ test('the Google Forms fallback is a pre-filled viewform link with every field',
     config.submitUrl.replace(/\/formResponse$/, '/viewform')
   );
   assert.equal(url.searchParams.get('usp'), 'pp_url');
-  for (const entry of Object.values(config.fields))
+  for (const entry of Object.values(config.fields)) {
     assert.ok(url.searchParams.has(entry), entry);
+  }
   assert.equal(
     url.searchParams.get(config.fields.problemType),
     'missing content'
@@ -224,8 +226,9 @@ function fakeBrowser(results, {landUrl = undefined} = {}) {
     executeScript: async o => {
       log.injected.push(o);
       const result = results[o.func.name];
-      if (o.func === submitReportFormInPage && result?.ok)
+      if (o.func === submitReportFormInPage && result?.ok) {
         fire(config.submitUrl);
+      }
       return [{result}];
     },
   };

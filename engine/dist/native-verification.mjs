@@ -19,9 +19,12 @@ export async function verificationPlan(snapshot, assignments) {
     operations = [];
   for (const {path, after} of assignments) {
     const before = clone(readPath(working, path));
-    if (before === undefined)
+    if (before === undefined) {
       throw Error('The verification target is missing.');
-    if (canonical(before) === canonical(after)) continue;
+    }
+    if (canonical(before) === canonical(after)) {
+      continue;
+    }
     const op = {
       kind: 'set',
       path: clone(path),
@@ -52,27 +55,32 @@ export async function verificationPlan(snapshot, assignments) {
     remoteWrites: false,
     saveAllowed: false,
   };
-  if (unsupportedNativeActions(plan).length)
+  if (unsupportedNativeActions(plan).length) {
     throw Error('Verification contains an unsupported native action.');
+  }
   plan.id = await digest(plan);
   return plan;
 }
 function checked(capture) {
   const snapshot = normalizeNativeCapture(capture);
-  if (snapshot.blockers.length) throw Error(snapshot.blockers.join(' '));
+  if (snapshot.blockers.length) {
+    throw Error(snapshot.blockers.join(' '));
+  }
   return snapshot;
 }
 function changedMinutes(value) {
   if (
     value !== null &&
     (!Number.isInteger(value) || value < 0 || value > 10000)
-  )
+  ) {
     throw Error('Timing is unsuitable for bounded verification.');
+  }
   return (value ?? 0) + 1;
 }
 export async function recoverNativeVerification(bridge, previous) {
-  if (!previous?.plan || !previous.initialCapture)
+  if (!previous?.plan || !previous.initialCapture) {
     throw Error('Recovery evidence is missing.');
+  }
   const initial = checked(previous.initialCapture),
     capture = await bridge({action: 'read'}),
     current = checked(capture);
@@ -86,10 +94,11 @@ export async function recoverNativeVerification(bridge, previous) {
     canonical(current.nativeProtection) !==
       canonical(initial.nativeProtection) ||
     !known.includes(canonical(current.lesson))
-  )
+  ) {
     throw Error(
       'Recovery stopped: current content includes edits outside the verification checkpoints.'
     );
+  }
   const plan = await verificationPlan(
     current,
     previous.plan.operations
@@ -102,10 +111,11 @@ export async function recoverNativeVerification(bridge, previous) {
   const restored =
     canonical(final.lesson) === canonical(initial.lesson) &&
     canonical(final.nativeProtection) === canonical(initial.nativeProtection);
-  if (!restored)
+  if (!restored) {
     throw Error(
       report.reason || 'Recovery did not restore the original values.'
     );
+  }
   return {
     status: 'restored',
     report,
@@ -137,10 +147,12 @@ export async function runNativeVerification(
   try {
     evidence.initialCapture = await bridge({action: 'read'});
     initial = checked(evidence.initialCapture);
-    if (!initial.lesson.activities.length)
+    if (!initial.lesson.activities.length) {
       throw Error('Verification needs an existing activity.');
-    if (!['all-existing-fields', 'title-and-timing'].includes(suite))
+    }
+    if (!['all-existing-fields', 'title-and-timing'].includes(suite)) {
       throw Error('Unknown verification suite.');
+    }
     const assignments = [
       {
         path: ['title'],
@@ -153,18 +165,20 @@ export async function runNativeVerification(
     ];
     if (suite === 'all-existing-fields') {
       const section = initial.lesson.activities[0].sections[0];
-      if (!section)
+      if (!section) {
         throw Error('The complete field check needs an existing section.');
+      }
       // Probe section timing before the rest of the suite so native failures stop early.
-      if (section.duration === 0)
+      if (section.duration === 0) {
         evidence.skipped.push(
           'Section duration: literal zero cannot be restored by this adapter.'
         );
-      else
+      } else {
         assignments.push({
           path: ['activities', 0, 'sections', 0, 'duration'],
           after: changedMinutes(section.duration),
         });
+      }
       assignments.push(
         ...TEXT_FIELDS.map(key => ({
           path: ['frontMatter', key],
@@ -198,8 +212,9 @@ export async function runNativeVerification(
     const driver = makeNativeScalarDriver(initial, bridge);
     const first = await stagePlan(plan, driver, {maxOperations: 1});
     evidence.reports.push(first);
-    if (first.status !== 'interrupted' || first.completed !== 1)
+    if (first.status !== 'interrupted' || first.completed !== 1) {
       throw Error(first.reason || 'Bounded first step failed.');
+    }
     onProgress(
       'First field verified; automatically resuming the remaining fields.'
     );
@@ -215,15 +230,17 @@ export async function runNativeVerification(
         ),
     });
     evidence.reports.push(resumed);
-    if (resumed.status !== 'staged-unsaved')
+    if (resumed.status !== 'staged-unsaved') {
       throw Error(resumed.reason || 'Resume failed.');
+    }
     const rerun = await stagePlan(plan, driver, {journal: resumed.journal});
     evidence.reports.push(rerun);
     if (
       rerun.status !== 'staged-unsaved' ||
       rerun.items.some(item => item.status !== 'already-present')
-    )
+    ) {
       throw Error('The repeat run did not recognize existing changes.');
+    }
     evidence.checksPassed = true;
   } catch (error) {
     evidence.error = error.message;
@@ -245,10 +262,11 @@ export async function runNativeVerification(
         canonical(current.nativeProtection) !==
           canonical(initial.nativeProtection) ||
         !known.includes(canonical(current.lesson))
-      )
+      ) {
         throw Error(
           'Outside changes detected. Automatic restoration was stopped to preserve them.'
         );
+      }
       const restore = await verificationPlan(
         current,
         plan.operations.map(op => ({path: op.path, after: op.before})).reverse()
@@ -263,8 +281,9 @@ export async function runNativeVerification(
         canonical(final.lesson) === canonical(initial.lesson) &&
         canonical(final.nativeProtection) ===
           canonical(initial.nativeProtection);
-      if (!evidence.restored)
+      if (!evidence.restored) {
         throw Error('Original values could not be confirmed.');
+      }
     } catch (error) {
       evidence.restorationError = error.message;
     }

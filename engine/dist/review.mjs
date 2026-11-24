@@ -28,14 +28,17 @@ export function approvalBlockers(state) {
   ];
 }
 export function addFlag(state, target, note, id) {
-  if (!note.trim()) throw Error('Describe what needs to change.');
+  if (!note.trim()) {
+    throw Error('Describe what needs to change.');
+  }
   state.flags ??= [];
   state.flags.push({id, target, note: note.trim(), resolved: false});
   state.approved = false;
 }
 export function approveDraft(state) {
-  if (approvalBlockers(state).length)
+  if (approvalBlockers(state).length) {
     throw Error('Resolve the listed approval blockers first.');
+  }
   state.baseline = structuredClone(state.draft);
   state.approved = true;
 }

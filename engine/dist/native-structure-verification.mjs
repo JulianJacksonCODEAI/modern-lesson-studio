@@ -10,12 +10,15 @@ import {stageNativeTransferPlan} from './native-transfer-runner.mjs';
 
 export async function recoverEmptyNativeSection(bridge, previous) {
   const initial = previous?.initialCapture;
-  if (!initial) throw Error('The original structural capture is missing.');
+  if (!initial) {
+    throw Error('The original structural capture is missing.');
+  }
   const current = await bridge({action: 'read'}),
     count = initial.live.activities[0]?.activitySections.length;
   const sections = current.live.activities[0]?.activitySections;
-  if (!count || sections?.length !== count + 1)
+  if (!count || sections?.length !== count + 1) {
     throw Error('Recovery does not recognize a single appended section.');
+  }
   const section = sections[count],
     normalized =
       normalizeNativeCapture(current).lesson.activities[0].sections[count];
@@ -27,15 +30,17 @@ export async function recoverEmptyNativeSection(bridge, previous) {
     normalized.callouts.length ||
     normalized.progression ||
     ![null, 0].includes(normalized.duration)
-  )
+  ) {
     throw Error(
       'The appended section is not an untouched native default; recovery will not delete its content.'
     );
+  }
   const compare = clone(current);
   compare.live.activities[0].activitySections.pop();
   compare.protection.unmanagedActivities[0].activitySections.pop();
-  if (canonical(compare) !== canonical(initial))
+  if (canonical(compare) !== canonical(initial)) {
     throw Error('Outside edits prevent temporary section recovery.');
+  }
   const finalCapture = await bridge({
     action: 'remove-created-section',
     mode: 'unsaved-structure-staging',
@@ -45,8 +50,9 @@ export async function recoverEmptyNativeSection(bridge, previous) {
     },
     expectedCaptureDigest: await digest(current),
   });
-  if (canonical(finalCapture) !== canonical(initial))
+  if (canonical(finalCapture) !== canonical(initial)) {
     throw Error('Original structural capture did not match after recovery.');
+  }
   return {
     status: 'restored',
     restored: true,
@@ -58,43 +64,49 @@ export async function recoverEmptyNativeSection(bridge, previous) {
 
 export async function recoverNativeStructureCheck(bridge, previous) {
   const initial = previous?.initialCapture;
-  if (!initial || !previous.plan)
+  if (!initial || !previous.plan) {
     throw Error('Structural recovery evidence is missing.');
+  }
   const current = await bridge({action: 'read'});
-  if (canonical(current) === canonical(initial))
+  if (canonical(current) === canonical(initial)) {
     return {
       status: 'restored',
       restored: true,
       saved: false,
       finalCapture: current,
     };
+  }
   const index = initial.live.activities[0]?.activitySections.length,
     sections = current.live.activities[0]?.activitySections;
-  if (!index || sections?.length !== index + 1)
+  if (!index || sections?.length !== index + 1) {
     throw Error(
       'Structural recovery cannot recognize the appended test section.'
     );
+  }
   const section = sections[index];
   if (
     !/^activitySection-/.test(section.key || '') ||
     (previous.createdKey && section.key !== previous.createdKey)
-  )
+  ) {
     throw Error('The generated test section identity does not match.');
+  }
   const projection = clone(current);
   projection.live.activities[0].activitySections.pop();
   projection.protection.unmanagedActivities[0].activitySections.pop();
-  if (canonical(projection) !== canonical(initial))
+  if (canonical(projection) !== canonical(initial)) {
     throw Error('Outside edits prevent structural test recovery.');
+  }
   const expected = clone(normalizeNativeCapture(initial).lesson),
     known = [];
   for (const op of previous.plan.operations) {
     applyOperation(expected, op);
     known.push(canonical(expected));
   }
-  if (!known.includes(canonical(normalizeNativeCapture(current).lesson)))
+  if (!known.includes(canonical(normalizeNativeCapture(current).lesson))) {
     throw Error(
       'The test section contains content outside known verification checkpoints.'
     );
+  }
   const finalCapture = await bridge({
     action: 'remove-created-section',
     mode: 'unsaved-structure-staging',
@@ -104,8 +116,9 @@ export async function recoverNativeStructureCheck(bridge, previous) {
     },
     expectedCaptureDigest: await digest(current),
   });
-  if (canonical(finalCapture) !== canonical(initial))
+  if (canonical(finalCapture) !== canonical(initial)) {
     throw Error('Original structural state did not match after recovery.');
+  }
   return {
     status: 'restored',
     restored: true,
@@ -117,10 +130,11 @@ export async function recoverNativeStructureCheck(bridge, previous) {
 
 export async function buildNativeStructureCheckPlan(snapshot) {
   const index = snapshot.lesson.activities[0]?.sections.length;
-  if (!index)
+  if (!index) {
     throw Error(
       'The structural check needs an activity with an existing section.'
     );
+  }
   const expected = clone(snapshot.lesson),
     operations = [];
   const add = async (path, after, label, kind = 'set') => {
@@ -154,25 +168,27 @@ export async function buildNativeStructureCheckPlan(snapshot) {
     body: 'Temporary native structural verification. This section will be removed automatically.',
     duration: 1,
     remarks: true,
-  }))
+  })) {
     await add(
       ['activities', 0, 'sections', index, key],
       value,
       'Temporary section / ' + key
     );
+  }
   for (const type of [
     'Teaching Tip',
     'Content Corner',
     'Discussion Goal',
     'Assessment Opportunity',
     'Ethics Opportunity',
-  ])
+  ]) {
     await add(
       ['activities', 0, 'sections', index, 'callouts'],
       {type, body: 'Unsaved automatic ' + type + ' verification.'},
       'Temporary ' + type,
       'append'
     );
+  }
   const plan = {
     schemaVersion: 1,
     kind: 'browser-transfer-plan',
@@ -212,7 +228,9 @@ export async function runNativeStructureVerification(
   try {
     initial = await bridge({action: 'read'});
     const baseline = normalizeNativeCapture(initial);
-    if (baseline.blockers.length) throw Error(baseline.blockers.join(' '));
+    if (baseline.blockers.length) {
+      throw Error(baseline.blockers.join(' '));
+    }
     sectionIndex = baseline.lesson.activities[0]?.sections.length;
     result.initialCapture = clone(initial);
     last = initial;
@@ -226,8 +244,9 @@ export async function runNativeStructureVerification(
       maxOperations: 1,
     });
     result.reports.push(first);
-    if (first.status !== 'interrupted' || first.completed !== 1)
+    if (first.status !== 'interrupted' || first.completed !== 1) {
       throw Error(first.reason || 'The first structural checkpoint failed.');
+    }
     last = first.journal.capture;
     createdKey = last.live.activities[0].activitySections[sectionIndex].key;
     result.createdKey = createdKey;
@@ -245,8 +264,9 @@ export async function runNativeStructureVerification(
       },
     });
     result.reports.push(resumed);
-    if (resumed.status !== 'staged-unsaved')
+    if (resumed.status !== 'staged-unsaved') {
       throw Error(resumed.reason || 'Native structural resume failed.');
+    }
     last = resumed.journal.capture;
     const rerun = await stageNativeTransferPlan(plan, bridge, {
       journal: resumed.journal,
@@ -255,10 +275,11 @@ export async function runNativeStructureVerification(
     if (
       rerun.status !== 'staged-unsaved' ||
       rerun.items.some(item => item.status !== 'already-present')
-    )
+    ) {
       throw Error(
         'Native structural rerun did not recognize its existing changes.'
       );
+    }
     result.callouts = normalizeNativeCapture(
       last
     ).lesson.activities[0].sections[sectionIndex].callouts.map(c => c.type);
@@ -267,8 +288,9 @@ export async function runNativeStructureVerification(
     result.error = error.message;
     if (error.nativeCapture) {
       result.errorCapture = error.nativeCapture;
-      if (initial && canonical(initial) === canonical(error.nativeCapture))
+      if (initial && canonical(initial) === canonical(error.nativeCapture)) {
         result.restored = true;
+      }
     }
     result.checksPassed = false;
   }
@@ -276,10 +298,11 @@ export async function runNativeStructureVerification(
     try {
       onProgress('Removing the temporary section and its callouts.');
       const fresh = await bridge({action: 'read'});
-      if (canonical(fresh) !== canonical(last))
+      if (canonical(fresh) !== canonical(last)) {
         throw Error(
           'Outside edits detected; temporary section cleanup was stopped.'
         );
+      }
       result.finalCapture = await bridge({
         action: 'remove-created-section',
         mode: 'unsaved-structure-staging',
@@ -290,10 +313,11 @@ export async function runNativeStructureVerification(
         expectedCaptureDigest: await digest(fresh),
       });
       result.restored = canonical(result.finalCapture) === canonical(initial);
-      if (!result.restored)
+      if (!result.restored) {
         throw Error(
           'Complete original native capture did not match after cleanup.'
         );
+      }
     } catch (error) {
       result.restorationError = error.message;
     }

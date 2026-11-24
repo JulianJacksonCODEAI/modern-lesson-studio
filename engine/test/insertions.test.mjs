@@ -32,8 +32,9 @@ test('Callout supports all five documented Level Builder types without changing 
   const draft = generate(source),
     s = draft.sections[0],
     before = structuredClone(s.callouts);
-  for (const type of CALLOUT_TYPES)
+  for (const type of CALLOUT_TYPES) {
     addCallout(draft, s.id, type, 'Added ' + type);
+  }
   assert.deepEqual(s.callouts.slice(0, before.length), before);
   assert.deepEqual(
     s.callouts.slice(before.length).map(c => c.type),
