@@ -5,5 +5,12 @@
   "scripts": {
     "test": "node --test \"test/*.test.mjs\" \"engine/test/*.test.mjs\"",
     "build": "powershell -ExecutionPolicy Bypass -File build.ps1"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "eslint": "9.39.5",
+    "eslint-config-prettier": "10.1.8",
+    "globals": "17.14.0",
+    "prettier": "3.10.1"
   }
 }
