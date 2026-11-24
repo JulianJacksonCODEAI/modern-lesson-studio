@@ -1,80 +1,82 @@
-# Chrome Web Store Listing — Lesson Studio AI
+# Chrome Web Store listing: Lesson Studio
 
-> Last Updated: 2026-11-21
+> Last updated: 2026-11-23, for version 1.6.0. Submit `build/team` (or `build/lesson-studio-team-<version>.zip`) only. `build/full` must never be uploaded.
 
-## Store Listing
+## Store listing
 
-**Extension Name**
-Lesson Studio AI — CodeAI Level Builder Companion
+**Extension name**
+Lesson Studio
 
-**Short Description**
-Turn Google Slides and Notion lesson briefs into Level Builder lessons with AI curriculum auditing and safe, guarded staging.
+(The same as `name` in `manifest.json`. The store shows the manifest's name, so change both together.)
 
-**Detailed Description**
-Lesson Studio AI helps computer science curriculum developers and instructional designers build, audit, and transfer lessons into Code.org Level Builder with zero guesswork and zero data loss.
+**Short description** (132 characters at most; this is `description` in `manifest.json`)
+Copies a lesson's Google Slides speaker notes and Notion page into a Code.org Level Builder lesson, with a checked save.
 
-Key Features:
-- 1-Click Google Slides Ingestion: Reads active presentation tabs directly, extracting slide titles, timing, speaker notes, and callout blocks without manual copying.
-- AI Curriculum Copilot: Uses on-device Chrome AI to audit lesson pacing, verify alignment between learning objectives and student activities, identify key vocabulary, and generate pedagogical discussion prompts.
-- Persistent Side Panel: Work side-by-side with your Google Slides deck or Level Builder editor without switching tabs or losing your drafting context.
-- Full Studio Workstation: An accessible, modern lesson workspace with document outline navigation, inline editing, and multi-level undo/redo.
-- Safe, Guarded Level Builder Staging: Visual diff inspection highlights exact proposed changes (additions, updates, callouts, and level progressions) while keeping all unrelated destination content and existing level identities strictly preserved. Requires explicit approval before any staging action.
+**Detailed description**
 
-How to Use:
-1. Open any lesson Google Slides deck or Notion brief, click the Lesson Studio AI extension icon, and select "Import".
-2. In the Side Panel or Studio Workstation, review your assembled lesson, edit guidance, and click "AI Quality Audit" to check pacing and alignment.
-3. Open your practice lesson editor in Level Builder and click "Read Baseline" to inspect existing fields safely.
-4. Review the visual diff and authorize staging to update your lesson seamlessly.
+Lesson Studio is for Code.org curriculum writers. It turns a lesson's Google Slides deck and Notion page into a Level Builder lesson plan, so you don't copy speaker notes, objectives and resources by hand.
 
-Privacy & Permissions:
-Lesson text stays in your browser for the session and is deleted when the browser closes. AI suggestions run on your computer with Chrome's built-in model. Problem reports, sent only when you choose to, go to the CodeAI team's Google Form with your code.org email.
+It works in three steps in Chrome's side panel:
 
-Support & Feedback:
-For questions, issue reports, or feature suggestions, visit https://github.com/JulianJacksonCODEAI/modern-lesson-studio/issues
+1. Import. Open the lesson's Slides deck and import it, then do the same with its Notion page. Lesson Studio only reads them; nothing in Slides or Notion changes.
+2. Check. See exactly what will go into Level Builder: overviews, objectives, activities, sections with their timing, teaching tips and other callouts, resources and vocabulary. Nothing can be edited here. If something looks wrong, use Report on that item.
+3. Save. Open the lesson in Level Builder and confirm it's yours. Lesson Studio looks up each resource and vocabulary word in the lesson's course, and you choose whether to add the missing ones. It then tries the changes in the editor, puts the editor back exactly as it was and lists every change. After you approve the list, it saves once, using Level Builder's own Save, then reads the lesson back and checks every saved field against what you approved. It never sends a save twice.
+
+Also included:
+- Read-only AI suggestions (a quality check and vocabulary definitions) using Chrome's built-in AI, which runs on your computer. Suggestions are never added to the lesson.
+- Report a problem, which sends the details of your run to the CodeAI team.
+- Keyboard and screen reader support, and a dark theme that follows your system setting.
+
+Privacy: the lesson you import is kept only until you close the browser or choose Start over. AI runs on your computer. Nothing is sent anywhere except the changes you approve to Level Builder, and a problem report when you choose to send one (it goes to the CodeAI team's Google Form with your code.org email address). Full policy: https://julianjacksoncodeai.github.io/modern-lesson-studio/privacy/
+
+Questions and issue reports: https://github.com/JulianJacksonCODEAI/modern-lesson-studio/issues
 
 **Category**
-Developer Tools
+Productivity (Workflow & Planning). Earlier drafts used Developer Tools; curriculum writers are the audience.
 
-**Single Purpose**
-Prepares, audits, and safely stages curriculum materials from Google Slides and Notion into Code.org Level Builder.
+**Single purpose**
+Copies a lesson's content from Google Slides and Notion into a Code.org Level Builder lesson the user chooses, and checks the save.
 
-**Primary Language**
+**Primary language**
 English
 
-## Graphics & Assets
+## Graphics and assets
 
-| Asset | Dimensions | Status | Filename |
-|-------|-----------|--------|----------|
-| Store Icon | 128×128 PNG | ✅ Ready | icons/icon-128.png |
-| Screenshot 1 | 1280×800 | ⬜ Not created | screenshots/screenshot-1.png |
-| Screenshot 2 | 1280×800 | ⬜ Not created | screenshots/screenshot-2.png |
-| Screenshot 3 | 1280×800 | ⬜ Not created | screenshots/screenshot-3.png |
-| Small Promo Tile | 440×280 | ⬜ Not created | promo/tile-small.png |
-| Marquee Promo Tile | 1400×560 | ⬜ Not created | promo/tile-marquee.png |
+| Asset | Size | Status | File |
+|-------|------|--------|------|
+| Store icon | 128×128 PNG | ✅ Ready | `icons/icon-128.png` |
+| Screenshot 1 | 1280×800 | ⬜ Not made | `screenshots/screenshot-1.png` |
+| Screenshot 2 | 1280×800 | ⬜ Not made | `screenshots/screenshot-2.png` |
+| Screenshot 3 | 1280×800 | ⬜ Not made | `screenshots/screenshot-3.png` |
+| Small promo tile | 440×280 | ⬜ Not made (optional) | `promo/tile-small.png` |
+| Marquee promo tile | 1400×560 | ⬜ Not made (optional) | `promo/tile-marquee.png` |
 
-### Screenshot Notes
-- Screenshot 1: Persistent Side Panel open alongside Google Slides showing one-click deck extraction.
-- Screenshot 2: AI Curriculum Copilot displaying the Quality Health Meter (Score 95/100, Grade A) and discussion prompts.
-- Screenshot 3: Level Builder Staging Visual Diff viewer with color-coded additions, updates, and the explicit staging approval guard.
+### Screenshots to take
+Use sandbox lesson 11 and a test deck, with no student data or real names in view.
+1. **Import:** the side panel next to an open Slides deck, with the deck and Notion page imported.
+2. **Check:** the read-only lesson view, showing a section with its timing, a callout and a Report button.
+3. **Save:** the "What will change" list with the approval box, next to the Level Builder editor.
 
-## Permissions Justification
+## Permissions justification
 
-> Updated 2026-11-22 for the team build (v1.1.0). Submit `build/team` only; `build/full` must never be uploaded.
+> Updated 2026-11-23 for version 1.6.0.
 
 | Permission | Type | Justification |
 |------------|------|---------------|
-| `scripting` | permissions | Runs the read-only exporter in the open Google Slides or Notion tab when the user clicks Import, and runs the lesson reader and save control in the open Level Builder sandbox lesson after the user approves a save. |
-| `storage` | permissions | Keeps the imported lesson, save receipts and unsent problem reports for the browser session (`chrome.storage.session`, cleared when the browser closes) so work survives closing the panel. Settings (the AI choice) are kept in `chrome.storage.local`. |
-| `tabs` | permissions | Finds the open Level Builder sandbox lesson by its address, and checks the tab is still that lesson before every read or save. |
+| `scripting` | permissions | Runs the read-only exporter in the open Google Slides or Notion tab when the user clicks Import, and runs the lesson reader and save control in the Level Builder lesson the user chose, after the user approves a save. |
+| `storage` | permissions | Keeps the imported lesson, save records and unsent problem reports for the browser session (`chrome.storage.session`, cleared when the browser closes) so work survives closing the panel. Settings (the AI choice) are kept in `chrome.storage.local`. |
+| `tabs` | permissions | Finds the open Level Builder lesson editor by its address, and checks the tab is still that lesson before every read or save. |
 | `sidePanel` | permissions | Shows Lesson Studio in Chrome's side panel next to Slides, Notion and Level Builder. |
 | `https://docs.google.com/presentation/*` | host_permissions | Reads the open Slides deck's speaker notes when the user clicks "Import the open Slides deck". |
-| `https://docs.google.com/forms/*` | host_permissions | Sends "Report a problem" reports to the team's Google Form. |
+| `https://docs.google.com/forms/*` | host_permissions | Fills in and sends the CodeAI team's "Report a problem" Google Form when the user sends a report. |
 | `https://levelbuilder-studio.code.org/*` | host_permissions | Reads the lesson the user chose and confirmed is theirs, adds any resources or vocabulary they chose to add to its course, and saves the approved changes to it. |
 | `https://*.notion.so/*`, `https://*.notion.site/*`, `https://app.notion.com/*` | host_permissions | Reads the open Notion lesson page when the user clicks "Import the open Notion page". |
 
-## Privacy & Data Use
+Remote code: none. All code ships in the package.
 
-### Data Collection
+## Privacy and data use
+
+### Data collection
 
 **Does the extension collect user data?** Yes, only when the user sends a problem report.
 
@@ -84,46 +86,51 @@ In the dashboard's data-usage form, tick:
 
 Leave every other category unticked.
 
-Everything else stays in the user's browser. The imported lesson, save receipts and unsent reports are kept in memory for the browser session (`chrome.storage.session`) and are deleted when the browser closes, when the user chooses "Start over", or when the report is sent. Nothing from a lesson is written to disk. AI features use Chrome's on-device model, so curriculum text is not sent to any AI service. Reports are filled into the Google Form on the page, not passed in its link, so report text does not land in browser history. No third-party telemetry or tracking exists.
+Everything else stays in the user's browser. The imported lesson, save records and unsent reports are kept in memory for the browser session (`chrome.storage.session`) and are deleted when the browser closes, when the user chooses "Start over", or when the report is sent. Nothing from a lesson is written to disk. AI features use Chrome's on-device model, so curriculum text is not sent to any AI service. Reports are filled into the Google Form on the page, not passed in its link, so report text does not land in browser history. No third-party telemetry or tracking exists.
 
-### Data Use Certification
+### Data use certification
 - [x] Data is NOT sold to third parties
 - [x] Data is NOT used for purposes unrelated to the extension's core functionality
 - [x] Data is NOT used for creditworthiness or lending purposes
 
-## Privacy Policy
+## Privacy policy
 
-**Privacy Policy URL**
+**Privacy policy URL**
 https://julianjacksoncodeai.github.io/modern-lesson-studio/privacy/
 
-> Published with GitHub Pages from `docs/privacy/index.md` on `main` (Cayman theme).
+> Published with GitHub Pages from `docs/privacy/index.md` on `main` (Cayman theme). Update its "Last updated" line whenever what Lesson Studio reads, stores or sends changes.
 
 ## Distribution
 
-**Visibility**: Public
-**Regions**: All regions
+**Visibility:** Private, limited to the code.org Google Workspace domain (recommended). Only code.org staff can use Level Builder, so a public listing would offer the extension to people who can't use it. To publish privately, the developer account must belong to the code.org domain; otherwise use **Unlisted** and share the link.
+**Regions:** All regions
 
-## Developer Info
+## Developer info
 
-**Publisher Name**
+**Publisher name**
 CodeAI Curriculum Team
 
-**Contact Email**
-developer@code.org
+**Contact email**
+developer@code.org (confirm this inbox is monitored before submitting)
 
-**Support URL / Email**
+**Support URL**
 https://github.com/JulianJacksonCODEAI/modern-lesson-studio/issues
 
-## Version History
+## Version history
 
-| Version | Date | Changes | Status |
-|---------|------|---------|--------|
-| 1.0.0 | 2026-11-21 | Initial release: Side panel experience, AI curriculum copilot, full studio workstation, visual diff staging, undo/redo. | Draft |
-| 1.1.0 | 2026-11-22 | Team build: Import → read-only Check → Save, with the prototype's tested save and readback; Report a problem; saves limited to sandbox lessons 10 and 11; popup and context menus removed. | Draft, not submitted |
+| Version | Date | Changes | Store status |
+|---------|------|---------|--------------|
+| 1.0.0 | 2026-11-21 | First AntiGrav interface: side panel, AI copilot, studio, staging. | Draft, not submitted |
+| 1.1.0 | 2026-11-22 | Team build: Import → read-only Check → Save, with the prototype's tested save and readback; Report a problem. | Draft, not submitted |
+| 1.5.0 | 2026-11-23 | AI runs only on the user's computer (Gemini removed); security audit fixes. | Not submitted |
+| 1.6.0 | 2026-11-23 | Lesson data kept only for the browser session; reports filled on the form's page; accessibility and security audit fixes; save check accepts Level Builder's equivalent values. | Ready to submit after screenshots |
 
-## Review Notes
+## Review notes
 
-### Known Issues / Limitations
-- Saving goes to any lesson the user confirms is theirs (shown with its name, unit and ID). Lesson Studio can't detect official lessons by link, so the confirmation is the safeguard; the review team may ask about this.
-- Before the Web Store build: the store description, feature list, privacy section and screenshots above still describe 1.0.0 (AI copilot, editing, undo/redo) and must be rewritten for the team build. The privacy section must add that problem reports are sent to a Google Form. The support URL, privacy policy URL and contact email are unverified.
-- The side panel's live path has not yet been run against live Level Builder.
+### Notes for the reviewer
+Lesson Studio is an internal tool for Code.org curriculum staff. Using it needs a Level Builder account (staff only) and a lesson the user can edit. To review without an account: the Import and Check steps work with any Google Slides deck.
+
+### Known limits
+- Saves go to any lesson the user confirms is theirs (shown with its name, unit and ID). Lesson Studio can't tell an official lesson from a draft by its link, so the confirmation is the safeguard. The review team may ask about this.
+- Levels named in slide text ("Lesson 7, Levels 1–5") aren't linked to the lesson. The Check step lists them to add in Level Builder.
+- Before submitting: take the three screenshots, decide the visibility, and confirm the contact email.
