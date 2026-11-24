@@ -752,11 +752,18 @@ function renderLevels() {
         autocomplete: 'off',
         placeholder: 'Exact level name',
       });
-      input.addEventListener('change', () => {
+      // refresh() re-enables controls when the panel stops being busy; skipped levels stay read-only.
+      input.dataset.skipped = String(c.status === 'skipped');
+      // Typing or pasting updates the choice at once (so Check level names turns on);
+      // leaving the box redraws the card with the new status.
+      input.addEventListener('input', () => {
         c.name = input.value.trim();
         c.source = c.name ? 'typed' : '';
         c.status = 'unchecked';
         delete c.message;
+        refresh();
+      });
+      input.addEventListener('change', () => {
         renderLevels();
         refresh();
       });
@@ -1200,6 +1207,13 @@ function refresh() {
   $('btn-check-shared').textContent = checked
     ? 'Check resources again'
     : 'Check resources';
+  // The Levels card is often rebuilt while a search or check is running, so its controls are
+  // enabled here, once the panel is free again (a skipped level's name box stays read-only).
+  for (const el of document.querySelectorAll(
+    '#levels-out input, #levels-out button, #level-results button'
+  )) {
+    el.disabled = busy || el.dataset.skipped === 'true';
+  }
   const levelsToCheck = uncheckedLevels().length;
   $('btn-check-levels').disabled =
     busy || !session || !owned || locked || !levelsToCheck;
