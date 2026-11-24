@@ -6,7 +6,7 @@ const api = globalThis.browser ?? globalThis.chrome;
 if (api.sidePanel?.setPanelBehavior) {
   const openOnClick = async () => {
     try {
-      await api.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
+      await api.sidePanel.setPanelBehavior({openPanelOnActionClick: true});
     } catch (err) {
       console.error('Could not set side panel behavior:', err);
     }

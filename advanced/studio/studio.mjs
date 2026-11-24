@@ -1,10 +1,19 @@
-import { AIService } from '../../ai/ai-service.mjs';
-import { generate, exportMarkdown } from '../../engine/dist/core.mjs';
-import { importSourceFile, combineSourceImports, unzipOffice, presentationParts, notionMarkdown } from '../../engine/dist/source-imports.mjs';
-import { sourcePageExport } from '../../engine/browser-fill/source-page-export.mjs';
-import { notionPageExport } from '../../shared/notion-page-export.mjs';
-import { NotionConnector } from '../notion-connector.mjs';
-import { lessonArea, moveLessonDataToSession } from '../../shared/lesson-store.mjs';
+import {AIService} from '../../ai/ai-service.mjs';
+import {generate, exportMarkdown} from '../../engine/dist/core.mjs';
+import {
+  importSourceFile,
+  combineSourceImports,
+  unzipOffice,
+  presentationParts,
+  notionMarkdown,
+} from '../../engine/dist/source-imports.mjs';
+import {sourcePageExport} from '../../engine/browser-fill/source-page-export.mjs';
+import {notionPageExport} from '../../shared/notion-page-export.mjs';
+import {NotionConnector} from '../notion-connector.mjs';
+import {
+  lessonArea,
+  moveLessonDataToSession,
+} from '../../shared/lesson-store.mjs';
 
 const $ = id => document.getElementById(id);
 
@@ -12,14 +21,16 @@ let state = {
   draft: null,
   undoStack: [],
   redoStack: [],
-  audit: null
+  audit: null,
 };
 
 function toast(message, duration = 3000) {
   const el = $('studio-toast');
   el.textContent = message;
   el.hidden = false;
-  setTimeout(() => { el.hidden = true; }, duration);
+  setTimeout(() => {
+    el.hidden = true;
+  }, duration);
 }
 
 function pushHistory() {
@@ -39,23 +50,33 @@ function updateHistoryButtons() {
 // The draft is lesson content, so it lives only for the browser session (see shared/lesson-store.mjs).
 function saveDraft() {
   if (state.draft) {
-    lessonArea().set({ activeLessonDraft: state.draft }).catch(err => toast(`Draft not kept: ${err.message}`));
+    lessonArea()
+      .set({activeLessonDraft: state.draft})
+      .catch(err => toast(`Draft not kept: ${err.message}`));
   }
 }
 
 async function init() {
   // 1. Load active draft
   try {
-    await moveLessonDataToSession().catch(err => console.warn('Moving old lesson data failed:', err));
+    await moveLessonDataToSession().catch(err =>
+      console.warn('Moving old lesson data failed:', err)
+    );
     const data = await lessonArea().get(['activeLessonDraft']);
     if (data?.activeLessonDraft) {
       state.draft = data.activeLessonDraft;
     } else {
-      const res = await fetch(chrome.runtime.getURL('engine/dist/fixture.json'));
+      const res = await fetch(
+        chrome.runtime.getURL('engine/dist/fixture.json')
+      );
       state.draft = await res.json();
     }
 
-    if (state.draft && (!state.draft.activities || state.draft.activities.length === 0) && state.draft.slides) {
+    if (
+      state.draft &&
+      (!state.draft.activities || state.draft.activities.length === 0) &&
+      state.draft.slides
+    ) {
       state.draft = generate(state.draft);
       saveDraft();
     }
@@ -85,11 +106,16 @@ function renderNavbar() {
   const d = state.draft;
   $('navbar-lesson-title').value = d.title || 'Untitled Lesson';
 
-  const totalMin = (d.activities || []).reduce((sum, a) => sum + (Number(a.duration) || 0), 0);
+  const totalMin = (d.activities || []).reduce(
+    (sum, a) => sum + (Number(a.duration) || 0),
+    0
+  );
   $('navbar-timing-pill').textContent = `${totalMin || 45} min`;
 
-  $('navbar-approval-pill').textContent = d.status === 'approved-locally' ? '✓ Approved' : 'Drafting';
-  $('navbar-approval-pill').className = d.status === 'approved-locally' ? 'pill pill-success' : 'pill pill-neutral';
+  $('navbar-approval-pill').textContent =
+    d.status === 'approved-locally' ? '✓ Approved' : 'Drafting';
+  $('navbar-approval-pill').className =
+    d.status === 'approved-locally' ? 'pill pill-success' : 'pill pill-neutral';
 }
 
 function renderOutline() {
@@ -113,8 +139,10 @@ function renderOutline() {
       const targetId = href.slice(1);
       const targetEl = document.getElementById(targetId);
       if (targetEl) {
-        targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        document.querySelectorAll('#outline-nav a').forEach(item => item.classList.remove('active'));
+        targetEl.scrollIntoView({behavior: 'smooth', block: 'start'});
+        document
+          .querySelectorAll('#outline-nav a')
+          .forEach(item => item.classList.remove('active'));
         link.classList.add('active');
       }
     };
@@ -123,10 +151,12 @@ function renderOutline() {
 
 function renderOverviews() {
   const fm = state.draft.frontMatter || state.draft;
-  $('display-teacher-overview').textContent = fm.teacherOverview || 'No teacher overview provided.';
+  $('display-teacher-overview').textContent =
+    fm.teacherOverview || 'No teacher overview provided.';
   $('edit-teacher-overview').value = fm.teacherOverview || '';
 
-  $('display-student-overview').textContent = fm.studentOverview || 'No student overview provided.';
+  $('display-student-overview').textContent =
+    fm.studentOverview || 'No student overview provided.';
   $('edit-student-overview').value = fm.studentOverview || '';
 }
 
@@ -198,7 +228,8 @@ function renderVocabulary() {
   grid.innerHTML = '';
 
   if (vocab.length === 0) {
-    grid.innerHTML = '<p class="text-secondary text-xs">No vocabulary words listed yet. Use "+ Add Word" or "AI Define Terms".</p>';
+    grid.innerHTML =
+      '<p class="text-secondary text-xs">No vocabulary words listed yet. Use "+ Add Word" or "AI Define Terms".</p>';
     return;
   }
 
@@ -257,18 +288,20 @@ function renderActivities() {
       const secBlock = document.createElement('div');
       secBlock.className = 'section-block';
 
-      const calloutsHtml = (sec.callouts || []).map(c => {
-        let calloutClass = 'callout-tip';
-        if (/warn/i.test(c.type)) calloutClass = 'callout-warn';
-        else if (/discuss/i.test(c.type)) calloutClass = 'callout-discuss';
-        else if (/content/i.test(c.type)) calloutClass = 'callout-content';
-        return `
+      const calloutsHtml = (sec.callouts || [])
+        .map(c => {
+          let calloutClass = 'callout-tip';
+          if (/warn/i.test(c.type)) calloutClass = 'callout-warn';
+          else if (/discuss/i.test(c.type)) calloutClass = 'callout-discuss';
+          else if (/content/i.test(c.type)) calloutClass = 'callout-content';
+          return `
           <div class="callout-box ${calloutClass}">
             <div class="callout-title">${escapeHtml(c.type)}</div>
             <div class="callout-body text-xs">${escapeHtml(c.body)}</div>
           </div>
         `;
-      }).join('');
+        })
+        .join('');
 
       secBlock.innerHTML = `
         <div class="section-title-bar">
@@ -308,7 +341,7 @@ function renderActivities() {
         duration: 5,
         body: 'Teacher guidance here...',
         remarks: false,
-        callouts: []
+        callouts: [],
       });
       saveDraft();
       renderAll();
@@ -350,7 +383,10 @@ function setupEventListeners() {
     if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
       e.preventDefault();
       $('btn-studio-undo').click();
-    } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))) {
+    } else if (
+      (e.ctrlKey || e.metaKey) &&
+      (e.key === 'y' || (e.shiftKey && e.key === 'Z'))
+    ) {
       e.preventDefault();
       $('btn-studio-redo').click();
     }
@@ -365,15 +401,17 @@ function setupEventListeners() {
       id: newId,
       title: 'New Activity',
       duration: 15,
-      sections: [{
-        id: `sec-${Date.now()}`,
-        activityId: newId,
-        title: 'Activity Step',
-        duration: 15,
-        body: 'Teacher instructions...',
-        remarks: false,
-        callouts: []
-      }]
+      sections: [
+        {
+          id: `sec-${Date.now()}`,
+          activityId: newId,
+          title: 'Activity Step',
+          duration: 15,
+          body: 'Teacher instructions...',
+          remarks: false,
+          callouts: [],
+        },
+      ],
     });
     saveDraft();
     renderAll();
@@ -405,7 +443,7 @@ function setupEventListeners() {
       name: name.trim(),
       type: 'Activity Guide',
       audience: 'Student',
-      url: url.trim()
+      url: url.trim(),
     });
     saveDraft();
     renderResources();
@@ -419,7 +457,7 @@ function setupEventListeners() {
     pushHistory();
     const fm = state.draft.frontMatter || state.draft;
     fm.vocabulary ??= [];
-    fm.vocabulary.push({ word: word.trim(), definition: def.trim() });
+    fm.vocabulary.push({word: word.trim(), definition: def.trim()});
     saveDraft();
     renderVocabulary();
   };
@@ -431,8 +469,13 @@ function setupEventListeners() {
     btn.textContent = '✨ Extracting...';
     try {
       pushHistory();
-      const guidance = (state.draft.activities || []).flatMap(a => a.sections || []).map(s => s.body).join('\n');
-      const terms = await AIService.generateVocabDefinitions(guidance || state.draft.title);
+      const guidance = (state.draft.activities || [])
+        .flatMap(a => a.sections || [])
+        .map(s => s.body)
+        .join('\n');
+      const terms = await AIService.generateVocabDefinitions(
+        guidance || state.draft.title
+      );
       const fm = state.draft.frontMatter || state.draft;
       fm.vocabulary ??= [];
       terms.forEach(t => {
@@ -464,10 +507,12 @@ function setupEventListeners() {
 
     try {
       const res = await AIService.executePrompt({
-        systemInstruction: 'You are an instructional curriculum designer for computer science.',
-        prompt: `Lesson Title: "${state.draft.title}"\nRequest: ${text}`
+        systemInstruction:
+          'You are an instructional curriculum designer for computer science.',
+        prompt: `Lesson Title: "${state.draft.title}"\nRequest: ${text}`,
       });
-      $('inspector-ai-output').innerHTML = `<p>${escapeHtml(res.text || 'No response')}</p>`;
+      $('inspector-ai-output').innerHTML =
+        `<p>${escapeHtml(res.text || 'No response')}</p>`;
       $('inspector-ai-output').hidden = false;
     } catch (err) {
       toast(`AI Error: ${err.message}`);
@@ -479,7 +524,11 @@ function setupEventListeners() {
 
   // Saving to Level Builder happens only in the side panel's Save tab (prototype engine: approval, one save, real readback).
   // The old staging modal below had no real readback, so it is no longer opened.
-  const useSaveTab = () => toast('To save to Level Builder, use the Save tab in the Lesson Studio side panel.', 5000);
+  const useSaveTab = () =>
+    toast(
+      'To save to Level Builder, use the Save tab in the Lesson Studio side panel.',
+      5000
+    );
   $('btn-studio-transfer').onclick = useSaveTab;
   $('btn-inspector-sync-lb').onclick = useSaveTab;
   // Import Modal
@@ -490,10 +539,16 @@ function setupEventListeners() {
     $('modal-import').querySelector('.modal-close').focus();
   };
   new MutationObserver(() => {
-    if ($('modal-import').hidden && $('modal-import').contains(document.activeElement)) {
+    if (
+      $('modal-import').hidden &&
+      $('modal-import').contains(document.activeElement)
+    ) {
       $('btn-studio-import').focus();
     }
-  }).observe($('modal-import'), { attributes: true, attributeFilter: ['hidden'] });
+  }).observe($('modal-import'), {
+    attributes: true,
+    attributeFilter: ['hidden'],
+  });
   $('modal-import').addEventListener('keydown', e => {
     if (e.key === 'Escape') {
       $('modal-import').hidden = true;
@@ -514,18 +569,27 @@ function setupEventListeners() {
     btn.textContent = 'Clipping from Notion...';
 
     try {
-      const tabs = await chrome.tabs.query({ url: ['*://*.notion.so/*', '*://*.notion.site/*', '*://app.notion.com/*'] });
+      const tabs = await chrome.tabs.query({
+        url: [
+          '*://*.notion.so/*',
+          '*://*.notion.site/*',
+          '*://app.notion.com/*',
+        ],
+      });
       if (tabs.length === 0) {
-        throw new Error('Please open or switch to a Notion page in another tab first.');
+        throw new Error(
+          'Please open or switch to a Notion page in another tab first.'
+        );
       }
 
       const [response] = await chrome.scripting.executeScript({
-        target: { tabId: tabs[0].id },
-        func: notionPageExport
+        target: {tabId: tabs[0].id},
+        func: notionPageExport,
       });
 
       const result = response?.result;
-      if (result?.kind !== 'notion-web-clip') throw new Error('Notion clipping failed.');
+      if (result?.kind !== 'notion-web-clip')
+        throw new Error('Notion clipping failed.');
 
       const parsedBrief = notionMarkdown(result.markdown);
       if (result.title) parsedBrief.title = result.title;
@@ -552,19 +616,24 @@ function setupEventListeners() {
     btn.textContent = 'Importing Slides...';
 
     try {
-      const tabs = await chrome.tabs.query({ url: '*://docs.google.com/presentation/*' });
+      const tabs = await chrome.tabs.query({
+        url: '*://docs.google.com/presentation/*',
+      });
       if (tabs.length === 0) {
-        throw new Error('Please open a Google Slides deck in another tab first.');
+        throw new Error(
+          'Please open a Google Slides deck in another tab first.'
+        );
       }
 
       const [response] = await chrome.scripting.executeScript({
-        target: { tabId: tabs[0].id },
+        target: {tabId: tabs[0].id},
         func: sourcePageExport,
-        args: [tabs[0].url]
+        args: [tabs[0].url],
       });
 
       const result = response?.result;
-      if (result?.kind !== 'google-slides-export') throw new Error('Slides export failed.');
+      if (result?.kind !== 'google-slides-export')
+        throw new Error('Slides export failed.');
 
       const bytes = Uint8Array.from(atob(result.base64), c => c.charCodeAt(0));
       const parsed = presentationParts(await unzipOffice(bytes), result.name);
@@ -601,33 +670,40 @@ function setupEventListeners() {
     if (!token && hintEl) hintEl.hidden = false;
   })();
 
-  document.getElementById('btn-studio-import-notion-url').onclick = async () => {
-    const btn = document.getElementById('btn-studio-import-notion-url');
-    const urlInput = document.getElementById('studio-notion-url-input');
-    const urlVal = urlInput.value.trim();
-    if (!urlVal) { toast('Please paste a Notion page URL or ID first.', 3000); return; }
-    const origText = btn.textContent;
-    btn.textContent = 'Fetching...';
-    btn.disabled = true;
-    try {
-      const token = await NotionConnector.getToken();
-      if (!token) throw new Error('No Notion Integration Token saved. Add one in Settings (secret_...).');
-      const brief = await NotionConnector.fetchFromApi(urlVal);
-      pushHistory();
-      const combined = combineSourceImports(state.draft, [brief]);
-      state.draft = generate(combined.source || combined);
-      saveDraft();
-      renderAll();
-      urlInput.value = '';
-      $('modal-import').hidden = true;
-      toast('✓ Notion page "' + (brief.title || 'Brief') + '" imported!');
-    } catch (err) {
-      toast('Notion import error: ' + err.message, 5000);
-    } finally {
-      btn.textContent = origText;
-      btn.disabled = false;
-    }
-  };
+  document.getElementById('btn-studio-import-notion-url').onclick =
+    async () => {
+      const btn = document.getElementById('btn-studio-import-notion-url');
+      const urlInput = document.getElementById('studio-notion-url-input');
+      const urlVal = urlInput.value.trim();
+      if (!urlVal) {
+        toast('Please paste a Notion page URL or ID first.', 3000);
+        return;
+      }
+      const origText = btn.textContent;
+      btn.textContent = 'Fetching...';
+      btn.disabled = true;
+      try {
+        const token = await NotionConnector.getToken();
+        if (!token)
+          throw new Error(
+            'No Notion Integration Token saved. Add one in Settings (secret_...).'
+          );
+        const brief = await NotionConnector.fetchFromApi(urlVal);
+        pushHistory();
+        const combined = combineSourceImports(state.draft, [brief]);
+        state.draft = generate(combined.source || combined);
+        saveDraft();
+        renderAll();
+        urlInput.value = '';
+        $('modal-import').hidden = true;
+        toast('✓ Notion page "' + (brief.title || 'Brief') + '" imported!');
+      } catch (err) {
+        toast('Notion import error: ' + err.message, 5000);
+      } finally {
+        btn.textContent = origText;
+        btn.disabled = false;
+      }
+    };
   fileInput.onchange = async () => {
     if (fileInput.files?.length) {
       const parsedSources = [];
@@ -651,7 +727,9 @@ function setupEventListeners() {
       frontMatter: state.draft.frontMatter || state.draft,
       resources: state.draft.resources || [],
       activities: state.draft.activities || [],
-      sections: state.draft.sections || (state.draft.activities || []).flatMap(a => a.sections || [])
+      sections:
+        state.draft.sections ||
+        (state.draft.activities || []).flatMap(a => a.sections || []),
     });
     navigator.clipboard.writeText(md);
     toast('✓ Markdown review export copied to clipboard!');
@@ -668,7 +746,8 @@ async function runAudit() {
     state.audit = audit;
 
     $('health-score-pill').textContent = `${audit.score}/100`;
-    $('health-summary-text').textContent = `Grade ${audit.grade}: ${audit.strengths.length} strengths, ${audit.issues.length} opportunities.`;
+    $('health-summary-text').textContent =
+      `Grade ${audit.grade}: ${audit.strengths.length} strengths, ${audit.issues.length} opportunities.`;
 
     const body = $('inspector-audit-body');
     body.innerHTML = `
@@ -688,7 +767,12 @@ async function runAudit() {
 }
 
 function escapeHtml(str) {
-  return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 // Durations come from imports and AI output: show only a whole number of minutes.
@@ -701,7 +785,9 @@ function minutes(value) {
 function safeUrl(value) {
   try {
     const url = new URL(String(value || ''));
-    return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : '#';
+    return url.protocol === 'https:' || url.protocol === 'http:'
+      ? url.href
+      : '#';
   } catch {
     return '#';
   }

@@ -5,8 +5,8 @@
  * 2. Active Tab In-Page Clipper (DOM-based extraction with no token needed)
  */
 
-import { notionBlocks, notionMarkdown } from '../engine/dist/source-imports.mjs';
-import { notionPageExport } from '../shared/notion-page-export.mjs';
+import {notionBlocks, notionMarkdown} from '../engine/dist/source-imports.mjs';
+import {notionPageExport} from '../shared/notion-page-export.mjs';
 
 const NOTION_API_VERSION = '2022-06-28';
 
@@ -18,7 +18,9 @@ export class NotionConnector {
     if (!input || typeof input !== 'string') return null;
     const clean = input.trim();
     // Match 32 hex chars with optional hyphens at end of URL or standalone
-    const match = clean.match(/([0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}|[0-9a-f]{32})(?:[?#]|$)/i);
+    const match = clean.match(
+      /([0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}|[0-9a-f]{32})(?:[?#]|$)/i
+    );
     if (!match) return null;
     return match[1].replace(/-/g, '').toLowerCase();
   }
@@ -50,7 +52,9 @@ export class NotionConnector {
       // An empty box deletes the token rather than storing an empty string.
       if (!clean) return this.clearToken().then(resolve);
       if (typeof chrome !== 'undefined' && chrome.storage?.local) {
-        chrome.storage.local.set({ notionIntegrationToken: clean }, () => resolve(true));
+        chrome.storage.local.set({notionIntegrationToken: clean}, () =>
+          resolve(true)
+        );
       } else {
         localStorage.setItem('lesson_studio_notion_token', clean);
         resolve(true);
@@ -63,11 +67,14 @@ export class NotionConnector {
    */
   static async fetchFromApi(pageUrlOrId, overrideToken = null) {
     const pageId = this.extractPageId(pageUrlOrId);
-    if (!pageId) throw new Error('Invalid Notion page URL or ID. Check the link.');
+    if (!pageId)
+      throw new Error('Invalid Notion page URL or ID. Check the link.');
 
-    const token = overrideToken || await this.getToken();
+    const token = overrideToken || (await this.getToken());
     if (!token) {
-      throw new Error('Notion Integration Token not configured. Enter your token in settings or clip from an active Notion tab.');
+      throw new Error(
+        'Notion Integration Token not configured. Enter your token in settings or clip from an active Notion tab.'
+      );
     }
 
     // 1. Fetch Page Details (Title)
@@ -75,14 +82,16 @@ export class NotionConnector {
     try {
       const pageRes = await fetch(`https://api.notion.com/v1/pages/${pageId}`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
           'Notion-Version': NOTION_API_VERSION,
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+        },
       });
       if (pageRes.ok) {
         const pageData = await pageRes.json();
-        const titleProp = Object.values(pageData.properties || {}).find(p => p.type === 'title');
+        const titleProp = Object.values(pageData.properties || {}).find(
+          p => p.type === 'title'
+        );
         if (titleProp?.title?.[0]?.plain_text) {
           pageTitle = titleProp.title[0].plain_text;
         }
@@ -96,18 +105,26 @@ export class NotionConnector {
     let cursor = null;
 
     do {
-      const query = cursor ? `?start_cursor=${encodeURIComponent(cursor)}&page_size=100` : '?page_size=100';
-      const res = await fetch(`https://api.notion.com/v1/blocks/${pageId}/children${query}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Notion-Version': NOTION_API_VERSION,
-          'Content-Type': 'application/json'
+      const query = cursor
+        ? `?start_cursor=${encodeURIComponent(cursor)}&page_size=100`
+        : '?page_size=100';
+      const res = await fetch(
+        `https://api.notion.com/v1/blocks/${pageId}/children${query}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Notion-Version': NOTION_API_VERSION,
+            'Content-Type': 'application/json',
+          },
         }
-      });
+      );
 
       if (!res.ok) {
         const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson.message || `Notion API returned HTTP ${res.status}. Verify token permissions.`);
+        throw new Error(
+          errJson.message ||
+            `Notion API returned HTTP ${res.status}. Verify token permissions.`
+        );
       }
 
       const data = await res.json();
@@ -116,7 +133,7 @@ export class NotionConnector {
     } while (cursor);
 
     // 3. Convert blocks using verified notionBlocks parser
-    const parsedBrief = notionBlocks({ results: allBlocks });
+    const parsedBrief = notionBlocks({results: allBlocks});
     if (pageTitle) parsedBrief.title = pageTitle;
     parsedBrief.sourceUrl = `https://www.notion.so/${pageId}`;
     parsedBrief.kind = 'brief';
@@ -128,19 +145,26 @@ export class NotionConnector {
    * Clips from active open Notion tab directly (zero token needed)
    */
   static async clipActiveTab() {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!tab?.id || (!tab.url.includes('notion.so') && !tab.url.includes('notion.site') && !tab.url.includes('app.notion.com'))) {
+    const [tab] = await chrome.tabs.query({active: true, currentWindow: true});
+    if (
+      !tab?.id ||
+      (!tab.url.includes('notion.so') &&
+        !tab.url.includes('notion.site') &&
+        !tab.url.includes('app.notion.com'))
+    ) {
       throw new Error('Please open or switch to a Notion page first.');
     }
 
     const [response] = await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: notionPageExport
+      target: {tabId: tab.id},
+      func: notionPageExport,
     });
 
     const result = response?.result;
     if (result?.kind !== 'notion-web-clip') {
-      throw new Error('Could not clip Notion page. Ensure the brief has headings.');
+      throw new Error(
+        'Could not clip Notion page. Ensure the brief has headings.'
+      );
     }
 
     const parsedBrief = notionMarkdown(result.markdown);
