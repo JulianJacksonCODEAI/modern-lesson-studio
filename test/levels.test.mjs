@@ -6,6 +6,7 @@ import {
   levelRequests,
   initialLevelChoices,
   applyLevelChoices,
+  duplicateLevelNames,
   choiceKey,
 } from '../shared/levels.mjs';
 
@@ -222,5 +223,70 @@ test('a group that already has exactly these levels is kept as it is', () => {
   assert.deepEqual(
     pkg.lesson.sections[2].progression.levels.map(x => x.number),
     [1, 2, 3]
+  );
+});
+
+test('a level name given to two levels is flagged; skipped levels do not count', () => {
+  const l = lesson(),
+    requests = levelRequests(l),
+    choices = initialLevelChoices(requests);
+  Object.assign(choices[choiceKey('s2', 1)], {
+    name: 'Same',
+    status: 'verified',
+  });
+  Object.assign(choices[choiceKey('s3', 2)], {
+    name: 'Same',
+    status: 'unchecked',
+  });
+  Object.assign(choices[choiceKey('s3', 3)], {
+    name: 'Other',
+    status: 'unchecked',
+  });
+  assert.deepEqual([...duplicateLevelNames(requests, choices)], ['Same']);
+  choices[choiceKey('s3', 2)].status = 'skipped';
+  assert.equal(duplicateLevelNames(requests, choices).size, 0);
+});
+
+test('the same level is never linked twice, even if both were checked', () => {
+  const l = lesson(),
+    requests = levelRequests(l),
+    choices = initialLevelChoices(requests);
+  Object.assign(choices[choiceKey('s2', 1)], {
+    name: 'Same',
+    status: 'verified',
+  });
+  Object.assign(choices[choiceKey('s3', 2)], {
+    name: 'Same',
+    status: 'verified',
+  });
+  const fresh = {
+    activities: [{activitySections: [{}, {}]}, {activitySections: [{}]}],
+  };
+  const {pkg, toCopy} = applyLevelChoices(pkgFor(l), fresh, requests, choices);
+  assert.deepEqual(
+    pkg.lesson.sections[1].progression.levels.map(x => x.key),
+    ['Same']
+  );
+  assert.ok(
+    toCopy.some(
+      x => x.number === 2 && /Already used for another level/.test(x.reason)
+    )
+  );
+});
+
+test('a level group title is used for an empty group', () => {
+  const l = lesson(),
+    requests = levelRequests(l),
+    choices = initialLevelChoices(requests);
+  Object.assign(choices[choiceKey('s3', 2)], {name: 'L2', status: 'verified'});
+  const fresh = {
+    activities: [{activitySections: [{}, {}]}, {activitySections: [{}]}],
+  };
+  const {pkg} = applyLevelChoices(pkgFor(l), fresh, requests, choices, {
+    s3: '  Check for Understanding ',
+  });
+  assert.equal(
+    pkg.lesson.sections[2].progression.title,
+    'Check for Understanding'
   );
 });

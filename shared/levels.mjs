@@ -127,19 +127,50 @@ const existingLevelNames = section =>
 // Applied during Prepare, once the lesson's saved state is known. Adds verified levels to empty
 // level groups and numbers every level by its position in the whole lesson, as Level Builder does.
 // Returns the updated package and the levels left to add by hand.
-export function applyLevelChoices(pkg, freshLesson, requests, choices) {
+// Level names given to more than one level in the card (a level can be linked only once).
+export function duplicateLevelNames(requests, choices) {
+  const seen = new Map();
+  for (const r of requests) {
+    for (const number of r.numbers) {
+      const c = choices[choiceKey(r.sectionId, number)];
+      if (c?.name && c.status !== 'skipped') {
+        seen.set(c.name, (seen.get(c.name) || 0) + 1);
+      }
+    }
+  }
+  return new Set([...seen].filter(([, n]) => n > 1).map(([name]) => name));
+}
+
+// titles: {sectionId: "Level group title"} (Level Builder's "Progression Title"), used for empty groups.
+export function applyLevelChoices(
+  pkg,
+  freshLesson,
+  requests,
+  choices,
+  titles = {}
+) {
   const next = structuredClone(pkg),
     toCopy = [],
     positions = sectionPositions(next.lesson);
   const label = r => 'Slide ' + r.slide + (r.title ? ' · ' + r.title : '');
-  const linked = new Map();
+  const linked = new Map(),
+    used = new Set();
   for (const r of requests) {
     const verified = [],
       section = next.lesson.sections.find(s => s.id === r.sectionId),
       pos = positions.get(r.sectionId);
     for (const number of r.numbers) {
       const c = choices[choiceKey(r.sectionId, number)] || {};
-      if (c.status === 'verified' && c.name) {
+      if (c.status === 'verified' && c.name && used.has(c.name)) {
+        // A level can be linked only once; the card blocks this, so it's a safeguard.
+        toCopy.push({
+          where: label(r),
+          number,
+          name: c.name,
+          reason: 'Already used for another level in this lesson',
+        });
+      } else if (c.status === 'verified' && c.name) {
+        used.add(c.name);
         verified.push({key: c.name, number});
       } else {
         toCopy.push({
@@ -180,7 +211,9 @@ export function applyLevelChoices(pkg, freshLesson, requests, choices) {
       }
     }
     linked.set(r.sectionId, {
-      title: existing.length ? target.progressionName || '' : '',
+      title: existing.length
+        ? target.progressionName || ''
+        : String(titles[r.sectionId] || '').trim(),
       levels: verified.map(v => ({key: v.key, number: 0, assessment: false})),
     });
   }

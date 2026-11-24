@@ -32,6 +32,7 @@ import {AIService} from '../ai/ai-service.mjs';
 import {
   levelRequests,
   initialLevelChoices,
+  duplicateLevelNames,
   choiceKey as levelKey,
 } from '../shared/levels.mjs';
 import {
@@ -683,13 +684,17 @@ function pendingChoices() {
 }
 
 // ---------- Levels: link existing levels named by number in the speaker notes ----------
-const levelPlan = {requests: [], choices: {}};
+// titles: optional level group title per section (Level Builder's "Progression Title").
+// results: the last search, shown without the levels already used in the card.
+const levelPlan = {requests: [], choices: {}, titles: {}, results: null};
 function resetLevels() {
   levelPlan.requests = built ? levelRequests(built.lesson) : [];
   levelPlan.choices = initialLevelChoices(
     levelPlan.requests,
     imports.brief?.levelNames || {}
   );
+  levelPlan.titles = {};
+  levelPlan.results = null;
   $('level-results').replaceChildren();
   say('levels-msg', '');
   renderLevels();
@@ -719,7 +724,8 @@ function renderLevels() {
     return;
   }
   const out = $('levels-out'),
-    parts = [];
+    parts = [],
+    duplicates = duplicateLevelNames(levelPlan.requests, levelPlan.choices);
   for (const r of levelPlan.requests) {
     const fs = document.createElement('fieldset');
     fs.className = 'levels-group';
@@ -728,6 +734,30 @@ function renderLevels() {
         textContent: `Slide ${r.slide}${r.title ? ' · ' + r.title : ''}: Lesson ${r.lesson}, Level${r.numbers.length === 1 ? '' : 's'} ${r.numbers.join(', ')}`,
       })
     );
+    // This slide's levels become one level group (progression) in its section.
+    const titleId =
+        'level-title-' + String(r.sectionId).replace(/[^a-z0-9]/gi, '-'),
+      title = Object.assign(document.createElement('input'), {
+        id: titleId,
+        type: 'text',
+        value: levelPlan.titles[r.sectionId] || '',
+        disabled: busy,
+        autocomplete: 'off',
+        placeholder: 'Optional, for example Check for Understanding',
+      });
+    title.addEventListener('input', () => {
+      levelPlan.titles[r.sectionId] = title.value;
+    });
+    const titleRow = document.createElement('div');
+    titleRow.className = 'level-title';
+    titleRow.append(
+      Object.assign(document.createElement('label'), {
+        htmlFor: titleId,
+        textContent: 'Level group title',
+      }),
+      title
+    );
+    fs.append(titleRow);
     if (r.tooMany) {
       fs.append(
         Object.assign(document.createElement('p'), {
@@ -765,6 +795,7 @@ function renderLevels() {
       });
       input.addEventListener('change', () => {
         renderLevels();
+        renderLevelResults();
         refresh();
       });
       const skip = Object.assign(document.createElement('button'), {
@@ -777,22 +808,25 @@ function renderLevels() {
       skip.addEventListener('click', () => {
         c.status = c.status === 'skipped' ? 'unchecked' : 'skipped';
         renderLevels();
+        renderLevelResults();
         refresh();
       });
+      const duplicate = c.status !== 'skipped' && duplicates.has(c.name);
       const status = Object.assign(document.createElement('p'), {
         className:
           'level-status ' +
-          (c.status === 'verified'
-            ? 'ok-text'
-            : c.status === 'not-found'
-              ? 'error'
+          (duplicate || c.status === 'not-found'
+            ? 'error'
+            : c.status === 'verified'
+              ? 'ok-text'
               : 'muted'),
-        textContent:
-          (STATUS_TEXT[c.status] || '') +
-          (c.status === 'not-found' && c.message ? `: ${c.message}` : '') +
-          (c.status === 'unchecked' && c.source === 'notion'
-            ? 'From the Notion page, not checked yet'
-            : ''),
+        textContent: duplicate
+          ? 'This level is also used for another level here. Each level can be linked once.'
+          : (STATUS_TEXT[c.status] || '') +
+            (c.status === 'not-found' && c.message ? `: ${c.message}` : '') +
+            (c.status === 'unchecked' && c.source === 'notion'
+              ? 'From the Notion page, not checked yet'
+              : ''),
       });
       row.append(
         Object.assign(document.createElement('label'), {
@@ -819,62 +853,81 @@ function useLevelName(name) {
   Object.assign(empty.c, {name, source: 'search', status: 'unchecked'});
   say('levels-msg', `Level ${empty.number} set to ${name}.`, 'ok');
   renderLevels();
+  renderLevelResults();
   refresh();
+}
+// The last search's results, minus levels already given to a level in the card.
+function renderLevelResults() {
+  const out = $('level-results'),
+    found = levelPlan.results;
+  if (!found) {
+    out.replaceChildren();
+    return;
+  }
+  const inUse = new Set(
+    levelRows()
+      .filter(x => x.c.name && x.c.status !== 'skipped')
+      .map(x => x.c.name)
+  );
+  const levels = found.levels.filter(l => !inUse.has(l.name));
+  if (!levels.length) {
+    out.replaceChildren(
+      Object.assign(document.createElement('p'), {
+        className: 'muted',
+        textContent: found.levels.length
+          ? `Every level matching "${found.query}" is already used above.`
+          : `No levels match "${found.query}".`,
+      })
+    );
+    return;
+  }
+  const ul = document.createElement('ul');
+  ul.className = 'level-results';
+  for (const level of levels) {
+    const li = document.createElement('li'),
+      use = Object.assign(document.createElement('button'), {
+        type: 'button',
+        className: 'btn',
+        textContent: 'Use',
+        disabled: busy,
+      });
+    use.setAttribute('aria-label', `Use ${level.name}`);
+    use.addEventListener('click', () => useLevelName(level.name));
+    li.append(
+      Object.assign(document.createElement('span'), {
+        textContent: level.name,
+      }),
+      Object.assign(document.createElement('span'), {
+        className: 'muted',
+        textContent: level.type ? ` (${level.type})` : '',
+      }),
+      use
+    );
+    ul.append(li);
+  }
+  out.replaceChildren(
+    ul,
+    ...(found.morePages
+      ? [
+          Object.assign(document.createElement('p'), {
+            className: 'muted',
+            textContent:
+              'More levels match. Type more of the name to narrow the list.',
+          }),
+        ]
+      : [])
+  );
 }
 $('btn-search-levels').addEventListener('click', e =>
   withBusy(e.currentTarget, 'Searching…', async () => {
-    const query = $('level-query').value.trim(),
-      out = $('level-results');
+    const query = $('level-query').value.trim();
     if (!query) {
       say('levels-msg', 'Type part of a level name to search for.', 'error');
       return;
     }
     try {
-      const found = await session.searchLevels(query);
-      if (!found.levels.length) {
-        out.replaceChildren(
-          Object.assign(document.createElement('p'), {
-            className: 'muted',
-            textContent: `No levels match "${query}".`,
-          })
-        );
-        return;
-      }
-      const ul = document.createElement('ul');
-      ul.className = 'level-results';
-      for (const level of found.levels) {
-        const li = document.createElement('li'),
-          use = Object.assign(document.createElement('button'), {
-            type: 'button',
-            className: 'btn',
-            textContent: 'Use',
-          });
-        use.setAttribute('aria-label', `Use ${level.name}`);
-        use.addEventListener('click', () => useLevelName(level.name));
-        li.append(
-          Object.assign(document.createElement('span'), {
-            textContent: level.name,
-          }),
-          Object.assign(document.createElement('span'), {
-            className: 'muted',
-            textContent: level.type ? ` (${level.type})` : '',
-          }),
-          use
-        );
-        ul.append(li);
-      }
-      out.replaceChildren(
-        ul,
-        ...(found.morePages
-          ? [
-              Object.assign(document.createElement('p'), {
-                className: 'muted',
-                textContent:
-                  'More levels match. Type more of the name to narrow the list.',
-              }),
-            ]
-          : [])
-      );
+      levelPlan.results = await session.searchLevels(query);
+      renderLevelResults();
       say('levels-msg', '');
     } catch (err) {
       say('levels-msg', 'Search failed: ' + err.message, 'error');
@@ -929,7 +982,11 @@ async function runPrepare(button, {addObjectives}) {
           skip,
           addObjectives,
           levels: levelPlan.requests.length
-            ? {requests: levelPlan.requests, choices: levelPlan.choices}
+            ? {
+                requests: levelPlan.requests,
+                choices: levelPlan.choices,
+                titles: levelPlan.titles,
+              }
             : null,
         });
         say(
@@ -1214,7 +1271,11 @@ function refresh() {
   )) {
     el.disabled = busy || el.dataset.skipped === 'true';
   }
-  const levelsToCheck = uncheckedLevels().length;
+  const levelsToCheck = uncheckedLevels().length,
+    duplicateLevels = duplicateLevelNames(
+      levelPlan.requests,
+      levelPlan.choices
+    ).size;
   $('btn-check-levels').disabled =
     busy || !session || !owned || locked || !levelsToCheck;
   $('btn-search-levels').disabled = busy || !session || !owned || locked;
@@ -1226,17 +1287,20 @@ function refresh() {
     !checked ||
     waiting > 0 ||
     levelsToCheck > 0 ||
+    duplicateLevels > 0 ||
     locked;
   const adding = [...sharedChoices.values()].filter(v => v === 'add').length;
   if (!busy) {
     $('btn-prepare').textContent =
       waiting > 0
         ? `Choose Skip or Add for ${waiting} item${waiting === 1 ? '' : 's'}`
-        : levelsToCheck > 0
-          ? `Check ${levelsToCheck} level name${levelsToCheck === 1 ? '' : 's'} first`
-          : adding
-            ? `Add ${adding} to Level Builder and prepare changes`
-            : 'Prepare changes';
+        : duplicateLevels > 0
+          ? 'Use each level only once'
+          : levelsToCheck > 0
+            ? `Check ${levelsToCheck} level name${levelsToCheck === 1 ? '' : 's'} first`
+            : adding
+              ? `Add ${adding} to Level Builder and prepare changes`
+              : 'Prepare changes';
   }
   $('btn-save').disabled = busy || !$('approve').checked || !st?.job;
   $('dest-open').hidden = !!destination;

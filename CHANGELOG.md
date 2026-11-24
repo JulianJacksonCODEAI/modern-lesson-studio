@@ -14,6 +14,9 @@ Link existing levels to the lesson. Also includes the changes below that were wa
 - **Levels card** in the Save step, for slides whose speaker notes send students to levels ("Lesson 16, Levels 2-4"). Each level gets its exact Level Builder name from, in order: the Notion page's Levels list (`- Level 2: <name>`), a search of Level Builder's levels (the editor's own Add Levels search, read-only), or typing it. **Check level names** confirms each name with Level Builder before Prepare; Prepare waits until every named level is checked.
 - Checked levels are linked into the section's level group when that group is empty, numbered by their position in the whole lesson, then saved and read back like every other change.
 - Levels that can't be linked (skipped, not found, or the group in Level Builder already has other levels) are listed after preparing and after saving, with a Copy name button, to add by hand.
+- Each slide's levels become one level group (progression) in its section, with an optional **Level group title** (Level Builder's Progression Title).
+- A level name given to two levels is flagged, and Prepare waits until each level is used once. Levels already used elsewhere in the unit are still caught by Prepare.
+- Search results drop levels already used in the card.
 - Engine: a read-only `search-levels` action in the editor bridge (lists level names that contain a query; nothing is added and the editor must be unchanged afterwards).
 
 ### Changed

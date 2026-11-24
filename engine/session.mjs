@@ -412,7 +412,8 @@ export function createSession({
             pkg,
             fresh.lesson,
             levels.requests,
-            levels.choices || {}
+            levels.choices || {},
+            levels.titles || {}
           );
           withLevels = applied.pkg;
           state.levelsToCopy = applied.toCopy;
