@@ -6,6 +6,9 @@ Release steps: bump `manifest.json`, add a section here, merge the pull request,
 
 ## [Unreleased]
 
+### Changed
+- The build also makes `build/lesson-studio-full-<version>.zip` (the full build under `full/`, checked like the team zip), instead of it being zipped by hand.
+
 ## [1.7.0] - 2026-11-23
 
 Link existing levels to the lesson. Also includes the changes below that were waiting for a release (one engine home, privacy page, CI, code style).

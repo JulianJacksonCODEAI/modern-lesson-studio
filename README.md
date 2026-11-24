@@ -22,7 +22,7 @@ Build both (runs every test first, stops on any failure):
 
 Load one in Chrome: `chrome://extensions` → Developer mode → **Load unpacked** → choose `build\team` or `build\full`. Click the toolbar icon to open the side panel.
 
-**Sharing with the team:** share only `build\lesson-studio-team-<version>.zip`, for example in a view-only Google Drive folder. It holds the team build and install steps for teammates. Never share `build\full` or this repository.
+**Sharing with the team:** share only `build\lesson-studio-team-<version>.zip`, for example in a view-only Google Drive folder. It holds the team build and install steps for teammates. `build\lesson-studio-full-<version>.zip` (the full build, made by the same build) goes only to Julian and Angi, in the Drive "Full" folder; never upload it to the Chrome Web Store.
 
 ## Safety rules
 
