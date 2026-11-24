@@ -5,26 +5,37 @@
  */
 export async function notionPageExport() {
   const url = location.href;
-  const title = (
-    document.querySelector('.notion-page-block [contenteditable="true"]')?.textContent ||
-    document.querySelector('h1')?.textContent ||
-    document.title.replace(/ \| Notion$/, '').replace(/^Notion - /, '')
-  ).trim() || 'Notion Lesson Brief';
+  const title =
+    (
+      document.querySelector('.notion-page-block [contenteditable="true"]')
+        ?.textContent ||
+      document.querySelector('h1')?.textContent ||
+      document.title.replace(/ \| Notion$/, '').replace(/^Notion - /, '')
+    ).trim() || 'Notion Lesson Brief';
 
   // Strategy 1: Look for Notion content blocks
-  const root = document.querySelector('.notion-page-content') || document.querySelector('main') || document.body;
-  if (!root) throw new Error('Could not find Notion page content.');
+  const root =
+    document.querySelector('.notion-page-content') ||
+    document.querySelector('main') ||
+    document.body;
+  if (!root) {
+    throw new Error('Could not find Notion page content.');
+  }
 
   const lines = [`# ${title}\n`];
 
   function extractBlock(el) {
-    if (!el || el.nodeType !== 1) return;
-    
+    if (!el || el.nodeType !== 1) {
+      return;
+    }
+
     // Check headings
     const tagName = el.tagName.toLowerCase();
     const classList = el.className || '';
     const text = el.innerText?.trim() || '';
-    if (!text) return;
+    if (!text) {
+      return;
+    }
 
     if (tagName === 'h1' || classList.includes('notion-header-block')) {
       lines.push(`\n## ${text}\n`);
@@ -52,7 +63,10 @@ export async function notionPageExport() {
     }
 
     // Check callouts / quotes
-    if (classList.includes('notion-callout-block') || tagName === 'blockquote') {
+    if (
+      classList.includes('notion-callout-block') ||
+      tagName === 'blockquote'
+    ) {
       lines.push(`> ${text}\n`);
       return;
     }
@@ -65,7 +79,10 @@ export async function notionPageExport() {
         let pText = text;
         links.forEach(a => {
           if (a.href && a.textContent.trim()) {
-            pText = pText.replace(a.textContent.trim(), `[${a.textContent.trim()}](${a.href})`);
+            pText = pText.replace(
+              a.textContent.trim(),
+              `[${a.textContent.trim()}](${a.href})`
+            );
           }
         });
         lines.push(pText);
@@ -75,8 +92,10 @@ export async function notionPageExport() {
     }
   }
 
-  const blocks = root.querySelectorAll('h1, h2, h3, p, li, blockquote, .notion-header-block, .notion-sub_header-block, .notion-sub_sub_header-block, .notion-text-block, .notion-bulleted_list-block, .notion-callout-block');
-  
+  const blocks = root.querySelectorAll(
+    'h1, h2, h3, p, li, blockquote, .notion-header-block, .notion-sub_header-block, .notion-sub_sub_header-block, .notion-text-block, .notion-bulleted_list-block, .notion-callout-block'
+  );
+
   if (blocks.length > 0) {
     blocks.forEach(b => extractBlock(b));
   } else {
@@ -89,6 +108,6 @@ export async function notionPageExport() {
     kind: 'notion-web-clip',
     title,
     url,
-    markdown
+    markdown,
   };
 }

@@ -1,0 +1,11 @@
+# Generated or not ours to format
+build/
+node_modules/
+package-lock.json
+
+# Prose and data: formatting would only churn them
+*.md
+*.json
+*.txt
+*.yml
+docs/

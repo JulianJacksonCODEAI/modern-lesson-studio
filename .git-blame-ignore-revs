@@ -1,0 +1,6 @@
+# Whole-repo formatting commits (merge this PR with a merge commit, not squash, or these IDs change). GitHub skips these in blame view; locally run
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+# Prettier formatting (code.org settings)
+7a0d0b4ce83e485b11210c58c4a6b6c7cbc86178
+# ESLint curly autofix (braces on every block)
+8d4796f7488f414aa349a790587ba06231498833

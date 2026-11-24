@@ -11,9 +11,10 @@ One home for the engine. The prototype repo `jacksj12/codeai-levelbuilder-protot
 ### Changed
 - Engine updated to the prototype's last version, 0.15.5: accessibility changes to the full build's workspace, workflow, transfer, Notion and publish pages (page titles per view, skip link, labelled dialogs, focus returned after saving a flag, larger text and targets that follow the system text size) and a content security policy on the local preview server. No save logic changed.
 - The engine's design notes and live acceptance records moved to `docs/engine/`.
-- Privacy policy published with GitHub Pages at https://julianjacksoncodeai.github.io/modern-lesson-studio/privacy/ (source `docs/privacy/index.html`; `PRIVACY.md` links to it). The store listing's privacy and support links point to this repo.
+- Privacy policy published with GitHub Pages at https://julianjacksoncodeai.github.io/modern-lesson-studio/privacy/ (source `docs/privacy/index.md`, Cayman theme; `PRIVACY.md` links to it). The store listing's privacy and support links point to this repo.
 
 ### Added
+- Code style from code.org: Prettier (code-dot-org's apps settings) and ESLint (code-dot-org's root rules, allowing `x == null` and bare `catch {}` as the Airbnb guide does). Every JS, CSS and HTML file is reformatted, every block has braces, and dead code ESLint found is removed. CI and `build.ps1` check formatting and lint; `npm run format` and `npm run lint` run them locally.
 - CI: a GitHub Actions workflow (`.github/workflows/ci.yml`) runs the unit tests, both builds with their checks, and Mozilla's extension checker on every pull request and every push to `main`.
 
 ### Removed
