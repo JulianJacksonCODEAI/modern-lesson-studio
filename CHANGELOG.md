@@ -4,7 +4,7 @@ All notable changes to Lesson Studio. Versions follow [Semantic Versioning](http
 
 Release steps: bump `manifest.json`, update the privacy page (`docs/privacy/index.md`: its "Last updated … (version X.Y.Z)" line, plus its text if what Lesson Studio reads, stores or sends changed; the build fails if the version doesn't match), add a section here, merge the pull request, then tag the merge commit `vX.Y.Z`.
 
-## [Unreleased]
+## [1.8.0] - 2026-11-25
 
 ### Changed
 - The build also makes `build/lesson-studio-full-<version>.zip` (the full build under `full/`, checked like the team zip), instead of it being zipped by hand.
