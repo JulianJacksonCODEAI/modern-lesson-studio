@@ -112,7 +112,9 @@ function notes(container, list, title) {
     li.textContent = w;
     ul.append(li);
   }
-  const h = document.createElement('h3');
+  // h2: the panel's first heading level under the h1 (no skipped level).
+  const h = document.createElement('h2');
+  h.className = 'notes-h';
   h.textContent = title;
   container.replaceChildren(h, ul);
 }
