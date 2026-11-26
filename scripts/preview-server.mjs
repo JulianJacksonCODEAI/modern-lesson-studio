@@ -59,7 +59,7 @@ const area=store=>({get:async k=>{if(k==null)return {...store};const keys=Array.
 const ev=()=>({addListener(){}});
 window.chrome={runtime:{getManifest:()=>({version:'preview'}),getURL:p=>'/'+p,id:'preview'},
  storage:{local:area(mem),session:area(sess)},
- tabs:{query:async()=>[],create:async o=>{console.log('[preview] would open',o.url);return {id:1};},get:async()=>({}),onUpdated:ev(),onActivated:ev()},
+ tabs:{query:async()=>[{id:2,active:false,lastAccessed:1,title:'AI Lab (open deck in another tab)',url:'https://docs.google.com/presentation/d/preview-deck-0000/edit#slide=id.p1'}],update:async(id)=>({id,active:true}),create:async o=>{console.log('[preview] would open',o.url);return {id:1};},get:async()=>({}),onUpdated:ev(),onActivated:ev()},
  scripting:{executeScript:async()=>{throw new Error('Preview only: no real tabs.');}}};
 `;
 http
