@@ -240,6 +240,9 @@ $('btn-reset').addEventListener('click', async () => {
 $('btn-to-check').addEventListener('click', () =>
   selectStep('check', {focus: true})
 );
+$('btn-empty-import').addEventListener('click', () =>
+  selectStep('import', {focus: true})
+);
 
 // ---------- 2 · Check ----------
 function lessonForAudit(lesson) {
@@ -760,10 +763,17 @@ function renderLevels() {
     titleRow.append(
       Object.assign(document.createElement('label'), {
         htmlFor: titleId,
-        textContent: 'Level group title',
+        textContent: 'Level group title (optional)',
       }),
-      title
+      title,
+      Object.assign(document.createElement('span'), {
+        id: titleId + '-help',
+        className: 'hint',
+        textContent:
+          'The heading teachers and students see above these levels in the lesson. Level Builder calls it the Progression Title.',
+      })
     );
+    title.setAttribute('aria-describedby', titleId + '-help');
     fs.append(titleRow);
     if (r.tooMany) {
       fs.append(
@@ -1258,7 +1268,10 @@ function refresh() {
     ? `✓ ${imports.brief.name}`
     : 'Not imported (optional, adds overview, objectives and resources)';
   $('lesson-label').textContent = built
-    ? built.lesson.title
+    ? built.lesson.title +
+      (destination
+        ? ` → ${lessonInfo?.lessonName || 'Level Builder lesson ' + destination.id}`
+        : '')
     : 'No lesson imported yet';
   $('btn-to-check').disabled = !built || busy;
   $('btn-to-save').disabled = !built || busy;

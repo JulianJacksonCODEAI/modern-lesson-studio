@@ -273,6 +273,12 @@ main {
   border: 1px dashed var(--border);
   border-radius: var(--radius);
 }
+.empty-state p {
+  margin: 0 0 10px;
+}
+.level-title .hint {
+  font-size: 0.8rem;
+}
 
 /* Read-only lesson view */
 .lesson-group {

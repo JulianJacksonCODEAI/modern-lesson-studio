@@ -136,7 +136,12 @@
               item.
             </p>
             <div id="check-empty" class="empty-state">
-              Import a Slides deck first.
+              <p>
+                Nothing to check yet. Import the lesson's Slides deck first.
+              </p>
+              <button type="button" id="btn-empty-import" class="btn">
+                Go to Import
+              </button>
             </div>
             <div id="check-warnings" class="notes" hidden></div>
             <label class="check source-toggle" id="source-toggle" hidden
@@ -213,7 +218,11 @@
                   <button type="submit" class="btn">Open</button>
                 </div>
                 <p class="muted">
-                  Or use a practice lesson:
+                  Paste the link from your browser's address bar while the
+                  lesson is open in Level Builder, or just its number.
+                </p>
+                <p class="muted">
+                  Trying Lesson Studio out? Use the practice lesson
                   <button
                     type="button"
                     class="linkish"
@@ -221,14 +230,16 @@
                   >
                     sandbox lesson 11
                   </button>
-                  ·
+                  (for tests). Sandbox lesson 10
                   <button
                     type="button"
                     class="linkish"
                     data-open-lesson="8898984"
+                    aria-label="Open sandbox lesson 10, which holds the accepted AI Lab save"
                   >
-                    sandbox lesson 10
+                    opens here
                   </button>
+                  but holds the accepted AI Lab save, so don't test there.
                 </p>
               </form>
             </section>
