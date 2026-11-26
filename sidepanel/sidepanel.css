@@ -268,9 +268,12 @@ main {
   border-radius: 8px;
   padding: 8px 10px;
 }
+/* Callouts and level groups sit inside a section as tinted blocks, not cards in cards. */
 .lesson-item .lesson-item {
-  margin-top: 8px;
+  margin-top: 10px;
   background: var(--surface-2);
+  border-color: transparent;
+  border-radius: 6px;
 }
 .activity {
   display: grid;
@@ -290,20 +293,35 @@ main {
 .item-head :is(h3, h4, h5) {
   overflow-wrap: anywhere;
 }
+/* Report stays in the tab order on every item but only draws its outline on the item in hand. */
 .flag-btn {
   flex: none;
   font: inherit;
   font-size: 0.8rem;
   background: none;
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
   border-radius: 6px;
   color: var(--muted);
   padding: 2px 8px;
   cursor: pointer;
 }
-.flag-btn:hover {
+.lesson-item:is(:hover, :focus-within) > .item-head > .flag-btn {
+  border-color: var(--border);
+}
+.flag-btn:hover,
+.flag-btn:focus-visible {
   color: var(--error);
-  border-color: var(--error);
+  border-color: var(--error) !important;
+}
+/* The step's next action stays in view at the end of a long Check page. */
+.sticky-cta {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  margin: 0 -16px -24px;
+  padding: 10px 16px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
 }
 .body-text {
   white-space: pre-wrap;
