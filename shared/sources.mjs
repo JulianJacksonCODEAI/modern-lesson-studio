@@ -127,12 +127,19 @@ export function buildLesson(imports) {
       /transition text needs confirmed level associations\./,
       "it sends students to levels. Name them in the Save step's Levels card to link them."
     );
-  const untitled = (lesson.sections || [])
+  // One grouped line, not one per slide; each section card also carries a "No title line" tag.
+  const untitledSlides = (lesson.sections || [])
     .filter(s => !String(s.title || '').trim())
-    .map(
-      s =>
-        `Slide ${s.slide}: no "Title (N minutes)" line at the top of its notes, so it becomes a section with no title in Level Builder.`
-    );
+    .map(s => s.slide);
+  const untitled = !untitledSlides.length
+    ? []
+    : untitledSlides.length === 1
+      ? [
+          `Slide ${untitledSlides[0]}: no "Title (N minutes)" line at the top of its notes, so it becomes a section with no title in Level Builder.`,
+        ]
+      : [
+          `${untitledSlides.length} slides have no "Title (N minutes)" line at the top of their notes (slides ${untitledSlides.join(', ')}), so each becomes a section with no title in Level Builder.`,
+        ];
   return {
     source,
     lesson,

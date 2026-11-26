@@ -9,6 +9,9 @@ Release steps: bump `manifest.json`, update the privacy page (`docs/privacy/inde
 ### Changed
 - The build also makes `build/lesson-studio-full-<version>.zip` (the full build under `full/`, checked like the team zip), instead of it being zipped by hand.
 - The build (and so CI) fails if the privacy page's "Last updated" version doesn't match `manifest.json`. The page now says 1.7.0 and mentions that level search reads level names from Level Builder.
+- Check shows the lesson formatted instead of as raw Markdown: bold, italics, lists and links render, and the speaker-note icons show as the emoji the author typed (🎯 💬 💡 ☑️ 📄 🔁 💻) instead of `<i class="fa-…">` tags. A "Show the Markdown source" switch shows the exact text that will be saved. Rendering builds DOM nodes (no `innerHTML`), and images show as links, so Check makes no requests to image hosts.
+- Check groups slides with no "Title (N minutes)" line into one warning ("7 slides … (slides 3, 4, 5, 8, 9, 13, 14)") instead of one line per slide, and tags each of those sections "No title line".
+- Resources in Check show as named links instead of bare URLs. The warning box uses a full tinted border instead of a left stripe.
 
 ## [1.7.0] - 2026-11-23
 

@@ -1,7 +1,8 @@
 export const SANDBOX =
   'https://levelbuilder-studio.code.org/courses/6-12-dev-playground/units/16/lessons/11';
 export const canWrite = () => false;
-const icons = [
+// Speaker-note emoji → Level Builder icon class. Also used by the side panel's Check view.
+export const icons = [
   ['🎯', 'fa-solid fa-bullseye-arrow'],
   ['💬', 'fa fa-comments'],
   ['💡', 'fa fa-lightbulb-o'],

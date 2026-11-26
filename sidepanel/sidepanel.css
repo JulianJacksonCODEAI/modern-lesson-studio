@@ -238,7 +238,7 @@ main {
 .notes {
   background: var(--warn-bg);
   color: var(--text);
-  border-left: 4px solid var(--warn);
+  border: 1px solid color-mix(in srgb, var(--warn) 45%, transparent);
   border-radius: 6px;
   padding: 8px 12px;
 }
@@ -319,6 +319,89 @@ main {
   color: var(--muted);
   font-size: 0.8rem;
   margin: 0.1rem 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  align-items: center;
+}
+.item-tag {
+  color: var(--warn);
+  background: var(--warn-bg);
+  border: 1px solid color-mix(in srgb, var(--warn) 45%, transparent);
+  border-radius: 999px;
+  padding: 0 7px;
+  font-weight: 600;
+}
+
+/* Formatted Markdown in Check; .show-source swaps it for the raw text. */
+.md {
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+}
+.md > :is(p, ul, ol) {
+  margin: 0.45rem 0 0;
+}
+.md :is(ul, ol) {
+  padding-left: 1.2rem;
+}
+.md li + li {
+  margin-top: 0.2rem;
+}
+.md .md-heading {
+  margin-top: 0.7rem;
+}
+.md a {
+  color: var(--primary);
+  text-underline-offset: 2px;
+}
+.md code {
+  font-size: 0.88em;
+  background: var(--surface-2);
+  border-radius: 4px;
+  padding: 0 4px;
+}
+.lesson-item .lesson-item .md code {
+  background: var(--surface);
+}
+.note-icon {
+  display: inline-block;
+  inline-size: 1.35em;
+  font-style: normal;
+}
+.slide-chip {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0 5px;
+  margin-right: 4px;
+}
+.missing-ref {
+  color: var(--warn);
+}
+.item-body .source {
+  display: none;
+  margin: 0.3rem 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font:
+    0.82rem/1.45 ui-monospace,
+    SFMono-Regular,
+    Consolas,
+    monospace;
+  color: var(--muted);
+}
+.show-source .item-body .md {
+  display: none;
+}
+.show-source .item-body .source {
+  display: block;
+}
+.source-toggle {
+  font-weight: 500;
+  color: var(--muted);
+  margin: 4px 0 8px;
 }
 .empty {
   color: var(--muted);

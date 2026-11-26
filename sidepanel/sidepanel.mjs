@@ -252,6 +252,7 @@ function lessonForAudit(lesson) {
 function renderCheck() {
   $('check-empty').hidden = !!built;
   $('ai-box').hidden = !built;
+  $('source-toggle').hidden = !built;
   if (!built) {
     $('lesson-view').replaceChildren();
     notes($('check-warnings'), [], '');
@@ -260,6 +261,9 @@ function renderCheck() {
   notes($('check-warnings'), built.warnings, 'Things to look at');
   renderLesson($('lesson-view'), built.lesson, item => openReport(item));
 }
+$('show-source').addEventListener('change', e =>
+  $('lesson-view').classList.toggle('show-source', e.currentTarget.checked)
+);
 $('btn-to-save').addEventListener('click', () =>
   selectStep('save', {focus: true})
 );
