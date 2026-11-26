@@ -436,6 +436,47 @@ main {
 }
 
 /* Save */
+.step-no {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 1.5em;
+  block-size: 1.5em;
+  margin-right: 4px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--primary-text);
+  font-size: 0.8em;
+  vertical-align: 0.08em;
+}
+.hint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.save-target {
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.btn.commit {
+  inline-size: 100%;
+  padding-block: 11px;
+  font-size: 1rem;
+}
+#approve-box {
+  display: grid;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+#expiry[data-kind='warn'] {
+  color: var(--warn);
+  font-weight: 600;
+}
 .change-list {
   margin: 0.3rem 0;
   padding-left: 1.1rem;

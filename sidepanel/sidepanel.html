@@ -180,7 +180,10 @@
         <div role="tabpanel" id="panel-save" aria-labelledby="tab-save" hidden>
           <div class="pad">
             <section class="card" aria-labelledby="dest-h">
-              <h2 id="dest-h">Level Builder lesson</h2>
+              <h2 id="dest-h">
+                <span class="step-no" aria-hidden="true">1</span> Your Level
+                Builder lesson
+              </h2>
               <p id="dest-status" class="status-line">
                 Looking for an open lesson editor…
               </p>
@@ -231,7 +234,10 @@
             </section>
 
             <section class="card" aria-labelledby="shared-h" id="shared-card">
-              <h2 id="shared-h">Resources and vocabulary</h2>
+              <h2 id="shared-h">
+                <span class="step-no" aria-hidden="true">2</span> Resources and
+                vocabulary
+              </h2>
               <p class="muted">
                 Lesson Studio looks for each resource and vocabulary word in
                 this lesson's course. For any that Level Builder doesn't have
@@ -240,6 +246,7 @@
               <button type="button" id="btn-check-shared" class="btn" disabled>
                 Check resources
               </button>
+              <p id="shared-hint" class="hint" hidden></p>
               <div id="shared-out"></div>
             </section>
 
@@ -249,7 +256,9 @@
               id="levels-card"
               hidden
             >
-              <h2 id="levels-h">Levels</h2>
+              <h2 id="levels-h">
+                <span class="step-no" aria-hidden="true">2</span> Levels
+              </h2>
               <p class="muted">
                 These slides send students to levels. Give each level its exact
                 Level Builder name: from the Notion page's Levels list, a
@@ -285,7 +294,11 @@
             </section>
 
             <section class="card" aria-labelledby="review-h">
-              <h2 id="review-h">What will change</h2>
+              <h2 id="review-h">
+                <span class="step-no" aria-hidden="true">3</span> Review and
+                save
+              </h2>
+              <p id="save-target" class="save-target" hidden></p>
               <p class="muted">
                 Lesson Studio tries the changes in the open editor, puts it back
                 exactly as it was, and lists the changes. Nothing is saved to
@@ -299,6 +312,7 @@
               >
                 Prepare changes
               </button>
+              <p id="prepare-hint" class="hint" hidden></p>
               <button type="button" id="btn-prepare-no-obj" class="btn" hidden>
                 Prepare again without adding objectives
               </button>
@@ -312,12 +326,12 @@
                 <button
                   type="button"
                   id="btn-save"
-                  class="btn primary"
+                  class="btn primary commit"
                   disabled
                 >
                   Save to Level Builder
                 </button>
-                <p class="muted">
+                <p id="expiry" class="muted" aria-live="off">
                   The review expires 10 minutes after it's prepared.
                 </p>
               </div>

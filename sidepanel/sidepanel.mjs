@@ -1310,7 +1310,67 @@ function refresh() {
   }
   $('btn-save').disabled = busy || !$('approve').checked || !st?.job;
   $('dest-open').hidden = !!destination;
+
+  // Say why a step's button is disabled instead of leaving it greyed out.
+  const before = !built
+    ? 'Import a Slides deck first.'
+    : !session
+      ? 'Open your lesson in Level Builder first (step 1).'
+      : !owned
+        ? 'Tick “This is my lesson” in step 1 first.'
+        : '';
+  hint('shared-hint', busy || locked ? '' : before);
+  hint(
+    'prepare-hint',
+    busy || locked || !$('btn-prepare').disabled
+      ? ''
+      : before ||
+          (!checked ? 'Check resources in step 2 first.' : '') ||
+          (levelsToCheck || duplicateLevels || waiting
+            ? 'Finish step 2 first.'
+            : '')
+  );
+
+  // Pin where the save goes, and name it on the Save button.
+  const lessonName =
+    lessonInfo?.lessonName || (destination ? `lesson ${destination.id}` : '');
+  hint(
+    'save-target',
+    destination
+      ? `Saving to: ${lessonName} (ID ${destination.id})${
+          SANDBOX_LESSONS[destination.id]
+            ? ` · ${SANDBOX_LESSONS[destination.id].label}`
+            : ''
+        }${owned ? ' · confirmed as your lesson' : ''}`
+      : ''
+  );
+  if (!busy) {
+    const changes = $('review-out').querySelectorAll('.change-list li').length;
+    $('btn-save').textContent =
+      st?.job && changes
+        ? `Save ${changes} change${changes === 1 ? '' : 's'} to ${lessonName}`
+        : 'Save to Level Builder';
+  }
+  showExpiry();
 }
+function hint(id, text) {
+  $(id).textContent = text;
+  $(id).hidden = !text;
+}
+// Counts down the prepared review's 10 minutes (save-review.mjs sets expiresAt).
+function showExpiry() {
+  const at = session?.state?.job?.review?.expiresAt;
+  if (!at) {
+    return;
+  }
+  const left = Math.ceil((at - Date.now()) / 60000);
+  $('expiry').textContent =
+    left > 0
+      ? `This review expires in ${left} minute${left === 1 ? '' : 's'}. After that, prepare the changes again.`
+      : 'This review has expired. Prepare the changes again before saving.';
+  $('expiry').dataset.kind = left > 2 ? '' : 'warn';
+}
+setInterval(showExpiry, 15000);
 
 // ---------- Report a problem ----------
 async function openReport(item = null) {
