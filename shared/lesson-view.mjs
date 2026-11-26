@@ -1,5 +1,9 @@
 // Read-only view of the imported lesson, in the order Level Builder shows it.
 // Every item carries a ⚑ Report button; onReport receives {label, content}.
+// Text is shown formatted (.md) and as its Markdown source (.source); the
+// "Show Markdown source" switch on #lesson-view picks which one is visible.
+import {inlineNodes, markdownBlock} from './markdown-view.mjs';
+
 const el = (tag, props = {}, ...children) => {
   const n = Object.assign(document.createElement(tag), props);
   n.append(...children.filter(c => c != null && c !== false));
@@ -10,7 +14,14 @@ function item(
   label,
   content,
   onReport,
-  {heading = 'h3', className = '', meta = ''} = {}
+  {
+    heading = 'h3',
+    className = '',
+    meta = '',
+    tag = '',
+    resources = [],
+    plain = false,
+  } = {}
 ) {
   const text = Array.isArray(content)
     ? content.join('\n')
@@ -28,24 +39,48 @@ function item(
     el(heading, {textContent: label}),
     report
   );
-  const body = Array.isArray(content)
-    ? content.length
-      ? el('ul', {}, ...content.map(c => el('li', {textContent: c})))
-      : el('p', {
-          className: 'empty',
-          textContent: 'Nothing imported for this field.',
-        })
-    : text.trim()
-      ? el('p', {className: 'body-text', textContent: text})
-      : el('p', {
-          className: 'empty',
-          textContent: 'Nothing imported for this field.',
-        });
+  const empty = () =>
+    el('p', {
+      className: 'empty',
+      textContent: 'Nothing imported for this field.',
+    });
+  let body;
+  if (Array.isArray(content)) {
+    body = content.length
+      ? el(
+          'ul',
+          {},
+          ...content.map(c =>
+            el('li', {}, ...(plain ? [c] : inlineNodes(c, resources)))
+          )
+        )
+      : empty();
+  } else if (!text.trim()) {
+    body = empty();
+  } else if (plain) {
+    body = el('p', {className: 'body-text', textContent: text});
+  } else {
+    body = el(
+      'div',
+      {className: 'item-body'},
+      markdownBlock(text, resources),
+      el('pre', {className: 'source', textContent: text})
+    );
+  }
+  const metaLine =
+    meta || tag
+      ? el(
+          'p',
+          {className: 'meta'},
+          meta,
+          tag ? el('span', {className: 'item-tag', textContent: tag}) : null
+        )
+      : null;
   return el(
     'article',
     {className: 'lesson-item ' + className},
     head,
-    meta ? el('p', {className: 'meta', textContent: meta}) : null,
+    metaLine,
     body
   );
 }
@@ -57,11 +92,12 @@ export function renderLesson(container, lesson, onReport) {
       ? v
       : [v.word, v.definition].filter(Boolean).join(': ')
   );
-  const resources = (lesson.resources || []).map(
-    r => `${r.name} (${r.type}, ${r.audience}) — ${r.url}`
+  const records = lesson.resources || [];
+  const resources = records.map(
+    r => `[${r.name}](${r.url}) (${r.type}, ${r.audience})`
   );
   const fields = [
-    ['Lesson title', lesson.title],
+    ['Lesson title', lesson.title, {plain: true}],
     ['Teacher overview', fm.teacherOverview],
     ['Student overview', fm.studentOverview],
     ['Purpose', fm.purpose],
@@ -75,7 +111,9 @@ export function renderLesson(container, lesson, onReport) {
     'section',
     {className: 'lesson-group'},
     el('h2', {textContent: 'Lesson plan fields'}),
-    ...fields.map(([label, content]) => item(label, content, onReport))
+    ...fields.map(([label, content, opts]) =>
+      item(label, content, onReport, {resources: records, ...opts})
+    )
   );
   const guide = el(
     'section',
@@ -93,7 +131,7 @@ export function renderLesson(container, lesson, onReport) {
         `Activity: ${activity.title}`,
         `${activity.duration} minutes · ${sections.length} section${sections.length === 1 ? '' : 's'}`,
         onReport,
-        {heading: 'h3', className: 'activity-head'}
+        {heading: 'h3', className: 'activity-head', plain: true}
       )
     );
     for (const s of sections) {
@@ -108,6 +146,9 @@ export function renderLesson(container, lesson, onReport) {
         heading: 'h4',
         className: 'section',
         meta,
+        // Matches the grouped "no Title (N minutes) line" warning above the lesson.
+        tag: String(s.title || '').trim() ? '' : 'No title line',
+        resources: records,
       });
       for (const c of s.callouts || []) {
         node.append(
@@ -115,7 +156,7 @@ export function renderLesson(container, lesson, onReport) {
             `${c.type} (in “${s.title || 'Untitled section'}”)`,
             c.body,
             onReport,
-            {heading: 'h5', className: 'callout'}
+            {heading: 'h5', className: 'callout', resources: records}
           )
         );
       }
@@ -128,7 +169,7 @@ export function renderLesson(container, lesson, onReport) {
                 `Level ${l.number}: ${l.key}${l.assessment ? ' (assessment)' : ''}`
             ),
             onReport,
-            {heading: 'h5', className: 'levels'}
+            {heading: 'h5', className: 'levels', plain: true}
           )
         );
       }
