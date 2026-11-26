@@ -104,6 +104,23 @@ p {
   outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
+/* Placeholders use the muted token (4.5:1 or better in both themes), not the browser's faint grey. */
+::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+::selection {
+  background: color-mix(in srgb, var(--primary) 30%, transparent);
+}
+/* Long links and IDs wrap anywhere instead of pushing a word alone onto a line or overflowing. */
+.notes,
+.msg,
+.hint,
+.result,
+.change-list,
+.leftover {
+  overflow-wrap: anywhere;
+}
 
 .layout {
   display: flex;
@@ -774,9 +791,12 @@ dialog textarea {
   color: var(--muted);
 }
 
+/* Sits above the sticky Check action bar and never takes clicks meant for it. */
 .toast {
   position: fixed;
-  inset: auto 12px 56px 12px;
+  inset: auto 12px 72px 12px;
+  pointer-events: none;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.25);
   background: var(--text);
   color: var(--bg);
   padding: 10px 12px;
