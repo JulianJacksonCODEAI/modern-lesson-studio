@@ -244,6 +244,16 @@ main {
 .btn.quiet {
   background: transparent;
 }
+/* Start over clears the import: set apart from the forward action. */
+#btn-reset {
+  margin-left: auto;
+  font-weight: 500;
+  color: var(--muted);
+}
+#btn-reset:hover {
+  color: var(--error);
+  border-color: var(--error);
+}
 .btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
@@ -530,7 +540,7 @@ main {
 }
 .warn {
   background: var(--warn-bg);
-  border-left: 4px solid var(--warn);
+  border: 1px solid color-mix(in srgb, var(--warn) 45%, transparent);
   padding: 6px 10px;
   border-radius: 6px;
 }
@@ -776,7 +786,7 @@ dialog textarea {
   background: var(--surface-2);
   border-radius: 8px;
   padding: 8px 10px;
-  max-block-size: 30vh;
+  max-block-size: 40vh;
   overflow: auto;
   font-size: 0.82rem;
 }

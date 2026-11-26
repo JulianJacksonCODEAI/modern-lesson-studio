@@ -113,9 +113,15 @@
               >
                 Check the lesson <span aria-hidden="true">→</span>
               </button>
-              <button type="button" id="btn-reset" class="btn quiet">
+              <button
+                type="button"
+                id="btn-reset"
+                class="btn quiet"
+                aria-describedby="reset-help"
+              >
                 Start over
               </button>
+              <span id="reset-help" hidden>Clears both imports.</span>
             </div>
           </div>
         </div>
@@ -228,18 +234,15 @@
                     class="linkish"
                     data-open-lesson="8898985"
                   >
-                    sandbox lesson 11
-                  </button>
-                  (for tests). Sandbox lesson 10
+                    sandbox lesson 11</button
+                  >. Don't test in
                   <button
                     type="button"
                     class="linkish"
                     data-open-lesson="8898984"
-                    aria-label="Open sandbox lesson 10, which holds the accepted AI Lab save"
                   >
-                    opens here
-                  </button>
-                  but holds the accepted AI Lab save, so don't test there.
+                    sandbox lesson 10</button
+                  >: it holds the accepted AI Lab save.
                 </p>
               </form>
             </section>

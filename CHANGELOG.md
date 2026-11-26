@@ -12,6 +12,12 @@ Release steps: bump `manifest.json`, update the privacy page (`docs/privacy/inde
 - Check shows the lesson formatted instead of as raw Markdown: bold, italics, lists and links render, and the speaker-note icons show as the emoji the author typed (🎯 💬 💡 ☑️ 📄 🔁 💻) instead of `<i class="fa-…">` tags. A "Show the Markdown source" switch shows the exact text that will be saved. Rendering builds DOM nodes (no `innerHTML`), and images show as links, so Check makes no requests to image hosts.
 - Check groups slides with no "Title (N minutes)" line into one warning ("7 slides … (slides 3, 4, 5, 8, 9, 13, 14)") instead of one line per slide, and tags each of those sections "No title line".
 - Resources in Check show as named links instead of bare URLs. The warning box uses a full tinted border instead of a left stripe.
+- Check: Report buttons only outline on the item you're on (each keeps its own label for screen readers), callouts sit in a section as tinted blocks instead of cards inside cards, and "Looks right — go to Save" stays in view at the bottom of the page. The AI box is marked Optional.
+- Save: the cards are numbered 1 to 3. A "Saving to" line names the lesson, its ID and whether you confirmed it's yours. Check resources and Prepare say why they're disabled. The Save button is full width and says what it saves ("Save 5 changes to …"), and the 10-minute review counts down.
+- Clearer wording: the level group title is marked optional and explained, the lesson link field says where to copy the link, the sandbox lessons say which one is for tests, Check's empty state has a Go to Import button, and the header shows which Level Builder lesson the import goes to.
+- Type: step titles lead at 1.25× the body text, and Check no longer skips from h1 to h3.
+- One primary button at a time on Import, Start over set apart, readable placeholders in dark mode, long links wrap, and the toast stays clear of the action bar.
+- Full build: the wide editor's 10–11px text is 12px, and two button colours now meet 4.5:1 contrast with white text.
 
 ## [1.7.0] - 2026-11-23
 

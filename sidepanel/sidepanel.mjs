@@ -1274,6 +1274,9 @@ function refresh() {
         : '')
     : 'No lesson imported yet';
   $('btn-to-check').disabled = !built || busy;
+  // One primary action per screen: the deck import until it's done, then Check the lesson.
+  $('btn-slides').classList.toggle('primary', !imports.slides);
+  $('btn-to-check').classList.toggle('primary', !!imports.slides);
   $('btn-to-save').disabled = !built || busy;
   const st = session?.state,
     owned = st?.ownershipConfirmed === true,
