@@ -4,6 +4,13 @@ All notable changes to Lesson Studio. Versions follow [Semantic Versioning](http
 
 Release steps: bump `manifest.json`, update the privacy page (`docs/privacy/index.md`: its "Last updated … (version X.Y.Z)" line, plus its text if what Lesson Studio reads, stores or sends changed; the build fails if the version doesn't match), add a section here, merge the pull request, then tag the merge commit `vX.Y.Z`.
 
+## [1.9.0] - 2026-11-26
+
+### Changed
+- One link field for each source. Slides, Notion and Level Builder each have a field you can paste a link into, or Lesson Studio fills it in from a matching tab open in the same window (`Found the open deck: "…" · Use it`). Import reads that tab if it's open, otherwise opens the link in a new tab and reads it there, so you no longer have to switch to the deck or page first. Links match even with `#slide=…`, `?usp=sharing` or a `/u/1/` account path, and a pasted Level Builder link reuses the lesson's open editor tab.
+- Each field says what's wrong with a link on the field itself, for example "That's a Google Docs link, not a Slides deck".
+- The privacy page says the side panel uses the addresses and titles of open Slides, Notion and Level Builder tabs to fill in links.
+
 ## [1.8.0] - 2026-11-25
 
 ### Changed

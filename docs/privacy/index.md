@@ -4,14 +4,15 @@ title: Lesson Studio privacy policy
 description: What Lesson Studio reads, stores and sends.
 ---
 
-*Last updated November 25, 2026 (version 1.8.0)*
+*Last updated November 26, 2026 (version 1.9.0)*
 
 Lesson Studio is a browser extension used by the Code.org CodeAI curriculum team. It copies a lesson's Google Slides speaker notes and Notion page into a Code.org Level Builder lesson.
 
 ## What Lesson Studio reads
 
-- **The Google Slides deck you import**, when you click "Import the open Slides deck". It reads the slides and speaker notes. Nothing in Slides is changed.
-- **The Notion page you import**, when you click "Import the open Notion page". Nothing in Notion is changed.
+- **The Google Slides deck you import**, when you click Import next to its link. It reads the slides and speaker notes. Nothing in Slides is changed.
+- **The Notion page you import**, when you click Import next to its link. Nothing in Notion is changed.
+- **The addresses and titles of the tabs open in the same window**, while the side panel is open, to fill in a Slides, Notion or Level Builder link for you. Only the addresses of those three sites are used, they stay in the side panel, and nothing from other tabs is read or kept. If you paste a link to a page that isn't open, Lesson Studio opens it in a new tab to read it.
 - **The Level Builder lesson you choose**, after you confirm it is your lesson. Lesson Studio reads it, saves the changes you approve, then reads it back to check the save. When you search for or check level names, it reads the matching level names from Level Builder's own level search; it adds nothing until you approve the save.
 
 It reads no other pages, and it runs only when you use it.

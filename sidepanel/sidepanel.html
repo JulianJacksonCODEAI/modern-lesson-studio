@@ -78,27 +78,59 @@
         >
           <div class="pad">
             <p class="lead">
-              Open the lesson's Google Slides deck and its Notion page in this
-              window. Import each one from its tab. Nothing is changed in Slides
-              or Notion.
+              Paste the lesson's Google Slides and Notion links, or open them in
+              this window and Lesson Studio fills them in. Nothing is changed in
+              Slides or Notion.
             </p>
 
             <section class="card" aria-labelledby="slides-h">
               <h2 id="slides-h">
                 Google Slides deck <span class="req">required</span>
               </h2>
+              <form class="link-field" id="slides-form" novalidate>
+                <label for="slides-link">Deck link</label>
+                <div class="row">
+                  <input
+                    id="slides-link"
+                    type="text"
+                    inputmode="url"
+                    autocomplete="off"
+                    spellcheck="false"
+                    placeholder="https://docs.google.com/presentation/d/…"
+                    aria-describedby="slides-error"
+                  />
+                  <button type="submit" id="btn-slides" class="btn primary">
+                    Import
+                  </button>
+                </div>
+                <p id="slides-found" class="found" hidden></p>
+                <p id="slides-error" class="error" hidden></p>
+              </form>
               <p id="slides-status" class="status-line">Not imported</p>
-              <button type="button" id="btn-slides" class="btn primary">
-                Import the open Slides deck
-              </button>
             </section>
 
             <section class="card" aria-labelledby="notion-h">
               <h2 id="notion-h">Notion lesson page</h2>
+              <form class="link-field" id="notion-form" novalidate>
+                <label for="notion-link">Page link</label>
+                <div class="row">
+                  <input
+                    id="notion-link"
+                    type="text"
+                    inputmode="url"
+                    autocomplete="off"
+                    spellcheck="false"
+                    placeholder="https://www.notion.so/…"
+                    aria-describedby="notion-error"
+                  />
+                  <button type="submit" id="btn-notion" class="btn">
+                    Import
+                  </button>
+                </div>
+                <p id="notion-found" class="found" hidden></p>
+                <p id="notion-error" class="error" hidden></p>
+              </form>
               <p id="notion-status" class="status-line">Not imported</p>
-              <button type="button" id="btn-notion" class="btn">
-                Import the open Notion page
-              </button>
             </section>
 
             <div id="import-warnings" class="notes" hidden></div>
@@ -209,8 +241,8 @@
                   Use a different lesson
                 </button>
               </div>
-              <form id="dest-open" class="dest-open">
-                <label for="lesson-link">Lesson link or lesson ID</label>
+              <form id="dest-open" class="link-field" novalidate>
+                <label for="lesson-link">Lesson link or ID</label>
                 <div class="row">
                   <input
                     id="lesson-link"
@@ -219,14 +251,12 @@
                     inputmode="url"
                     autocomplete="off"
                     spellcheck="false"
-                    placeholder="https://levelbuilder-studio.code.org/lessons/123/edit"
+                    placeholder="https://levelbuilder-studio.code.org/lessons/…"
+                    aria-describedby="lesson-error"
                   />
                   <button type="submit" class="btn">Open</button>
                 </div>
-                <p class="muted">
-                  Paste the link from your browser's address bar while the
-                  lesson is open in Level Builder, or just its number.
-                </p>
+                <p id="lesson-error" class="error" hidden></p>
                 <p class="muted">
                   Trying Lesson Studio out? Use the practice lesson
                   <button

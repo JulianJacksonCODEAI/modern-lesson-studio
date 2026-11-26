@@ -7,6 +7,7 @@ import {
   importNotion,
   buildLesson,
 } from '../shared/sources.mjs';
+import {sourceLink, tabKey, bestTab} from '../shared/link-field.mjs';
 import {renderLesson, renderReview} from '../shared/lesson-view.mjs';
 import {leftoverContent} from '../shared/leftover.mjs';
 import {
@@ -78,10 +79,6 @@ const say = (id, text, kind = '') => {
   n.textContent = text;
   n.dataset.kind = kind;
 };
-async function activeTab() {
-  const [tab] = await chrome.tabs.query({active: true, currentWindow: true});
-  return tab;
-}
 async function withBusy(button, label, action) {
   if (busy) {
     return;
@@ -147,6 +144,8 @@ function selectStep(step, {focus = false} = {}) {
         findDestination();
       }
     }, 300);
+  } else if (step === 'import') {
+    scanOpenTabs();
   }
 }
 for (const s of STEPS) {
@@ -204,37 +203,145 @@ function rebuild() {
   renderCheck();
   refresh();
 }
-$('btn-slides').addEventListener('click', e =>
-  withBusy(e.currentTarget, 'Reading the deck…', async () => {
+// Each source has one link field: paste a link, or Lesson Studio fills it from a matching tab in this window.
+// Importing reads that tab if it's open, otherwise opens the link in a new tab and reads it there.
+const SOURCES = {
+  slides: {
+    store: 'slides',
+    read: importSlides,
+    busy: 'Reading the deck…',
+    found: 'Found the open deck',
+    empty: 'Paste the deck’s link, or open the deck in this window.',
+    done: r => `Imported ${r.count} slides.`,
+  },
+  notion: {
+    store: 'brief',
+    read: importNotion,
+    busy: 'Reading the page…',
+    found: 'Found the open Notion page',
+    empty: 'Paste the Notion page’s link, or open the page in this window.',
+    done: () => 'Imported the Notion page.',
+    // Notion only draws a page's content while its tab is showing.
+    needsFocus: true,
+  },
+};
+const suggested = {slides: null, notion: null};
+function fieldError(kind, text) {
+  const n = $(kind + '-error');
+  n.textContent = text;
+  n.hidden = !text;
+  $(kind + '-link').toggleAttribute('aria-invalid', !!text);
+}
+async function scanOpenTabs() {
+  const tabs = await chrome.tabs.query({currentWindow: true});
+  for (const kind of Object.keys(SOURCES)) {
+    const tab = bestTab(kind, tabs),
+      input = $(kind + '-link'),
+      imported = tabKey(kind, imports[SOURCES[kind].store]?.url);
+    suggested[kind] = tab && tabKey(kind, tab.url) !== imported ? tab : null;
+    if (suggested[kind] && !input.value.trim()) {
+      input.value = sourceLink(kind, tab.url).url;
+    }
+    renderFound(kind);
+  }
+}
+function renderFound(kind) {
+  const tab = suggested[kind],
+    p = $(kind + '-found');
+  p.hidden = !tab;
+  if (!tab) {
+    return;
+  }
+  const label = `${SOURCES[kind].found}: “${tab.title || 'Untitled'}”`;
+  if (sourceLink(kind, $(kind + '-link').value).key === tabKey(kind, tab.url)) {
+    p.replaceChildren(label);
+    return;
+  }
+  const use = Object.assign(document.createElement('button'), {
+    type: 'button',
+    className: 'linkish',
+    textContent: 'Use it',
+  });
+  use.addEventListener('click', () => {
+    $(kind + '-link').value = sourceLink(kind, tab.url).url;
+    fieldError(kind, '');
+    renderFound(kind);
+    $('btn-' + kind).focus();
+  });
+  p.replaceChildren(label + ' · ', use);
+}
+async function tabFor(kind, link) {
+  const tabs = await chrome.tabs.query({currentWindow: true});
+  let tab = tabs.find(t => tabKey(kind, t.url) === link.key);
+  if (!tab) {
+    tab = await chrome.tabs.create({url: link.url, active: true});
+  } else if (SOURCES[kind].needsFocus && !tab.active) {
+    tab = await chrome.tabs.update(tab.id, {active: true});
+  }
+  return tabLoaded(tab.id);
+}
+async function readSource(kind, tabId) {
+  // Notion keeps filling in the page after the tab reports it has loaded, so try a few times.
+  for (let i = 0; ; i++) {
     try {
-      imports.slides = await importSlides(await activeTab());
+      return await SOURCES[kind].read(await chrome.tabs.get(tabId));
+    } catch (err) {
+      if (!SOURCES[kind].needsFocus || i >= 4) {
+        throw err;
+      }
+      await new Promise(r => setTimeout(r, 1500));
+    }
+  }
+}
+async function importFrom(kind) {
+  const s = SOURCES[kind],
+    input = $(kind + '-link');
+  let link = sourceLink(kind, input.value);
+  if (link.empty && suggested[kind]) {
+    link = sourceLink(kind, suggested[kind].url);
+  }
+  if (link.empty || link.error) {
+    fieldError(kind, link.error || s.empty);
+    input.focus();
+    return;
+  }
+  fieldError(kind, '');
+  input.value = link.url;
+  await withBusy($('btn-' + kind), s.busy, async () => {
+    try {
+      const tab = await tabFor(kind, link);
+      imports[s.store] = await readSource(kind, tab.id);
       await saveImports(imports);
       rebuild();
-      toast(`Imported ${imports.slides.count} slides.`);
+      toast(s.done(imports[s.store]));
     } catch (err) {
-      say('import-msg', err.message, 'error');
+      fieldError(kind, err.message);
     }
-  })
-);
-$('btn-notion').addEventListener('click', e =>
-  withBusy(e.currentTarget, 'Reading the page…', async () => {
-    try {
-      imports.brief = await importNotion(await activeTab());
-      await saveImports(imports);
-      rebuild();
-      toast('Imported the Notion page.');
-    } catch (err) {
-      say('import-msg', err.message, 'error');
-    }
-  })
-);
+  });
+  scanOpenTabs();
+}
+for (const kind of Object.keys(SOURCES)) {
+  $(kind + '-form').addEventListener('submit', e => {
+    e.preventDefault();
+    importFrom(kind);
+  });
+  $(kind + '-link').addEventListener('input', () => {
+    fieldError(kind, '');
+    renderFound(kind);
+  });
+}
 $('btn-reset').addEventListener('click', async () => {
   imports = {slides: null, brief: null};
   await clearImports();
   session?.reset();
   session = null;
+  for (const kind of Object.keys(SOURCES)) {
+    $(kind + '-link').value = '';
+    fieldError(kind, '');
+  }
   rebuild();
   selectStep('import');
+  scanOpenTabs();
   toast('Cleared. Import a deck to start again.');
 });
 $('btn-to-check').addEventListener('click', () =>
@@ -445,7 +552,7 @@ async function tabLoaded(tabId, ms = 30000) {
     };
     const timer = setTimeout(() => {
       chrome.tabs.onUpdated.removeListener(on);
-      reject(Error('The lesson page took too long to load.'));
+      reject(Error('The page took too long to load. Try again.'));
     }, ms);
     chrome.tabs.onUpdated.addListener(on);
   });
@@ -454,19 +561,35 @@ $('dest-open').addEventListener('submit', async e => {
   e.preventDefault();
   const text = $('lesson-link').value,
     direct = editorUrlFromInput(text);
+  fieldError('lesson', '');
+  if (!text.trim()) {
+    fieldError(
+      'lesson',
+      'Paste the lesson’s link or ID, or open its editor in this window.'
+    );
+    return;
+  }
   if (direct) {
-    const tab = await chrome.tabs.create({url: direct});
+    // Same as Slides and Notion: use the lesson's editor tab if it's already open.
+    const id = destinationFromTab({url: direct})?.id;
+    const open = (await chrome.tabs.query({currentWindow: true})).find(
+      t => id != null && destinationFromTab(t)?.id === id
+    );
+    const tab = open
+      ? await chrome.tabs.update(open.id, {active: true})
+      : await chrome.tabs.create({url: direct});
     pinnedTabId = tab.id;
     $('lesson-link').value = '';
+    findDestination();
     return;
   }
   const page = lessonPageFromInput(text);
   if (!page) {
-    say(
-      'dest-status',
-      "That isn't a Level Builder lesson link. Paste a lesson link from levelbuilder-studio.code.org (for example …/lessons/123/edit or …/s/unit-name/lessons/4/edit), or the lesson's ID.",
-      'error'
+    fieldError(
+      'lesson',
+      "That isn't a Level Builder lesson link. Paste a link from levelbuilder-studio.code.org (for example …/lessons/123/edit or …/s/unit-name/lessons/4/edit), or the lesson's ID."
     );
+    $('lesson-link').focus();
     return;
   }
   // Links like /s/<unit>/lessons/<n>/edit name the lesson by its position, so open it and read its real ID.
@@ -491,9 +614,11 @@ $('dest-open').addEventListener('submit', async e => {
     $('lesson-link').value = '';
     say('dest-status', `Found lesson ${id}. Opening its editor…`);
   } catch (err) {
-    say('dest-status', 'Could not open that lesson: ' + err.message, 'error');
+    say('dest-status', '');
+    fieldError('lesson', 'Could not open that lesson: ' + err.message);
   }
 });
+$('lesson-link').addEventListener('input', () => fieldError('lesson', ''));
 document.querySelectorAll('[data-open-lesson]').forEach(b =>
   b.addEventListener('click', async () => {
     const tab = await chrome.tabs.create({
@@ -502,14 +627,22 @@ document.querySelectorAll('[data-open-lesson]').forEach(b =>
     pinnedTabId = tab.id;
   })
 );
+// Open tabs feed the link fields: Import suggests Slides and Notion pages, Save finds the lesson editor.
 chrome.tabs.onUpdated.addListener((id, info) => {
-  if (currentStep === 'save' && info.status === 'complete') {
+  if (info.status !== 'complete') {
+    return;
+  }
+  if (currentStep === 'save') {
     findDestination();
+  } else if (currentStep === 'import') {
+    scanOpenTabs();
   }
 });
 chrome.tabs.onActivated.addListener(() => {
   if (currentStep === 'save') {
     findDestination();
+  } else if (currentStep === 'import') {
+    scanOpenTabs();
   }
 });
 
@@ -1632,7 +1765,11 @@ $('version').textContent = 'v' + VERSION;
 checkAccess();
 await moved;
 imports = await loadImports();
+// Show what was imported earlier in each field, then suggest any matching open tabs.
+$('slides-link').value = imports.slides?.url || '';
+$('notion-link').value = imports.brief?.url || '';
 rebuild();
+scanOpenTabs();
 setupAI();
 showPending();
 loadAdvanced();

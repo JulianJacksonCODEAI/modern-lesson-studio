@@ -569,15 +569,16 @@ main {
   color: var(--error);
 }
 
-.dest-open {
+/* One link field for Slides, Notion and Level Builder: label, input + action, found tab, error. */
+.link-field {
   display: grid;
   gap: 6px;
 }
-.dest-open label {
+.link-field label {
   font-weight: 600;
   font-size: 0.9rem;
 }
-.dest-open input {
+.link-field input {
   flex: 1;
   min-inline-size: 0;
   font: inherit;
@@ -586,6 +587,23 @@ main {
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 6px 8px;
+}
+.link-field input[aria-invalid] {
+  border-color: var(--error);
+}
+.link-field .btn {
+  flex: none;
+}
+.link-field .found {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.link-field .error {
+  margin: 0;
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
 }
 .shared-list {
   list-style: none;
