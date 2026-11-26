@@ -112,7 +112,9 @@ function notes(container, list, title) {
     li.textContent = w;
     ul.append(li);
   }
-  const h = document.createElement('h3');
+  // h2: the panel's first heading level under the h1 (no skipped level).
+  const h = document.createElement('h2');
+  h.className = 'notes-h';
   h.textContent = title;
   container.replaceChildren(h, ul);
 }
@@ -237,6 +239,9 @@ $('btn-reset').addEventListener('click', async () => {
 });
 $('btn-to-check').addEventListener('click', () =>
   selectStep('check', {focus: true})
+);
+$('btn-empty-import').addEventListener('click', () =>
+  selectStep('import', {focus: true})
 );
 
 // ---------- 2 · Check ----------
@@ -758,10 +763,17 @@ function renderLevels() {
     titleRow.append(
       Object.assign(document.createElement('label'), {
         htmlFor: titleId,
-        textContent: 'Level group title',
+        textContent: 'Level group title (optional)',
       }),
-      title
+      title,
+      Object.assign(document.createElement('span'), {
+        id: titleId + '-help',
+        className: 'hint',
+        textContent:
+          'The heading teachers and students see above these levels in the lesson. Level Builder calls it the Progression Title.',
+      })
     );
+    title.setAttribute('aria-describedby', titleId + '-help');
     fs.append(titleRow);
     if (r.tooMany) {
       fs.append(
@@ -1256,9 +1268,15 @@ function refresh() {
     ? `✓ ${imports.brief.name}`
     : 'Not imported (optional, adds overview, objectives and resources)';
   $('lesson-label').textContent = built
-    ? built.lesson.title
+    ? built.lesson.title +
+      (destination
+        ? ` → ${lessonInfo?.lessonName || 'Level Builder lesson ' + destination.id}`
+        : '')
     : 'No lesson imported yet';
   $('btn-to-check').disabled = !built || busy;
+  // One primary action per screen: the deck import until it's done, then Check the lesson.
+  $('btn-slides').classList.toggle('primary', !imports.slides);
+  $('btn-to-check').classList.toggle('primary', !!imports.slides);
   $('btn-to-save').disabled = !built || busy;
   const st = session?.state,
     owned = st?.ownershipConfirmed === true,
@@ -1310,7 +1328,67 @@ function refresh() {
   }
   $('btn-save').disabled = busy || !$('approve').checked || !st?.job;
   $('dest-open').hidden = !!destination;
+
+  // Say why a step's button is disabled instead of leaving it greyed out.
+  const before = !built
+    ? 'Import a Slides deck first.'
+    : !session
+      ? 'Open your lesson in Level Builder first (step 1).'
+      : !owned
+        ? 'Tick “This is my lesson” in step 1 first.'
+        : '';
+  hint('shared-hint', busy || locked ? '' : before);
+  hint(
+    'prepare-hint',
+    busy || locked || !$('btn-prepare').disabled
+      ? ''
+      : before ||
+          (!checked ? 'Check resources in step 2 first.' : '') ||
+          (levelsToCheck || duplicateLevels || waiting
+            ? 'Finish step 2 first.'
+            : '')
+  );
+
+  // Pin where the save goes, and name it on the Save button.
+  const lessonName =
+    lessonInfo?.lessonName || (destination ? `lesson ${destination.id}` : '');
+  hint(
+    'save-target',
+    destination
+      ? `Saving to: ${lessonName} (ID ${destination.id})${
+          SANDBOX_LESSONS[destination.id]
+            ? ` · ${SANDBOX_LESSONS[destination.id].label}`
+            : ''
+        }${owned ? ' · confirmed as your lesson' : ''}`
+      : ''
+  );
+  if (!busy) {
+    const changes = $('review-out').querySelectorAll('.change-list li').length;
+    $('btn-save').textContent =
+      st?.job && changes
+        ? `Save ${changes} change${changes === 1 ? '' : 's'} to ${lessonName}`
+        : 'Save to Level Builder';
+  }
+  showExpiry();
 }
+function hint(id, text) {
+  $(id).textContent = text;
+  $(id).hidden = !text;
+}
+// Counts down the prepared review's 10 minutes (save-review.mjs sets expiresAt).
+function showExpiry() {
+  const at = session?.state?.job?.review?.expiresAt;
+  if (!at) {
+    return;
+  }
+  const left = Math.ceil((at - Date.now()) / 60000);
+  $('expiry').textContent =
+    left > 0
+      ? `This review expires in ${left} minute${left === 1 ? '' : 's'}. After that, prepare the changes again.`
+      : 'This review has expired. Prepare the changes again before saving.';
+  $('expiry').dataset.kind = left > 2 ? '' : 'warn';
+}
+setInterval(showExpiry, 15000);
 
 // ---------- Report a problem ----------
 async function openReport(item = null) {

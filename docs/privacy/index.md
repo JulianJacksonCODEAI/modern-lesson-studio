@@ -4,7 +4,7 @@ title: Lesson Studio privacy policy
 description: What Lesson Studio reads, stores and sends.
 ---
 
-*Last updated November 23, 2026 (version 1.7.0)*
+*Last updated November 25, 2026 (version 1.8.0)*
 
 Lesson Studio is a browser extension used by the Code.org CodeAI curriculum team. It copies a lesson's Google Slides speaker notes and Notion page into a Code.org Level Builder lesson.
 
